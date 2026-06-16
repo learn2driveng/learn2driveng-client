@@ -1,0 +1,139 @@
+# Learn2Drive Mobile — Cursor Rules
+
+You are building Learn2Drive, a Nigeria-focused React Native app connecting learners with FRSC-approved driving schools.
+
+## Documentation First
+
+Before implementing features, read:
+- `project_plan.md` — master plan
+- `docs/architecture.md` — system design
+- `docs/decisions.md` — ADRs (do not contradict without updating ADRs)
+
+Expo SDK 56 docs: https://docs.expo.dev/versions/v56.0.0/
+
+## Mandatory Stack
+
+- React Native 0.79+ / Expo SDK 56
+- TypeScript (strict)
+- NativeWind (styling — prefer `className` over large StyleSheet)
+- React Navigation (native-stack, bottom-tabs)
+- TanStack Query v5 (server state)
+- Zustand (client state only)
+- React Hook Form + Zod (all forms)
+- react-native-maps
+- socket.io-client
+- expo-notifications
+- expo-secure-store (JWT)
+- expo-location (GPS)
+
+Do NOT introduce Redux, MobX, Apollo, or alternative form libraries.
+
+## State Management (Strict)
+
+### TanStack Query ONLY for:
+- Auth API requests
+- Driving schools, instructors, vehicles
+- Bookings, sessions, reviews
+- User profile (server-fetched)
+
+Never store server/API cache in Zustand.
+
+### Zustand ONLY for:
+- Auth state (tokens, isAuthenticated)
+- User session snapshot (id, role)
+- selectedSchool, selectedPackage
+- activeSession, currentCoordinates
+- UI state, theme, app settings
+
+Never use Zustand for API caching.
+
+## Folder Structure
+
+Place code only in:
+
+```
+src/api/
+src/assets/
+src/components/{common,forms,cards,maps}/
+src/features/{auth,learner,guardian,instructor,driving-school,admin,schools,vehicles,bookings,sessions,tracking,notifications,profile}/
+src/hooks/
+src/navigation/{auth,learner,guardian,instructor,driving-school,admin}/
+src/screens/
+src/services/
+src/store/
+src/types/
+src/utils/
+src/constants/
+```
+
+- Feature modules own business logic, feature hooks, and feature components.
+- `src/screens/` — thin screen wrappers wired to navigation.
+- `src/api/` — HTTP client, endpoints, query keys, query hooks.
+- `src/services/` — socket, notifications, location, secure storage.
+
+## Navigation & RBAC
+
+Roles: `learner` | `guardian` | `instructor` | `school_admin` | `platform_admin`
+
+After auth, mount exactly ONE role navigator via `RootNavigator` + role resolver.
+Never expose screens from other roles in the active stack.
+Auth stack: Splash, Login, Register, ForgotPassword.
+
+## Authentication
+
+- JWT access + refresh tokens in expo-secure-store
+- Bearer token on API requests via axios/fetch interceptor
+- Role-based route protection at navigator level
+
+## Components & Code Style
+
+- Functional components only
+- Absolute imports: `@/...` (never deep relative `../../../`)
+- Small, reusable components in `src/components/`
+- Custom hooks for reusable logic (`useXxx`)
+- No prop drilling — use hooks, context sparingly, or Zustand for UI
+- SOLID / Clean Architecture where practical
+- ESLint + Prettier compliant
+
+## Forms
+
+Always: React Hook Form + Zod schemas.
+Never: useState for form field values (except trivial toggles).
+
+## Styling
+
+- NativeWind `className` tokens
+- Design tokens from `src/constants/theme.ts`: primary, secondary, success, warning, error
+- Mobile-first, accessible labels and touch targets (min 44pt)
+
+## Maps & Realtime
+
+- react-native-maps for schools, routes, live tracking
+- socket.io-client in `src/services/socket.ts` for session events and location broadcast
+
+## Error Handling
+
+- Error boundaries for render failures
+- Query error/loading/empty states on all data screens
+- Zod validation messages on forms
+- NetInfo offline indicator where appropriate
+
+## Testing
+
+Structure tests under `__tests__/` mirroring `src/`.
+Use Jest + React Native Testing Library when adding tests.
+
+## Environment
+
+- Secrets in `.env` (never commit)
+- Use `EXPO_PUBLIC_*` for client-safe config
+- Reference `.env.example` for required variables
+
+## What NOT To Do
+
+- Do not add server state to Zustand
+- Do not create forms with raw useState
+- Do not bypass RBAC with direct navigation to role screens
+- Do not store tokens in AsyncStorage
+- Do not add dependencies outside the approved stack without an ADR in `docs/decisions.md`
+- Do not create markdown files unless explicitly requested
