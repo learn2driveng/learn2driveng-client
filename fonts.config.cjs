@@ -6,5 +6,7 @@ module.exports = {
     medium: 'Inter_500Medium',
     semibold: 'Inter_600SemiBold',
     bold: 'Inter_700Bold',
+    display: 'SpaceGrotesk_700Bold',
+    displayMedium: 'SpaceGrotesk_600SemiBold',
   },
 };

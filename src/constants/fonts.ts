@@ -1,10 +1,10 @@
 import shared from '../../fonts.config.cjs';
 
 /**
- * Learn2Drive app font — Inter.
+ * Learn2Drive app fonts.
  *
- * Inter is optimized for UI screens and small sizes. Used by many modern
- * mobile and web products for clarity and a neutral, professional feel.
+ * - Inter: UI body text and labels
+ * - Space Grotesk: display headlines (onboarding, marketing)
  *
  * Load via useAppFonts() in the root layout before rendering screens.
  */
