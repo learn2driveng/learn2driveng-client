@@ -18,11 +18,13 @@ export function useAppTheme() {
   const isDark = scheme === 'dark';
 
   const colors = useMemo(() => {
+    const background = isDark ? splashPalette.backgroundDark : splashPalette.backgroundLight;
+
     if (Platform.OS === 'ios') {
       return {
         primary: splashPalette.primary,
-        background: PlatformColor('systemBackground'),
-        text: PlatformColor('label'),
+        background,
+        text: isDark ? '#FFFFFF' : PlatformColor('label'),
         textMuted: PlatformColor('secondaryLabel'),
         textSubtle: PlatformColor('tertiaryLabel'),
         textFaint: PlatformColor('quaternaryLabel'),
@@ -30,22 +32,22 @@ export function useAppTheme() {
         surface: PlatformColor('secondarySystemBackground'),
         surfaceStrong: PlatformColor('tertiarySystemBackground'),
         gridDot: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-        logoBackground: PlatformColor('systemBackground'),
+        logoBackground: background,
       };
     }
 
     return {
       primary: splashPalette.primary,
-      background: isDark ? '#121212' : '#FFFFFF',
-      text: isDark ? '#FFFFFF' : '#1C1B1F',
-      textMuted: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(28,27,31,0.7)',
-      textSubtle: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(28,27,31,0.5)',
-      textFaint: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(28,27,31,0.35)',
-      border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(28,27,31,0.12)',
-      surface: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(28,27,31,0.05)',
-      surfaceStrong: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(28,27,31,0.08)',
+      background,
+      text: isDark ? '#FFFFFF' : splashPalette.backgroundDark,
+      textMuted: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(10,25,47,0.7)',
+      textSubtle: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(10,25,47,0.5)',
+      textFaint: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(10,25,47,0.35)',
+      border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(10,25,47,0.12)',
+      surface: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(10,25,47,0.05)',
+      surfaceStrong: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(10,25,47,0.08)',
       gridDot: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-      logoBackground: isDark ? '#121212' : '#FFFFFF',
+      logoBackground: background,
     };
   }, [isDark]);
 

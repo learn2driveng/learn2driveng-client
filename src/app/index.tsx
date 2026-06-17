@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/common/screen';
 import { splashPalette } from '@/constants/theme';
 
 const FRSC_SEAL_URI =
@@ -92,8 +93,9 @@ export default function SplashScreen() {
   }));
 
   return (
-    <View
-      className="flex-1 overflow-hidden bg-background-light px-8 dark:bg-background-dark"
+    <Screen
+      edges={false}
+      className="overflow-hidden px-8"
       style={{ paddingTop: insets.top + 32, paddingBottom: insets.bottom + 16 }}
     >
       <DotGrid />
@@ -196,6 +198,6 @@ export default function SplashScreen() {
       </View>
 
       <Scanline />
-    </View>
+    </Screen>
   );
 }

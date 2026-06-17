@@ -4,9 +4,10 @@
  */
 export const splashPalette = {
   primary: '#ffb700',
-  backgroundLight: '#f2f5f8',
-  backgroundDark: '#101728',
+  backgroundLight: '#f2f2f3',
+  backgroundDark: '#041320',
   navyAccent: '#1C274B',
+  surfaceDark: '#1E2129',
 } as const;
 
 export const colors = {

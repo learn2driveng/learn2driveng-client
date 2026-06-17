@@ -16,16 +16,20 @@ module.exports = {
         warning: '#F59E0B',
         error: '#EF4444',
         background: {
-          light: '#f2f5f8',
-          dark: '#101728',
+          light: '#f2f2f3',
+          dark: '#041320',
         },
-        'background-dark': '#101728',
+        'background-dark': '#041320',
+        surface: {
+          dark: '#1E2129',
+        },
         navy: {
           accent: '#1C274B',
         },
       },
       fontFamily: {
         sans: [fontFamily.regular],
+        display: [fontFamily.display],
       },
       fontSize: {
         caption: ['12px', { lineHeight: '16px' }],
@@ -52,6 +56,8 @@ module.exports = {
         '.font-medium': { fontFamily: fontFamily.medium },
         '.font-semibold': { fontFamily: fontFamily.semibold },
         '.font-bold': { fontFamily: fontFamily.bold },
+        '.font-display': { fontFamily: fontFamily.display },
+        '.font-display-medium': { fontFamily: fontFamily.displayMedium },
       });
     }),
   ],
