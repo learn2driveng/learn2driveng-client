@@ -4,8 +4,9 @@
  */
 export const splashPalette = {
   primary: '#ffb700',
-  backgroundLight: '#f1f2f4',
-  backgroundDark: '#0a192f',
+  backgroundLight: '#f2f5f8',
+  backgroundDark: '#101728',
+  navyAccent: '#1C274B',
 } as const;
 
 export const colors = {
@@ -27,6 +28,11 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+} as const;
+
+/** Pill-shaped buttons — use explicit `borderRadius.button` in style on Android */
+export const borderRadius = {
+  button: 50,
 } as const;
 
 /** Default map region: Nigeria */

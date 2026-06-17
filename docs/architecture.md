@@ -34,15 +34,13 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 
 ```
 ┌────────────────────────────────────────────┐
-│  Screens (src/screens/)                     │  ← Navigation targets
+│  Routes (src/app/)                          │  ← Expo Router pages & layouts
 ├────────────────────────────────────────────┤
-│  Features (src/features/)                 │  ← Domain UI + hooks
+│  Components (src/components/)             │  ← Reusable UI
 ├────────────────────────────────────────────┤
-│  Components (src/components/)             │  ← Shared UI
+│  Hooks (src/hooks/)                         │  ← Business logic hooks
 ├────────────────────────────────────────────┤
-│  Navigation (src/navigation/)             │  ← Role stacks
-├────────────────────────────────────────────┤
-│  API Hooks (src/api/)                       │  ← TanStack Query
+│  API (src/api/)                             │  ← TanStack Query
 ├────────────────────────────────────────────┤
 │  Store (src/store/)                         │  ← Zustand client state
 ├────────────────────────────────────────────┤
@@ -50,7 +48,7 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 └────────────────────────────────────────────┘
 ```
 
-**Dependency rule:** Upper layers depend on lower layers. Features must not import from screens. API layer must not import from features.
+**Dependency rule:** Routes import from components/hooks/api. API layer must not import from routes.
 
 ---
 
@@ -58,22 +56,19 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 
 `src/app/_layout.tsx` responsibilities:
 
-1. Load fonts / splash
-2. Wrap app with providers:
-   - `QueryClientProvider`
-   - `NavigationContainer` (if not inside RootNavigator)
-   - Theme / SafeArea
-3. Render `RootNavigator`
+1. Load fonts / hide splash screen
+2. Wrap app with providers (`SafeAreaProvider`, `QueryClientProvider` when added)
+3. Render root `<Stack />` for Expo Router
+4. Role-based redirects (auth → role route group)
 
 ```typescript
-// Illustrative — not yet implemented
+// Current root layout
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <RootNavigator />
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <StatusBar />
+      <Stack screenOptions={{ headerShown: false }} />
+    </SafeAreaProvider>
   );
 }
 ```
