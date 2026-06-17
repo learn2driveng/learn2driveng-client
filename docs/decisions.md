@@ -35,22 +35,28 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 
 ---
 
-## ADR-003: React Navigation as Primary Navigator
+## ADR-003: Expo Router File-Based Navigation
 
-**Status:** Accepted  
-**Date:** 2025-06-15
+**Status:** Accepted (supersedes prior React Navigation–only ADR)  
+**Date:** 2025-06-15 · **Revised:** 2026-06-15
 
-**Context:** Project scaffold uses Expo Router (`src/app/`). Spec requires React Navigation role stacks.
+**Context:** The original plan used separate `src/screens/`, `src/features/`, and `src/navigation/` layers alongside Expo Router, which added indirection. Expo SDK 56 recommends Expo Router as the primary navigation model.
 
-**Decision:** Use `@react-navigation/native` with imperative role-based root navigator in `src/navigation/`. Keep `src/app/_layout.tsx` as a thin bootstrap (providers + `RootNavigator`). Migrate away from file-based routing for feature screens over time.
+**Decision:** Use **Expo Router** file-based routing in `src/app/`. Navigation is defined by the filesystem:
 
-**Alternatives considered:**
-- *Expo Router route groups per role* — good DX but harder to enforce strict RBAC isolation
-- *Pure Expo Router* — rejected; spec mandates React Navigation stacks
+- `_layout.tsx` — stack/tab navigators per route group
+- `(group)/` — route groups (auth, learner, guardian, etc.) without URL segments
+- `index.tsx` — default route for a directory (`/`)
+- `[param].tsx` — dynamic routes
+
+React Navigation (`Stack`, `Tabs`) is used **inside** `_layout.tsx` files as Expo Router documents — not as a separate `src/navigation/` tree.
 
 **Consequences:**
-- New screens register in `src/navigation/{role}/` not `src/app/`
-- Deep linking configured via React Navigation linking config
+- Routes live in `src/app/`; no `src/screens/` or `src/navigation/` folders
+- Reusable UI in `src/components/`; hooks in `src/hooks/`; API in `src/api/`
+- RBAC enforced in root `src/app/_layout.tsx` via redirects (authenticated role → correct route group)
+- Typed routes via Expo Router experiments (`typedRoutes: true`)
+- Deep linking is automatic from file paths
 
 ---
 

@@ -16,8 +16,12 @@ module.exports = {
         warning: '#F59E0B',
         error: '#EF4444',
         background: {
-          light: '#FFFFFF',
-          dark: '#121212',
+          light: '#f2f5f8',
+          dark: '#101728',
+        },
+        'background-dark': '#101728',
+        navy: {
+          accent: '#1C274B',
         },
       },
       fontFamily: {
@@ -32,6 +36,9 @@ module.exports = {
         title2: ['22px', { lineHeight: '28px' }],
         title1: ['28px', { lineHeight: '34px' }],
         largeTitle: ['34px', { lineHeight: '41px' }],
+      },
+      borderRadius: {
+        button: '50px',
       },
     },
   },

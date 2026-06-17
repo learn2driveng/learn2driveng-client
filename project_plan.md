@@ -38,7 +38,7 @@ See [docs/architecture.md](./docs/architecture.md) for navigation diagrams and [
 | Framework | Expo + React Native | Expo SDK 56, RN 0.79+ (current: 0.85) |
 | Language | TypeScript | strict mode |
 | Styling | NativeWind | v4 + Tailwind CSS |
-| Navigation | React Navigation | native-stack, bottom-tabs |
+| Navigation | Expo Router | file-based; Stack/Tabs in `_layout.tsx` |
 | Server state | TanStack Query | v5 |
 | Client state | Zustand | v5 |
 | Forms | React Hook Form | v7 |
@@ -79,70 +79,66 @@ Query keys live in `src/api/query-keys.ts`. Stores live in `src/store/`.
 
 ```
 src/
-├── api/                    # API client, endpoints, query keys, hooks
-├── assets/                 # App-local assets (fonts, images)
+├── app/                    # Expo Router — all routes & layouts
+│   ├── _layout.tsx         # Root providers + role redirect
+│   ├── +not-found.tsx
+│   ├── (auth)/             # Splash, login, register (URL: /, /login, …)
+│   ├── (learner)/          # Learner tabs & screens
+│   ├── (guardian)/
+│   ├── (instructor)/
+│   ├── (school)/           # Driving school admin
+│   └── (admin)/            # Platform admin
 ├── components/
-│   ├── common/             # Button, Input, Screen, Loading, ErrorBoundary
-│   ├── forms/              # FormField, FormSelect, FormDatePicker
-│   ├── cards/              # SchoolCard, BookingCard, SessionCard
-│   └── maps/               # MapView wrapper, markers, polylines
-├── features/               # Feature modules (hooks, components, utils)
-│   ├── auth/
-│   ├── learner/
-│   ├── guardian/
-│   ├── instructor/
-│   ├── driving-school/
-│   ├── admin/
-│   ├── schools/
-│   ├── vehicles/
-│   ├── bookings/
-│   ├── sessions/
-│   ├── tracking/
-│   ├── notifications/
-│   └── profile/
+│   ├── auth/               # Splash, auth forms
+│   ├── common/             # Button, Input, Loading, ErrorBoundary
+│   ├── forms/              # FormField, FormSelect
+│   ├── cards/              # SchoolCard, BookingCard
+│   └── maps/               # MapView, markers, polylines
 ├── hooks/                  # Cross-cutting hooks
-├── navigation/             # Role-based navigators
-│   ├── auth/
-│   ├── learner/
-│   ├── guardian/
-│   ├── instructor/
-│   ├── driving-school/
-│   └── admin/
-├── screens/                # Screen compositions (thin; delegate to features)
+├── api/                    # HTTP client, endpoints, query hooks
 ├── services/               # Socket, notifications, location, secure storage
 ├── store/                  # Zustand stores
 ├── types/                  # Shared TypeScript types
 ├── utils/                  # Pure helpers
-└── constants/              # Design tokens, routes, config
+├── constants/              # Design tokens, config
+└── lib/                    # NativeWind setup, shared utilities
 ```
 
-`src/app/` (Expo Router entry) will bootstrap providers and delegate to `src/navigation/RootNavigator.tsx`.
+**Expo Router notation:** `(group)` = route group (no URL segment), `index.tsx` = default route, `_layout.tsx` = navigator, `[id].tsx` = dynamic param.
+
+Static assets live in project root `assets/` (Expo convention).
 
 ---
 
 ## 6. Navigation Architecture
 
+Expo Router file-based routing in `src/app/`:
+
 ```
-RootNavigator
-├── AuthStack (unauthenticated)
-│   ├── Splash
-│   ├── Login
-│   ├── Register
-│   └── ForgotPassword
-└── RoleStack (authenticated — one of five)
-    ├── LearnerNavigator
-    ├── GuardianNavigator
-    ├── InstructorNavigator
-    ├── DrivingSchoolNavigator
-    └── AdminNavigator
+src/app/
+├── _layout.tsx              # Providers, fonts, role redirect
+├── +not-found.tsx
+├── (auth)/
+│   ├── _layout.tsx          # Auth stack
+│   ├── index.tsx            # Splash → /
+│   ├── login.tsx            # → /login
+│   ├── register.tsx
+│   └── forgot-password.tsx
+├── (learner)/
+│   ├── _layout.tsx          # Learner tabs
+│   └── (tabs)/...
+├── (guardian)/
+├── (instructor)/
+├── (school)/
+└── (admin)/
 ```
 
-**Role resolver flow:**
+**Role resolver flow** (in root `_layout.tsx`):
 
 1. App launch → read secure token → hydrate auth store
-2. If no token → `AuthStack`
-3. If token → fetch/validate profile (Query) → set role → mount role navigator
-4. Token expiry → refresh or logout → return to `AuthStack`
+2. If no token → stay in `(auth)` routes
+3. If token valid → `router.replace` to `/(learner)` etc. based on `user.role`
+4. Token expiry → refresh or logout → redirect to `/(auth)/login`
 
 ---
 
@@ -180,7 +176,7 @@ RootNavigator
 - `session:status` (booking state changes)
 
 Service: `src/services/socket.ts`  
-Hooks: `src/features/tracking/hooks/`
+Hooks: `src/hooks/` (e.g. `useSessionTracking.ts`)
 
 ---
 
@@ -198,8 +194,8 @@ Hooks: `src/features/tracking/hooks/`
 
 ```
 __tests__/
+├── app/
 ├── components/
-├── features/
 ├── hooks/
 └── utils/
 ```

@@ -16,7 +16,7 @@ Expo SDK 56 docs: https://docs.expo.dev/versions/v56.0.0/
 - React Native 0.79+ / Expo SDK 56
 - TypeScript (strict)
 - NativeWind (styling — prefer `className` over large StyleSheet)
-- React Navigation (native-stack, bottom-tabs)
+- Expo Router (file-based routing; Stack/Tabs in `_layout.tsx`)
 - TanStack Query v5 (server state)
 - Zustand (client state only)
 - React Hook Form + Zod (all forms)
@@ -49,25 +49,34 @@ Never use Zustand for API caching.
 
 ## Folder Structure
 
-Place code only in:
+Expo Router owns navigation. Place code only in:
 
 ```
-src/api/
-src/assets/
+src/app/                    # Routes only (Expo Router file-based routing)
 src/components/{common,forms,cards,maps}/
-src/features/{auth,learner,guardian,instructor,driving-school,admin,schools,vehicles,bookings,sessions,tracking,notifications,profile}/
 src/hooks/
-src/navigation/{auth,learner,guardian,instructor,driving-school,admin}/
-src/screens/
+src/api/
 src/services/
 src/store/
 src/types/
 src/utils/
 src/constants/
+src/lib/
 ```
 
-- Feature modules own business logic, feature hooks, and feature components.
-- `src/screens/` — thin screen wrappers wired to navigation.
+### Expo Router conventions (`src/app/`)
+
+| Pattern | Example | URL |
+|---------|---------|-----|
+| Route group | `(auth)/login.tsx` | `/login` |
+| Index route | `(auth)/index.tsx` | `/` |
+| Layout | `(auth)/_layout.tsx` | defines stack/tabs for group |
+| Dynamic | `schools/[id].tsx` | `/schools/123` |
+| Not found | `+not-found.tsx` | catch-all |
+
+- **Do not** create `src/screens/`, `src/features/`, or `src/navigation/`.
+- Route files are thin when possible; screen-specific UI can live directly in `src/app/` routes.
+- `src/components/` — **reusable** UI only (buttons, cards, form fields). No screen-specific layouts.
 - `src/api/` — HTTP client, endpoints, query keys, query hooks.
 - `src/services/` — socket, notifications, location, secure storage.
 
@@ -75,9 +84,10 @@ src/constants/
 
 Roles: `learner` | `guardian` | `instructor` | `school_admin` | `platform_admin`
 
-After auth, mount exactly ONE role navigator via `RootNavigator` + role resolver.
-Never expose screens from other roles in the active stack.
-Auth stack: Splash, Login, Register, ForgotPassword.
+After auth, redirect to exactly ONE role route group via root `_layout.tsx` (role resolver).
+Never expose routes from other roles to unauthenticated or wrong-role users.
+Auth routes in `src/app/(auth)/`: splash (`index`), login, register, forgot-password.
+Role routes in `src/app/(learner)/`, `(guardian)/`, `(instructor)/`, `(school)/`, `(admin)/`.
 
 ## Authentication
 
@@ -104,6 +114,7 @@ Never: useState for form field values (except trivial toggles).
 
 - NativeWind `className` tokens
 - Design tokens from `src/constants/theme.ts`: primary, secondary, success, warning, error
+- Pill buttons: set `borderRadius: borderRadius.button` + `overflow: 'hidden'` in `style` (Android needs this; `rounded-button` alone may not apply on Pressable)
 - Mobile-first, accessible labels and touch targets (min 44pt)
 
 ## Maps & Realtime
