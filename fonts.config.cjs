@@ -8,5 +8,9 @@ module.exports = {
     bold: 'Inter_700Bold',
     display: 'SpaceGrotesk_700Bold',
     displayMedium: 'SpaceGrotesk_600SemiBold',
+    figtree: 'Figtree_400Regular',
+    figtreeMedium: 'Figtree_500Medium',
+    figtreeSemibold: 'Figtree_600SemiBold',
+    figtreeBold: 'Figtree_700Bold',
   },
 };

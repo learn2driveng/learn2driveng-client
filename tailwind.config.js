@@ -58,6 +58,10 @@ module.exports = {
         '.font-bold': { fontFamily: fontFamily.bold },
         '.font-display': { fontFamily: fontFamily.display },
         '.font-display-medium': { fontFamily: fontFamily.displayMedium },
+        '.font-figtree': { fontFamily: fontFamily.figtree },
+        '.font-figtree-medium': { fontFamily: fontFamily.figtreeMedium },
+        '.font-figtree-semibold': { fontFamily: fontFamily.figtreeSemibold },
+        '.font-figtree-bold': { fontFamily: fontFamily.figtreeBold },
       });
     }),
   ],
