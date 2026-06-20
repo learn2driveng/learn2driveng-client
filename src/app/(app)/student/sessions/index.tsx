@@ -8,12 +8,14 @@ import {
   PackageCreditCard,
   SectionHeader,
 } from "@/components/dashboard";
+import { BookingCard, learnerBookings } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function StudentSessionsScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const upcomingBooking = learnerBookings.find((booking) => booking.status === "upcoming");
 
   const bookSelectedPackage = () => {
     if (!selectedPackage) return;
@@ -41,7 +43,7 @@ export default function StudentSessionsScreen() {
 
       <View
         className="mt-8 flex-row items-center gap-4 rounded-3xl p-5"
-        style={{ backgroundColor: colors.text }}
+        style={{ backgroundColor: colors.contrastSurface }}
       >
         <View
           className="h-12 w-12 items-center justify-center rounded-2xl"
@@ -50,12 +52,12 @@ export default function StudentSessionsScreen() {
           <MaterialCommunityIcons
             name="ticket-confirmation-outline"
             size={25}
-            color="#041320"
+            color={colors.onPrimary}
           />
         </View>
         <View className="flex-1">
-          <Text className="font-figtree-bold text-[26px] text-white">20</Text>
-          <Text className="font-figtree text-[13px] text-white/70">
+          <Text className="font-figtree-bold text-[26px]" style={{ color: colors.contrastText }}>20</Text>
+          <Text className="font-figtree text-[13px]" style={{ color: colors.contrastMuted }}>
             Available session credits
           </Text>
         </View>
@@ -74,18 +76,39 @@ export default function StudentSessionsScreen() {
           <MaterialCommunityIcons
             name="calendar-plus"
             size={19}
-            color={selectedPackage ? "#041320" : colors.textSubtle}
+            color={selectedPackage ? colors.onPrimary : colors.textSubtle}
           />
           <Text
             className="font-figtree-bold text-[13px]"
             style={{
-              color: selectedPackage ? "#041320" : colors.textSubtle,
+              color: selectedPackage ? colors.onPrimary : colors.textSubtle,
             }}
           >
             Book
           </Text>
         </Pressable>
       </View>
+
+      {upcomingBooking ? (
+        <View className="mt-9">
+          <SectionHeader
+            title="Upcoming lesson"
+            actionLabel="View history"
+            onActionPress={() => router.push("/student/sessions/history")}
+          />
+          <View className="mt-4">
+            <BookingCard
+              booking={upcomingBooking}
+              onPress={() =>
+                router.push({
+                  pathname: "/student/sessions/[bookingId]",
+                  params: { bookingId: upcomingBooking.id },
+                })
+              }
+            />
+          </View>
+        </View>
+      ) : null}
 
       <View className="mt-9">
         <SectionHeader title="Active packages" />

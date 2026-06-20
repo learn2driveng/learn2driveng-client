@@ -41,7 +41,7 @@ export function BookingStepIndicator({
               >
                 <Text
                   className="font-figtree-bold text-[12px]"
-                  style={{ color: active ? "#041320" : colors.textSubtle }}
+                  style={{ color: active ? colors.onPrimary : colors.textSubtle }}
                 >
                   {index + 1}
                 </Text>

@@ -40,7 +40,7 @@ export function ToggleSettingRow({
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: colors.surfaceStrong, true: colors.primary }}
-        thumbColor="#FFFFFF"
+        thumbColor={colors.contrastText}
       />
     </View>
   );

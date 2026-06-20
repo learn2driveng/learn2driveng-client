@@ -37,6 +37,19 @@ export default function StudentLayout() {
         }}
       />
       <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="compass"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="sessions"
         options={{
           title: "Sessions",
