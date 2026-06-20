@@ -1,6 +1,7 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
+import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type SocialAuthButtonsProps = {
@@ -28,10 +29,12 @@ export function SocialAuthButtons({
           accessibilityRole="button"
           accessibilityLabel={`Continue with ${provider.label}`}
           onPress={provider.onPress}
-          className={`${compact ? "h-14 w-14 rounded-full" : "h-14 flex-1 rounded-2xl"} flex-row items-center justify-center gap-3 border active:opacity-70`}
+          className={`${compact ? "h-14 w-14 rounded-full" : "h-14 flex-1 rounded-full"} flex-row items-center justify-center gap-3 border active:opacity-70`}
           style={{
             borderColor: colors.border,
             backgroundColor: colors.surface,
+            borderRadius: borderRadius.button,
+            overflow: "hidden",
           }}
         >
           <FontAwesome name={provider.icon} size={20} color={colors.text} />
