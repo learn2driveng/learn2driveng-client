@@ -25,12 +25,12 @@ export function AuthPrimaryButton({
     >
       <Text
         className="font-figtree-bold text-[17px]"
-        style={{ color: "#041320" }}
+        style={{ color: colors.onPrimary }}
       >
         {label}
       </Text>
       {showArrow ? (
-        <MaterialCommunityIcons name="arrow-right" size={24} color="#041320" />
+        <MaterialCommunityIcons name="arrow-right" size={24} color={colors.onPrimary} />
       ) : null}
     </Pressable>
   );

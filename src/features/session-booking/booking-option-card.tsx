@@ -43,7 +43,7 @@ export function BookingOptionCard({
         <MaterialCommunityIcons
           name={icon}
           size={24}
-          color={selected ? "#041320" : colors.text}
+          color={selected ? colors.onPrimary : colors.text}
         />
       </View>
       <View className="flex-1">
