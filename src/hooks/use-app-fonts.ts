@@ -1,4 +1,10 @@
 import {
+  Figtree_400Regular,
+  Figtree_500Medium,
+  Figtree_600SemiBold,
+  Figtree_700Bold,
+} from '@expo-google-fonts/figtree';
+import {
   Inter_300Light,
   Inter_400Regular,
   Inter_500Medium,
@@ -20,5 +26,9 @@ export function useAppFonts() {
     Inter_700Bold,
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
+    Figtree_400Regular,
+    Figtree_500Medium,
+    Figtree_600SemiBold,
+    Figtree_700Bold,
   });
 }
