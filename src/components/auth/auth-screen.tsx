@@ -7,11 +7,13 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 type AuthScreenProps = {
   children: ReactNode;
   contentClassName?: string;
+  scrollEnabled?: boolean;
 };
 
 export function AuthScreen({
   children,
   contentClassName = "",
+  scrollEnabled = true,
 }: AuthScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
@@ -23,6 +25,7 @@ export function AuthScreen({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
+        scrollEnabled={scrollEnabled}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerClassName="flex-grow items-center px-7"

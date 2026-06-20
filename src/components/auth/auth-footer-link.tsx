@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 
+import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type AuthFooterLinkProps = {
@@ -28,8 +29,15 @@ export function AuthFooterLink({
       <Pressable
         accessibilityRole="link"
         onPress={onPress}
-        className={`${underline ? "border-b-2" : ""} active:opacity-60`}
-        style={underline ? { borderColor: colors.primary } : undefined}
+        className={`${underline ? "rounded-full border px-3 py-1" : ""} active:opacity-60`}
+        style={
+          underline
+            ? {
+                borderColor: colors.primary,
+                borderRadius: borderRadius.button,
+              }
+            : undefined
+        }
       >
         <Text
           className="font-figtree-semibold text-[15px]"

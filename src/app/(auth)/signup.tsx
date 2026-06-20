@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -6,12 +6,14 @@ import { Pressable, Text, View } from "react-native";
 import {
   AuthDivider,
   AuthField,
-  AuthFooterLink,
   AuthPrimaryButton,
   AuthScreen,
   SocialAuthButtons,
 } from "@/components/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+
+const FRSC_SEAL_URI =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -22,98 +24,125 @@ export default function SignupScreen() {
   const [password, setPassword] = useState("");
 
   return (
-    <AuthScreen>
-      <View className="flex-row items-center justify-between">
-        <MaterialCommunityIcons name="car" size={30} color={colors.text} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Account creation help"
-        >
-          <MaterialCommunityIcons
-            name="help-circle"
-            size={30}
-            color={colors.textSubtle}
+    <AuthScreen scrollEnabled={false} contentClassName="justify-between">
+      <View>
+        <View className="items-end">
+          <View
+            className="h-9 flex-row items-center gap-2 rounded-full border px-3"
+            style={{
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
+          >
+            <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-sm">
+              <Image
+                source={{ uri: FRSC_SEAL_URI }}
+                className="h-5 w-5"
+                contentFit="contain"
+              />
+            </View>
+            <Text
+              className="font-figtree-bold text-[11px] tracking-[0.7px]"
+              style={{ color: colors.textMuted }}
+            >
+              FRSC VERIFIED
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-5">
+          <Text
+            className="font-figtree-bold text-[30px] leading-[36px] tracking-[-0.8px]"
+            style={{ color: colors.text }}
+          >
+            Create your account
+          </Text>
+          <Text
+            className="mt-1 font-figtree-medium text-[14px]"
+            style={{ color: colors.primary }}
+          >
+            Join the FRSC-verified driving community.
+          </Text>
+        </View>
+
+        <View className="mt-5 gap-3">
+          <AuthField
+            label="FULL NAME"
+            icon="account"
+            autoCapitalize="words"
+            autoComplete="name"
+            placeholder="Enter your full name"
+            returnKeyType="next"
+            value={fullName}
+            onChangeText={setFullName}
           />
-        </Pressable>
+          <AuthField
+            label="EMAIL ADDRESS"
+            icon="email"
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            placeholder="name@example.com"
+            returnKeyType="next"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <AuthField
+            label="PHONE NUMBER"
+            icon="phone"
+            autoComplete="tel"
+            keyboardType="phone-pad"
+            placeholder="+234 000 000 0000"
+            returnKeyType="next"
+            value={phone}
+            onChangeText={setPhone}
+          />
+          <AuthField
+            label="CREATE PASSWORD"
+            icon="lock"
+            isPassword
+            autoCapitalize="none"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+
+        <View className="mt-5">
+          <AuthPrimaryButton label="Create Account" />
+        </View>
+
+        <View className="mb-4 mt-5">
+          <AuthDivider />
+        </View>
+        <SocialAuthButtons compact />
       </View>
 
-      <View className="mt-10">
+      <View className="pt-4 items-center gap-3">
+        <View className="flex-row flex-wrap items-center justify-center">
+          <Text
+            className="font-figtree text-[15px]"
+            style={{ color: colors.text }}
+          >
+            Already have an account?{" "}
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.replace("/login")}
+            className="active:opacity-60"
+          >
+            <Text
+              className="font-figtree-semibold text-[15px]"
+              style={{ color: colors.primary }}
+            >
+              Log in
+            </Text>
+          </Pressable>
+        </View>
         <Text
-          className="font-figtree-bold text-[36px] leading-[43px] tracking-[-1px]"
+          className="max-w-[300px] text-center font-figtree text-[11px] leading-4"
           style={{ color: colors.text }}
-        >
-          Create your account
-        </Text>
-        <Text
-          className="mt-2 font-figtree-medium text-[17px]"
-          style={{ color: colors.textMuted }}
-        >
-          Join the FRSC-verified driving community.
-        </Text>
-      </View>
-
-      <View className="mt-10 gap-6">
-        <AuthField
-          label="FULL NAME"
-          icon="account"
-          autoCapitalize="words"
-          autoComplete="name"
-          placeholder="Enter your full name"
-          returnKeyType="next"
-          value={fullName}
-          onChangeText={setFullName}
-        />
-        <AuthField
-          label="EMAIL ADDRESS"
-          icon="email"
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          placeholder="name@example.com"
-          returnKeyType="next"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <AuthField
-          label="PHONE NUMBER"
-          icon="phone"
-          autoComplete="tel"
-          keyboardType="phone-pad"
-          placeholder="+234 000 000 0000"
-          returnKeyType="next"
-          value={phone}
-          onChangeText={setPhone}
-        />
-        <AuthField
-          label="CREATE PASSWORD"
-          icon="lock"
-          isPassword
-          autoCapitalize="none"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-        />
-      </View>
-
-      <View className="mt-8">
-        <AuthPrimaryButton label="Create Account" />
-      </View>
-
-      <View className="mb-6 mt-16">
-        <AuthDivider />
-      </View>
-      <SocialAuthButtons compact />
-
-      <View className="mt-10 items-center gap-6">
-        <AuthFooterLink
-          prompt="Already have an account?"
-          action="Log in"
-          onPress={() => router.replace("/login")}
-        />
-        <Text
-          className="max-w-[330px] text-center font-figtree text-[12px] leading-5"
-          style={{ color: colors.textSubtle }}
         >
           By creating an account, you agree to our Terms and Privacy.
         </Text>

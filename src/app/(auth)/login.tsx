@@ -7,7 +7,6 @@ import { Pressable, Text, View } from "react-native";
 import {
   AuthDivider,
   AuthField,
-  AuthFooterLink,
   AuthPrimaryButton,
   AuthScreen,
   SocialAuthButtons,
@@ -24,29 +23,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
 
   return (
-    <AuthScreen>
-      <View className="flex-row items-center justify-between gap-3">
-        <View className="flex-row items-center gap-2.5">
-          <View
-            className="h-12 w-12 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: colors.text }}
-          >
-            <MaterialCommunityIcons
-              name="car-emergency"
-              size={27}
-              color={colors.primary}
-            />
-          </View>
-          <Text
-            className="font-figtree-bold text-[22px] tracking-[-0.6px]"
-            style={{ color: colors.text }}
-          >
-            Learn<Text style={{ color: colors.primary }}>2</Text>Drive
-          </Text>
-        </View>
-
+    <AuthScreen scrollEnabled={false} contentClassName="justify-between">
+      <View>
         <View
-          className="h-10 flex-row items-center gap-2 rounded-full border px-3"
+          className="h-9 self-end flex-row items-center gap-2 rounded-full border px-3"
           style={{
             borderColor: colors.border,
             backgroundColor: colors.surface,
@@ -66,82 +46,96 @@ export default function LoginScreen() {
             FRSC VERIFIED
           </Text>
         </View>
-      </View>
 
-      <View className="mt-12">
-        <Text
-          className="font-figtree-bold text-[36px] leading-[43px] tracking-[-1px]"
-          style={{ color: colors.text }}
-        >
-          Welcome Back
-        </Text>
-        <Text
-          className="mt-2 font-figtree text-[17px]"
-          style={{ color: colors.textMuted }}
-        >
-          Sign in to continue your driving journey
-        </Text>
-      </View>
+        <View className="mt-8">
+          <Text
+            className="font-figtree-bold text-[36px] leading-[42px] tracking-[-1px]"
+            style={{ color: colors.text }}
+          >
+            Welcome!
+          </Text>
+          <Text
+            className="mt-2 font-figtree text-[15px]"
+            style={{ color: colors.primary }}
+          >
+            Sign in to continue your driving journey
+          </Text>
+        </View>
 
-      <View className="mt-11 gap-7">
-        <AuthField
-          label="EMAIL ADDRESS"
-          icon="email"
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          placeholder="alex.jordan@safety.com"
-          returnKeyType="next"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <View>
+        <View className="mt-8 gap-4">
           <AuthField
-            label="PASSWORD"
-            icon="lock"
-            isPassword
+            label="EMAIL ADDRESS"
+            icon="email"
             autoCapitalize="none"
-            autoComplete="current-password"
-            placeholder="••••••••••"
-            value={password}
-            onChangeText={setPassword}
+            autoComplete="email"
+            keyboardType="email-address"
+            placeholder="alex.jordan@safety.com"
+            returnKeyType="next"
+            value={email}
+            onChangeText={setEmail}
           />
+          <View>
+            <AuthField
+              label="PASSWORD"
+              icon="lock"
+              isPassword
+              autoCapitalize="none"
+              autoComplete="current-password"
+              placeholder="••••••••••"
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Pressable
+              accessibilityRole="button"
+              className="mt-3 self-end active:opacity-60"
+              onPress={() => router.push("/forgot-password")}
+            >
+              <Text
+                className="font-figtree-semibold text-[14px]"
+                style={{ color: colors.primary }}
+              >
+                FORGOT PASSWORD?
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View className="mt-6">
+          <AuthPrimaryButton
+            label="LOGIN TO DASHBOARD"
+            showArrow
+            onPress={() => router.replace("/student")}
+          />
+        </View>
+
+        <View className="mt-8 mb-6">
+          <AuthDivider />
+        </View>
+        <SocialAuthButtons />
+      </View>
+
+      <View className="items-center pt-6">
+        <View className="flex-row flex-wrap items-center justify-center">
+          <Text
+            className="font-figtree text-[15px]"
+            style={{ color: colors.textMuted }}
+          >
+            Don’t have an account?{" "}
+          </Text>
           <Pressable
-            accessibilityRole="button"
-            className="mt-4 self-end active:opacity-60"
-            onPress={() => router.push("/forgot-password")}
+            accessibilityRole="link"
+            onPress={() => router.push("/signup")}
+            className="active:opacity-60"
           >
             <Text
-              className="font-figtree-semibold text-[13px]"
+              className="font-figtree-semibold text-[15px]"
               style={{ color: colors.primary }}
             >
-              FORGOT PASSWORD?
+              Sign Up
             </Text>
           </Pressable>
         </View>
-      </View>
-
-      <View className="mt-9">
-        <AuthPrimaryButton
-          label="LOGIN TO DASHBOARD"
-          showArrow
-          onPress={() => router.replace("/student")}
-        />
-      </View>
-
-      <View className="my-10">
-        <AuthDivider />
-      </View>
-      <SocialAuthButtons />
-
-      <View className="mt-auto items-center pt-14">
-        <AuthFooterLink
-          prompt="Don’t have an account?"
-          action="Sign Up"
-          underline
-          onPress={() => router.push("/signup")}
-        />
-        <View className="mt-5 flex-row items-center gap-2">
+        <View className="mt-3 flex-row items-center gap-2">
           <MaterialCommunityIcons
             name="shield-check"
             size={14}

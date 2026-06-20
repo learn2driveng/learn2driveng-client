@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { fontFamily } from "@/constants/fonts";
+import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -40,8 +41,13 @@ export function AuthField({
         {label}
       </Text>
       <View
-        className="h-16 flex-row items-center rounded-2xl border px-5"
-        style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        className="h-16 flex-row items-center rounded-full border px-5"
+        style={{
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.button,
+          overflow: "hidden",
+        }}
       >
         <MaterialCommunityIcons
           name={icon}
@@ -54,7 +60,7 @@ export function AuthField({
           placeholderTextColor={colors.textFaint}
           secureTextEntry={isPassword && !passwordVisible}
           className="ml-4 flex-1 text-[17px]"
-          style={{ color: colors.text, fontFamily: fontFamily.figtree }}
+          style={{ color: colors.text, fontFamily: fontFamily.regular }}
         />
         {isPassword ? (
           <Pressable

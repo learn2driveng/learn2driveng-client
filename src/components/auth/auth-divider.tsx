@@ -13,7 +13,7 @@ export function AuthDivider() {
       />
       <Text
         className="font-figtree-semibold text-[11px] tracking-[2.3px]"
-        style={{ color: colors.textSubtle }}
+        style={{ color: colors.text }}
       >
         OR CONTINUE WITH
       </Text>
