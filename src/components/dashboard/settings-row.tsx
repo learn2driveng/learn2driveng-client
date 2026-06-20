@@ -22,7 +22,7 @@ export function SettingsRow({
   destructive = false,
 }: SettingsRowProps) {
   const { colors } = useAppTheme();
-  const foreground = destructive ? "#EF4444" : colors.text;
+  const foreground = destructive ? colors.error : colors.text;
 
   return (
     <Pressable

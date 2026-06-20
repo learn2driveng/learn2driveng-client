@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -15,8 +15,12 @@ const dateOptions = ["Mon 24", "Tue 25", "Wed 26"] as const;
 const timeOptions = ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"] as const;
 
 export default function BookSessionScreen() {
+  const router = useRouter();
   const { colors } = useAppTheme();
-  const { packageName } = useLocalSearchParams<{ packageName?: string }>();
+  const { packageName, schoolName } = useLocalSearchParams<{
+    packageName?: string;
+    schoolName?: string;
+  }>();
   const [step, setStep] = useState(0);
   const selectedPackage = packageName ?? "Selected package";
   const [selectedDate, setSelectedDate] = useState("Tue 25");
@@ -228,6 +232,7 @@ export default function BookSessionScreen() {
               }}
             >
               {[
+                ["School", schoolName ?? "Elite Safety Driving Academy"],
                 ["Package", selectedPackage],
                 ["Date", selectedDate],
                 ["Time", selectedTime],
@@ -285,21 +290,35 @@ export default function BookSessionScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            if (!isReview) setStep((current) => current + 1);
+            if (!isReview) {
+              setStep((current) => current + 1);
+              return;
+            }
+
+            router.replace({
+              pathname: "/student/sessions/confirmation",
+              params: {
+                packageName: selectedPackage,
+                schoolName: schoolName ?? "Elite Safety Driving Academy",
+                date: selectedDate,
+                time: selectedTime,
+                instructor: selectedInstructor,
+              },
+            });
           }}
           className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
           <Text
             className="font-figtree-bold text-[15px]"
-            style={{ color: "#041320" }}
+            style={{ color: colors.onPrimary }}
           >
             {isReview ? "Confirm booking" : "Continue"}
           </Text>
           <MaterialCommunityIcons
             name={isReview ? "check" : "arrow-right"}
             size={20}
-            color="#041320"
+            color={colors.onPrimary}
           />
         </Pressable>
       </View>
