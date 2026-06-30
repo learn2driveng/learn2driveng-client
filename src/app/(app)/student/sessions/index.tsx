@@ -4,31 +4,53 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import {
+  DashboardEmptyState,
   DashboardScreen,
   PackageCreditCard,
   SectionHeader,
 } from "@/components/dashboard";
-import { BookingCard, learnerBookings } from "@/features/session-booking";
+import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { learnerBookings, studentPackages } from "@/sample_data";
 
 export default function StudentSessionsScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const upcomingBooking = learnerBookings.find((booking) => booking.status === "upcoming");
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
+    null,
+  );
+  const activePackages = studentPackages.filter(
+    (item) => item.status === "active",
+  );
+  const expiredPackages = studentPackages.filter(
+    (item) => item.status === "expired",
+  );
+  const selectedPackage = activePackages.find(
+    (item) => item.id === selectedPackageId,
+  );
+  const totalRemainingSessions = activePackages.reduce(
+    (total, item) => total + item.remainingSessions,
+    0,
+  );
+  const hasPackages = activePackages.length > 0;
+  const hasCredits = totalRemainingSessions > 0;
+  const upcomingBooking = learnerBookings.find(
+    (booking) => booking.status === "upcoming",
+  );
 
   const bookSelectedPackage = () => {
     if (!selectedPackage) return;
 
     router.push({
       pathname: "/student/sessions/book",
-      params: { packageName: selectedPackage },
+      params: { packageName: selectedPackage.name },
     });
   };
 
   return (
     <DashboardScreen>
       <Text
+        accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
         style={{ color: colors.text }}
       >
@@ -56,40 +78,50 @@ export default function StudentSessionsScreen() {
           />
         </View>
         <View className="flex-1">
-          <Text className="font-figtree-bold text-[26px]" style={{ color: colors.contrastText }}>20</Text>
-          <Text className="font-figtree text-[13px]" style={{ color: colors.contrastMuted }}>
+          <Text
+            className="font-figtree-bold text-[26px]"
+            style={{ color: colors.contrastText }}
+          >
+            {totalRemainingSessions}
+          </Text>
+          <Text
+            className="font-figtree text-[13px]"
+            style={{ color: colors.contrastMuted }}
+          >
             Available session credits
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !selectedPackage }}
-          disabled={!selectedPackage}
-          onPress={bookSelectedPackage}
-          className="h-11 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-75"
-          style={{
-            backgroundColor: selectedPackage
-              ? colors.primary
-              : colors.surfaceStrong,
-          }}
-        >
-          <MaterialCommunityIcons
-            name="calendar-plus"
-            size={19}
-            color={selectedPackage ? colors.onPrimary : colors.textSubtle}
-          />
-          <Text
-            className="font-figtree-bold text-[13px]"
+        {hasCredits ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !selectedPackage }}
+            disabled={!selectedPackage}
+            onPress={bookSelectedPackage}
+            className="h-11 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-75"
             style={{
-              color: selectedPackage ? colors.onPrimary : colors.textSubtle,
+              backgroundColor: selectedPackage
+                ? colors.primary
+                : colors.surfaceStrong,
             }}
           >
-            Book
-          </Text>
-        </Pressable>
+            <MaterialCommunityIcons
+              name="calendar-plus"
+              size={19}
+              color={selectedPackage ? colors.onPrimary : colors.textSubtle}
+            />
+            <Text
+              className="font-figtree-bold text-[13px]"
+              style={{
+                color: selectedPackage ? colors.onPrimary : colors.textSubtle,
+              }}
+            >
+              Book
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
-      {upcomingBooking ? (
+      {hasPackages && upcomingBooking ? (
         <View className="mt-9">
           <SectionHeader
             title="Upcoming lesson"
@@ -111,32 +143,91 @@ export default function StudentSessionsScreen() {
       ) : null}
 
       <View className="mt-9">
-        <SectionHeader title="Active packages" />
-        <Text
-          className="mt-2 font-figtree text-[13px]"
-          style={{ color: colors.textMuted }}
-        >
-          Select the package you want to use, then tap Book.
-        </Text>
-        <View className="mt-4 gap-3">
-          <PackageCreditCard
-            name="Defensive Driving Package"
-            icon="shield-car"
-            totalSessions={10}
-            remainingSessions={10}
-            selected={selectedPackage === "Defensive Driving Package"}
-            onPress={() => setSelectedPackage("Defensive Driving Package")}
-          />
-          <PackageCreditCard
-            name="Professional Driving Package"
-            icon="steering"
-            totalSessions={10}
-            remainingSessions={10}
-            selected={selectedPackage === "Professional Driving Package"}
-            onPress={() => setSelectedPackage("Professional Driving Package")}
-          />
-        </View>
+        <SectionHeader title="Training packages" />
+        {hasPackages ? (
+          <>
+            <Text
+              className="mt-2 font-figtree text-[13px]"
+              style={{ color: colors.textMuted }}
+            >
+              {hasCredits
+                ? "Select the package you want to use, then tap Book."
+                : "You have used all the sessions included in your packages."}
+            </Text>
+            {!hasCredits ? (
+              <View className="mt-4">
+                <DashboardEmptyState
+                  icon="ticket-confirmation-outline"
+                  title="No sessions remaining"
+                  description="Explore available packages to continue your driving training."
+                  actionLabel="Explore packages"
+                  onActionPress={() => router.push("/student/explore")}
+                />
+              </View>
+            ) : null}
+            <View className="mt-4 gap-3">
+              {activePackages.map((item) => {
+                const hasPackageCredits = item.remainingSessions > 0;
+
+                return (
+                  <PackageCreditCard
+                    key={item.id}
+                    name={item.name}
+                    icon={item.icon}
+                    totalSessions={item.totalSessions}
+                    remainingSessions={item.remainingSessions}
+                    status={item.status}
+                    selected={selectedPackageId === item.id}
+                    disabled={!hasPackageCredits}
+                    onPress={() => setSelectedPackageId(item.id)}
+                  />
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <View className="mt-4">
+            <DashboardEmptyState
+              icon="package-variant-plus"
+              title="No active packages"
+              description={
+                expiredPackages.length > 0
+                  ? "Renew an expired package or purchase a new one before booking another session."
+                  : "Purchase a training package before booking your first driving session."
+              }
+              actionLabel="Explore packages"
+              onActionPress={() => router.push("/student/explore")}
+            />
+          </View>
+        )}
       </View>
+
+      {expiredPackages.length > 0 ? (
+        <View className="mt-9">
+          <SectionHeader title="Expired packages" />
+          <Text
+            className="mt-2 font-figtree text-[13px]"
+            style={{ color: colors.textMuted }}
+          >
+            Expired packages cannot be used to book sessions.
+          </Text>
+          <View className="mt-4 gap-3">
+            {expiredPackages.map((item) => (
+              <PackageCreditCard
+                key={item.id}
+                name={item.name}
+                icon={item.icon}
+                totalSessions={item.totalSessions}
+                remainingSessions={item.remainingSessions}
+                status={item.status}
+                expiresOn={item.expiresOn}
+                actionLabel="Renew"
+                onPress={() => router.push("/student/explore")}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
     </DashboardScreen>
   );
 }

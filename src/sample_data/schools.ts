@@ -1,5 +1,6 @@
 import type { SchoolDetail, TrainingPackage } from "@/types";
 
+/** Presentation fixtures. Replace with school catalogue API responses. */
 export const schoolCatalog: SchoolDetail[] = [
   {
     id: "elite-safety",
@@ -14,8 +15,18 @@ export const schoolCatalog: SchoolDetail[] = [
     reviewCount: 284,
     premium: true,
     instructors: [
-      { id: "john", name: "John Adeyemi", experience: "8 years experience", rating: 4.9 },
-      { id: "grace", name: "Grace Okafor", experience: "6 years experience", rating: 4.8 },
+      {
+        id: "john",
+        name: "John Adeyemi",
+        experience: "8 years experience",
+        rating: 4.9,
+      },
+      {
+        id: "grace",
+        name: "Grace Okafor",
+        experience: "6 years experience",
+        rating: 4.8,
+      },
     ],
     vehicles: [
       { id: "corolla", name: "Toyota Corolla", transmission: "Automatic" },
@@ -25,7 +36,8 @@ export const schoolCatalog: SchoolDetail[] = [
       {
         id: "starter",
         name: "Road Ready Starter",
-        description: "Core controls, road signs, parking, and supervised city practice.",
+        description:
+          "Core controls, road signs, parking, and supervised city practice.",
         price: 45000,
         sessions: 6,
         duration: "3 weeks",
@@ -33,7 +45,8 @@ export const schoolCatalog: SchoolDetail[] = [
       {
         id: "defensive",
         name: "Defensive Driving Pro",
-        description: "Hazard awareness, highway confidence, and emergency manoeuvres.",
+        description:
+          "Hazard awareness, highway confidence, and emergency manoeuvres.",
         price: 78500,
         sessions: 10,
         duration: "5 weeks",
@@ -53,8 +66,18 @@ export const schoolCatalog: SchoolDetail[] = [
     rating: 4.7,
     reviewCount: 167,
     instructors: [
-      { id: "amina", name: "Amina Bello", experience: "7 years experience", rating: 4.8 },
-      { id: "emeka", name: "Emeka Obi", experience: "5 years experience", rating: 4.7 },
+      {
+        id: "amina",
+        name: "Amina Bello",
+        experience: "7 years experience",
+        rating: 4.8,
+      },
+      {
+        id: "emeka",
+        name: "Emeka Obi",
+        experience: "5 years experience",
+        rating: 4.7,
+      },
     ],
     vehicles: [
       { id: "civic", name: "Honda Civic", transmission: "Automatic" },
@@ -64,7 +87,8 @@ export const schoolCatalog: SchoolDetail[] = [
       {
         id: "essentials",
         name: "Driving Essentials",
-        description: "A compact programme for road basics and test preparation.",
+        description:
+          "A compact programme for road basics and test preparation.",
         price: 38500,
         sessions: 5,
         duration: "3 weeks",
@@ -72,7 +96,8 @@ export const schoolCatalog: SchoolDetail[] = [
       {
         id: "complete",
         name: "Complete Driver",
-        description: "End-to-end instruction with extra practice and mock road tests.",
+        description:
+          "End-to-end instruction with extra practice and mock road tests.",
         price: 69000,
         sessions: 10,
         duration: "5 weeks",
@@ -92,7 +117,12 @@ export const schoolCatalog: SchoolDetail[] = [
     rating: 4.5,
     reviewCount: 119,
     instructors: [
-      { id: "tunde", name: "Tunde Balogun", experience: "9 years experience", rating: 4.7 },
+      {
+        id: "tunde",
+        name: "Tunde Balogun",
+        experience: "9 years experience",
+        rating: 4.7,
+      },
     ],
     vehicles: [
       { id: "rio", name: "Kia Rio", transmission: "Automatic" },
@@ -102,7 +132,8 @@ export const schoolCatalog: SchoolDetail[] = [
       {
         id: "confidence",
         name: "City Confidence",
-        description: "Build everyday confidence in traffic, junctions, and parking.",
+        description:
+          "Build everyday confidence in traffic, junctions, and parking.",
         price: 42000,
         sessions: 6,
         duration: "4 weeks",
@@ -124,7 +155,10 @@ export function getSchoolById(schoolId: string | undefined) {
   return schoolCatalog.find((school) => school.id === schoolId);
 }
 
-export function getPackageById(schoolId: string | undefined, packageId: string | undefined) {
+export function getPackageById(
+  schoolId: string | undefined,
+  packageId: string | undefined,
+) {
   const school = getSchoolById(schoolId);
   if (!school) return undefined;
 

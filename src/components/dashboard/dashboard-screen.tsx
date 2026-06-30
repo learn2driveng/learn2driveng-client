@@ -16,6 +16,8 @@ export function DashboardScreen({ children }: DashboardScreenProps) {
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingBottom: 32,

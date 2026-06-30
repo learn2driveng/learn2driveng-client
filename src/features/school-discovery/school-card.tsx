@@ -21,6 +21,9 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`View ${school.name}`}
+      accessibilityHint="Opens the driving school profile"
+      accessibilityState={{ disabled: !onPress }}
+      disabled={!onPress}
       onPress={onPress}
       className="rounded-3xl border p-5 active:opacity-80"
       style={{
@@ -37,10 +40,16 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
         <View className="flex-1">
           <View className="mb-1 flex-row items-center gap-2">
             {school.premium ? (
-              <View className="rounded px-2 py-0.5" style={{ backgroundColor: colors.contrastSurface }}>
+              <View
+                className="rounded px-2 py-0.5"
+                style={{ backgroundColor: colors.contrastSurface }}
+              >
                 <Text
                   className="text-[9px] uppercase tracking-[-0.2px]"
-                  style={{ color: colors.contrastText, fontFamily: fontFamily.figtreeBold }}
+                  style={{
+                    color: colors.contrastText,
+                    fontFamily: fontFamily.figtreeBold,
+                  }}
                 >
                   Premium
                 </Text>
@@ -54,7 +63,10 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
               />
               <Text
                 className="text-[9px] uppercase"
-                style={{ color: colors.verified, fontFamily: fontFamily.figtreeBold }}
+                style={{
+                  color: colors.verified,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
               >
                 {school.premium ? "Verified" : "FRSC Verified"}
               </Text>
@@ -68,39 +80,65 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
             {school.name}
           </Text>
           <View className="mt-1 flex-row items-center gap-1">
-            <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={13}
+              color={colors.textMuted}
+            />
             <Text
               className="text-[12px]"
-              style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
             >
               {school.location}
             </Text>
           </View>
         </View>
 
-        <View className="min-w-10 items-center rounded-xl px-2.5 py-1.5" style={{ backgroundColor: colors.primary }}>
+        <View
+          className="min-w-10 items-center rounded-xl px-2.5 py-1.5"
+          style={{ backgroundColor: colors.primary }}
+        >
           <Text
             className="text-[12px] leading-[14px]"
-            style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}
+            style={{
+              color: colors.onPrimary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
           >
             {school.rating.toFixed(1)}
           </Text>
-          <MaterialCommunityIcons name="star" size={10} color={colors.onPrimary} />
+          <MaterialCommunityIcons
+            name="star"
+            size={10}
+            color={colors.onPrimary}
+          />
         </View>
       </View>
 
-      <View className="mt-5 flex-row items-center justify-between border-t pt-4" style={{ borderColor: colors.border }}>
+      <View
+        className="mt-5 flex-row items-center justify-between border-t pt-4"
+        style={{ borderColor: colors.border }}
+      >
         <View className="flex-row gap-5">
           <View>
             <Text
               className="text-[9px] uppercase tracking-[0.7px]"
-              style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
             >
               Distance
             </Text>
             <Text
               className="mt-0.5 text-[13px]"
-              style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeBold,
+              }}
             >
               {school.distanceKm.toFixed(1)} km
             </Text>
@@ -108,13 +146,19 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
           <View>
             <Text
               className="text-[9px] uppercase tracking-[0.7px]"
-              style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
             >
               Starts from
             </Text>
             <Text
               className="mt-0.5 text-[13px]"
-              style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeBold,
+              }}
             >
               {formatPrice(school.startingPrice)}
             </Text>
@@ -125,7 +169,11 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
           className="h-10 w-10 items-center justify-center rounded-full"
           style={{ backgroundColor: colors.contrastSurface }}
         >
-          <MaterialCommunityIcons name="arrow-right" size={20} color={colors.contrastText} />
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={20}
+            color={colors.contrastText}
+          />
         </View>
       </View>
     </Pressable>

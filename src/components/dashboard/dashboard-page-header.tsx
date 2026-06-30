@@ -17,7 +17,8 @@ export function DashboardPageHeader({ title }: DashboardPageHeaderProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Go back"
-        hitSlop={8}
+        accessibilityHint="Returns to the previous screen"
+        hitSlop={12}
         onPress={() => router.back()}
         className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
         style={{ borderColor: colors.border, backgroundColor: colors.surface }}
@@ -29,6 +30,7 @@ export function DashboardPageHeader({ title }: DashboardPageHeaderProps) {
         />
       </Pressable>
       <Text
+        accessibilityRole="header"
         className="font-figtree-bold text-[24px]"
         style={{ color: colors.text }}
       >

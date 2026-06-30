@@ -13,7 +13,12 @@ type CheckoutShellProps = PropsWithChildren<{
   onBack: () => void;
 }>;
 
-export function CheckoutShell({ title, step, onBack, children }: CheckoutShellProps) {
+export function CheckoutShell({
+  title,
+  step,
+  onBack,
+  children,
+}: CheckoutShellProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
@@ -29,9 +34,16 @@ export function CheckoutShell({ title, step, onBack, children }: CheckoutShellPr
           accessibilityLabel="Go back"
           onPress={onBack}
           className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
-          <MaterialCommunityIcons name="arrow-left" size={21} color={colors.text} />
+          <MaterialCommunityIcons
+            name="arrow-left"
+            size={21}
+            color={colors.text}
+          />
         </Pressable>
         <Text
           className="flex-1 text-center text-[16px]"
@@ -41,15 +53,24 @@ export function CheckoutShell({ title, step, onBack, children }: CheckoutShellPr
         </Text>
         <Text
           className="w-10 text-right text-[11px]"
-          style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}
+          style={{
+            color: colors.textMuted,
+            fontFamily: fontFamily.figtreeBold,
+          }}
         >
           {step}/2
         </Text>
       </View>
-      <View className="mx-5 h-1 overflow-hidden rounded-full" style={{ backgroundColor: colors.surfaceStrong }}>
+      <View
+        className="mx-5 h-1 overflow-hidden rounded-full"
+        style={{ backgroundColor: colors.surfaceStrong }}
+      >
         <View
           className="h-full rounded-full"
-          style={{ backgroundColor: colors.primary, width: step === 1 ? "50%" : "100%" }}
+          style={{
+            backgroundColor: colors.primary,
+            width: step === 1 ? "50%" : "100%",
+          }}
         />
       </View>
       {children}

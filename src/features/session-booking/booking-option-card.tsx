@@ -26,6 +26,7 @@ export function BookingOptionCard({
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={[title, description, meta].filter(Boolean).join(". ")}
       accessibilityState={{ selected }}
       onPress={onPress}
       className="flex-row items-center gap-4 rounded-3xl border-2 p-4 active:opacity-75"

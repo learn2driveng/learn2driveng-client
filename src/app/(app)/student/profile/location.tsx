@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -7,12 +7,22 @@ import {
   SettingsRow,
   ToggleSettingRow,
 } from "@/components/dashboard";
+import { useUserLocation } from "@/features/location";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSettingsStore } from "@/store/settings.store";
 
 export default function LocationSettingsScreen() {
   const { colors } = useAppTheme();
-  const [locationAccess, setLocationAccess] = useState(false);
+  const location = useUserLocation();
+  const setLocationPromptDismissed = useSettingsStore(
+    (state) => state.setLocationPromptDismissed,
+  );
   const [shareDuringSessions, setShareDuringSessions] = useState(true);
+  const locationValue = location.isChecking
+    ? "Checking"
+    : location.isGranted
+      ? "Allowed"
+      : "Not allowed";
 
   return (
     <DashboardScreen>
@@ -28,11 +38,20 @@ export default function LocationSettingsScreen() {
         className="mt-8 overflow-hidden rounded-3xl border"
         style={{ borderColor: colors.border, backgroundColor: colors.surface }}
       >
-        <ToggleSettingRow
+        <SettingsRow
+          icon="map-marker-radius-outline"
           title="Location access"
           description="Use your location to find nearby schools and instructors."
-          value={locationAccess}
-          onValueChange={setLocationAccess}
+          value={locationValue}
+          onPress={() => {
+            if (!location.isGranted && location.canAskAgain) {
+              void location.requestLocation().then((coordinates) => {
+                if (coordinates) setLocationPromptDismissed(false);
+              });
+              return;
+            }
+            void Linking.openSettings();
+          }}
         />
         <View
           className="mx-4 h-px"

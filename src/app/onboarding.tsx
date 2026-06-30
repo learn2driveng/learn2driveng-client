@@ -1,7 +1,7 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, type Href } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -11,7 +11,7 @@ import {
   Text,
   useWindowDimensions,
   View,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -19,11 +19,11 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-} from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+} from "react-native-reanimated";
+import Svg, { Path } from "react-native-svg";
 
-import { Screen } from '@/components/common/screen';
-import { borderRadius, splashPalette } from '@/constants/theme';
+import { Screen } from "@/components/common/screen";
+import { borderRadius, splashPalette } from "@/constants/theme";
 
 const PRIMARY = splashPalette.primary;
 const SLIDE_COUNT = 3;
@@ -38,13 +38,31 @@ function OnboardingHeader({
   return (
     <View className="flex-row items-center px-6 py-3">
       {onBack ? (
-        <Pressable onPress={onBack} hitSlop={12}>
-          <MaterialCommunityIcons name="chevron-left" size={24} color="#94a3b8" />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Previous onboarding page"
+          onPress={onBack}
+          hitSlop={12}
+          className="h-11 w-11 items-center justify-center"
+        >
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={24}
+            color="#94a3b8"
+          />
         </Pressable>
       ) : null}
       <View className="flex-1" />
-      <Pressable onPress={onSkip} hitSlop={12}>
-        <Text className="font-sans text-sm font-medium text-neutral-500 dark:text-white/60">Skip</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Skip onboarding"
+        onPress={onSkip}
+        hitSlop={12}
+        className="min-h-11 justify-center px-2"
+      >
+        <Text className="font-sans text-sm font-medium text-neutral-500 dark:text-white/60">
+          Skip
+        </Text>
       </Pressable>
     </View>
   );
@@ -52,13 +70,14 @@ function OnboardingHeader({
 
 function OnboardingTitle({
   children,
-  className = '',
+  className = "",
 }: {
   children: ReactNode;
   className?: string;
 }) {
   return (
     <Text
+      accessibilityRole="header"
       className={`text-center font-sans text-[30px] font-bold leading-tight tracking-tight text-neutral-900 dark:text-white ${className}`}
     >
       {children}
@@ -79,7 +98,7 @@ function PrimaryCtaButton({
       style={{
         borderRadius: borderRadius.button,
         backgroundColor: PRIMARY,
-        overflow: 'hidden',
+        overflow: "hidden",
         ...Platform.select({
           android: { elevation: 6 },
           ios: {
@@ -92,25 +111,49 @@ function PrimaryCtaButton({
       }}
     >
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
         onPress={onPress}
-        android_ripple={{ color: 'rgba(16, 23, 40, 0.12)' }}
+        android_ripple={{ color: "rgba(16, 23, 40, 0.12)" }}
         className="flex-row items-center justify-center gap-2 py-4"
         style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
       >
-        <Text className="font-sans text-lg font-bold text-background-dark">{label}</Text>
-        <MaterialCommunityIcons name="arrow-right" size={22} color={splashPalette.backgroundDark} />
+        <Text className="font-sans text-lg font-bold text-background-dark">
+          {label}
+        </Text>
+        <MaterialCommunityIcons
+          name="arrow-right"
+          size={22}
+          color={splashPalette.backgroundDark}
+        />
       </Pressable>
     </View>
   );
 }
 
-function PageDots({ activeIndex, className = 'mb-10' }: { activeIndex: number; className?: string }) {
+function PageDots({
+  activeIndex,
+  className = "mb-10",
+}: {
+  activeIndex: number;
+  className?: string;
+}) {
   return (
-    <View className={`flex-row items-center justify-center gap-2 ${className}`}>
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityValue={{
+        min: 1,
+        max: SLIDE_COUNT,
+        now: activeIndex + 1,
+        text: `Page ${activeIndex + 1} of ${SLIDE_COUNT}`,
+      }}
+      className={`flex-row items-center justify-center gap-2 ${className}`}
+    >
       {Array.from({ length: SLIDE_COUNT }).map((_, index) => (
         <View
           key={index}
-          className={`h-1.5 rounded-full ${index === activeIndex ? 'w-8 bg-primary' : 'w-4 bg-slate-300 dark:bg-slate-700'}`}
+          className={`h-1.5 rounded-full ${index === activeIndex ? "w-8 bg-primary" : "w-4 bg-slate-300 dark:bg-slate-700"}`}
           style={
             index === activeIndex
               ? {
@@ -160,12 +203,21 @@ function ProCertificateHero() {
 
         <View className="flex-1 items-center justify-center gap-4 px-6 py-8">
           <View className="h-24 w-24 items-center justify-center rounded-full border border-primary/30 bg-primary/20">
-            <MaterialCommunityIcons name="star-shooting" size={56} color={PRIMARY} />
+            <MaterialCommunityIcons
+              name="star-shooting"
+              size={56}
+              color={PRIMARY}
+            />
           </View>
 
           <View className="flex-row gap-1">
             {Array.from({ length: 5 }).map((_, index) => (
-              <MaterialCommunityIcons key={index} name="star" size={20} color={PRIMARY} />
+              <MaterialCommunityIcons
+                key={index}
+                name="star"
+                size={20}
+                color={PRIMARY}
+              />
             ))}
           </View>
 
@@ -230,7 +282,10 @@ function VerifiedBadge() {
 
 function MapDotPattern() {
   return (
-    <View className="absolute inset-0 flex-row flex-wrap opacity-40" pointerEvents="none">
+    <View
+      className="absolute inset-0 flex-row flex-wrap opacity-40"
+      pointerEvents="none"
+    >
       {Array.from({ length: 120 }).map((_, i) => (
         <View key={i} className="h-5 w-5 items-center justify-center">
           <View className="h-0.5 w-0.5 rounded-full bg-white/10" />
@@ -245,8 +300,16 @@ function LocationPing() {
   const opacity = useSharedValue(0.6);
 
   useEffect(() => {
-    scale.value = withRepeat(withTiming(2.5, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-    opacity.value = withRepeat(withTiming(0, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
+    scale.value = withRepeat(
+      withTiming(2.5, { duration: 1500, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+    opacity.value = withRepeat(
+      withTiming(0, { duration: 1500, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
   }, [opacity, scale]);
 
   const pingStyle = useAnimatedStyle(() => ({
@@ -267,18 +330,32 @@ function LocationPing() {
 
 function PhoneMockup({ height = 280 }: { height?: number }) {
   return (
-    <View className="relative w-full max-w-[260px] self-center" style={{ height }}>
+    <View
+      className="relative w-full max-w-[260px] self-center"
+      style={{ height }}
+    >
       <View className="absolute inset-0 overflow-hidden rounded-[3rem] border-[6px] border-slate-800 bg-surface-dark shadow-2xl">
         <View className="absolute inset-0 overflow-hidden bg-slate-900">
           <MapDotPattern />
-          <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ opacity: 0.4 }}>
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{ opacity: 0.4 }}
+          >
             <Path
               d="M-10 80 C 20 70, 50 90, 80 60 S 110 20, 150 10"
               fill="none"
               stroke={PRIMARY}
               strokeWidth={2}
             />
-            <Path d="M-10 40 C 30 50, 60 20, 90 40" fill="none" stroke="#475569" strokeWidth={1} />
+            <Path
+              d="M-10 40 C 30 50, 60 20, 90 40"
+              fill="none"
+              stroke="#475569"
+              strokeWidth={1}
+            />
           </Svg>
 
           <View className="absolute inset-0 items-center justify-center">
@@ -288,7 +365,11 @@ function PhoneMockup({ height = 280 }: { height?: number }) {
           <View className="absolute bottom-4 left-4 right-4 rounded-xl border border-white/10 bg-surface-dark/90 p-3">
             <View className="flex-row items-center gap-3">
               <View className="h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-                <MaterialCommunityIcons name="share-variant" size={18} color={PRIMARY} />
+                <MaterialCommunityIcons
+                  name="share-variant"
+                  size={18}
+                  color={PRIMARY}
+                />
               </View>
               <View className="flex-1 gap-1">
                 <View className="h-1.5 w-16 rounded-full bg-white/20" />
@@ -304,7 +385,7 @@ function PhoneMockup({ height = 280 }: { height?: number }) {
       <View
         className="absolute -right-4 top-1/3 h-16 w-16 items-center justify-center rounded-2xl border-4 border-background-dark bg-primary"
         style={{
-          transform: [{ rotate: '12deg' }],
+          transform: [{ rotate: "12deg" }],
           shadowColor: PRIMARY,
           shadowOpacity: 0.3,
           shadowRadius: 20,
@@ -343,15 +424,15 @@ function OnboardingSlide1({
         <View className="relative aspect-square w-full max-w-[280px] items-center justify-center">
           <View
             className="absolute inset-0 rounded-[2.5rem] bg-navy-accent/40"
-            style={{ transform: [{ rotate: '6deg' }] }}
+            style={{ transform: [{ rotate: "6deg" }] }}
           />
           <View
             className="absolute inset-0 rounded-[2.5rem] border border-white/10 bg-navy-accent"
-            style={{ transform: [{ rotate: '-3deg' }] }}
+            style={{ transform: [{ rotate: "-3deg" }] }}
           />
           <View className="relative z-10 items-center">
             <LinearGradient
-              colors={['rgba(255,255,255,0.1)', 'transparent']}
+              colors={["rgba(255,255,255,0.1)", "transparent"]}
               className="h-32 w-48 items-center justify-center rounded-2xl border border-white/20"
             >
               <MaterialCommunityIcons name="garage" size={80} color={PRIMARY} />
@@ -363,11 +444,12 @@ function OnboardingSlide1({
 
       <View className="px-8 pb-4">
         <OnboardingTitle className="mb-4">
-          FRSC-Approved{'\n'}
+          FRSC-Approved{"\n"}
           <Text className="text-primary">Schools</Text>
         </OnboardingTitle>
         <Text className="mx-auto mb-6 max-w-[300px] text-center font-sans text-base leading-relaxed text-neutral-600 dark:text-white/70">
-          Discover and book lessons with the best, government-verified driving schools near you.
+          Discover and book lessons with the best, government-verified driving
+          schools near you.
         </Text>
         <PageDots activeIndex={0} />
         <PrimaryCtaButton label="Get Started" onPress={onNext} />
@@ -404,7 +486,8 @@ function OnboardingSlide2({
       <View className="px-8 pb-2">
         <OnboardingTitle className="mb-2">Safety for Everyone</OnboardingTitle>
         <Text className="mx-auto mb-4 max-w-xs text-center font-sans text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          Share your live location with guardians during sessions so they know you are safe.
+          Share your live location with guardians during sessions so they know
+          you are safe.
         </Text>
       </View>
 
@@ -439,11 +522,12 @@ function OnboardingSlide3({
         <ProCertificateHero />
 
         <OnboardingTitle className="mt-8">
-          Become a{'\n'}
+          Become a{"\n"}
           <Text className="text-primary">Pro</Text> Driver
         </OnboardingTitle>
         <Text className="mt-4 max-w-xs text-center font-sans text-base leading-relaxed text-slate-500 dark:text-slate-400">
-          Track your progress, get expert tips, and build a structured driving history.
+          Track your progress, get expert tips, and build a structured driving
+          history.
         </Text>
       </View>
 
@@ -462,8 +546,8 @@ export default function OnboardingScreen() {
   const [page, setPage] = useState(0);
   const [slideHeight, setSlideHeight] = useState(0);
 
-  const goToLogin = () => {
-    router.push('/login' as Href);
+  const continueToDiscovery = () => {
+    router.push("/location");
   };
 
   const goToPage = (index: number) => {
@@ -506,22 +590,22 @@ export default function OnboardingScreen() {
             <OnboardingSlide1
               width={width}
               height={slideHeight}
-              onSkip={goToLogin}
+              onSkip={continueToDiscovery}
               onNext={() => goToPage(1)}
             />
             <OnboardingSlide2
               width={width}
               height={slideHeight}
-              onSkip={goToLogin}
+              onSkip={continueToDiscovery}
               onBack={() => goToPage(0)}
               onNext={() => goToPage(2)}
             />
             <OnboardingSlide3
               width={width}
               height={slideHeight}
-              onSkip={goToLogin}
+              onSkip={continueToDiscovery}
               onBack={() => goToPage(1)}
-              onNext={goToLogin}
+              onNext={continueToDiscovery}
             />
           </ScrollView>
         ) : null}

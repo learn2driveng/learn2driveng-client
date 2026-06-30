@@ -27,6 +27,11 @@ export function SettingsRow({
   return (
     <Pressable
       accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={
+        onPress
+          ? [title, description, value].filter(Boolean).join(". ")
+          : undefined
+      }
       onPress={onPress}
       disabled={!onPress}
       className="min-h-18 flex-row items-center gap-4 px-4 py-3 active:opacity-65"
@@ -55,6 +60,7 @@ export function SettingsRow({
       </View>
       {value ? (
         <Text
+          accessibilityLabel={`Current value: ${value}`}
           className="font-figtree text-[13px]"
           style={{ color: colors.textMuted }}
         >

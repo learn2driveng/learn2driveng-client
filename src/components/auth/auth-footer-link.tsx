@@ -6,7 +6,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 type AuthFooterLinkProps = {
   prompt: string;
   action: string;
-  onPress: () => void;
+  onPress?: () => void;
   underline?: boolean;
 };
 
@@ -28,8 +28,11 @@ export function AuthFooterLink({
       </Text>
       <Pressable
         accessibilityRole="link"
+        accessibilityLabel={action}
+        accessibilityState={{ disabled: !onPress }}
+        disabled={!onPress}
         onPress={onPress}
-        className={`${underline ? "rounded-full border px-3 py-1" : ""} active:opacity-60`}
+        className={`${underline ? "rounded-full border px-3 py-1" : ""} min-h-11 justify-center active:opacity-60`}
         style={
           underline
             ? {
@@ -41,7 +44,7 @@ export function AuthFooterLink({
       >
         <Text
           className="font-figtree-semibold text-[15px]"
-          style={{ color: colors.text }}
+          style={{ color: onPress ? colors.text : colors.textSubtle }}
         >
           {action}
         </Text>

@@ -58,6 +58,21 @@ React Navigation (`Stack`, `Tabs`) is used **inside** `_layout.tsx` files as Exp
 - Typed routes via Expo Router experiments (`typedRoutes: true`)
 - Deep linking is automatic from file paths
 
+### Public marketplace boundary
+
+School discovery is public marketplace content. The `(public)` route group owns
+location consent, school search, school profiles, instructor/vehicle
+information, and package browsing. Authentication is required only when a user
+starts a transactional or personal action such as checkout, booking, saving a
+school, or viewing learner data.
+
+Public discovery and authenticated learner routes compose the same feature
+screens from `src/features/school-discovery/screens`; route files do not
+duplicate marketplace UI.
+
+Checkout belongs to the protected app root at `(app)/checkout`, not inside the
+Explore tab. This prevents transaction screens from becoming tab-owned routes.
+
 ---
 
 ## ADR-004: JWT + expo-secure-store
@@ -103,7 +118,9 @@ React Navigation (`Stack`, `Tabs`) is used **inside** `_layout.tsx` files as Exp
 **Status:** Accepted  
 **Date:** 2025-06-15
 
-**Decision:** Domain logic lives under `src/features/{domain}/`. Cross-cutting UI in `src/components/`. Screens in `src/screens/` compose features for navigation.
+**Decision:** Domain logic lives under `src/features/{domain}/`. Cross-cutting UI
+in `src/components/`. Expo Router entry files in `src/app/` compose feature
+screens; there is no separate `src/screens/` navigation tree.
 
 **Consequences:**
 - Features may export hooks and components; avoid circular imports via `src/types/` and `src/api/`

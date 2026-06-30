@@ -28,6 +28,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Learn2Drive to use your location to show nearby driving schools."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#f1f2f4",

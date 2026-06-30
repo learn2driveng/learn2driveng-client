@@ -18,6 +18,10 @@ export default function ResetPasswordScreen() {
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const canReset =
+    otp.length === 6 &&
+    password.length >= 8 &&
+    password === passwordConfirmation;
 
   return (
     <AuthScreen>
@@ -63,6 +67,7 @@ export default function ResetPasswordScreen() {
           />
         </View>
         <Text
+          accessibilityRole="header"
           className="font-figtree-bold text-[36px] leading-[43px] tracking-[-1px]"
           style={{ color: colors.text }}
         >
@@ -114,15 +119,16 @@ export default function ResetPasswordScreen() {
       </View>
 
       <View className="mt-8">
-        <AuthPrimaryButton label="Reset Password" showArrow />
+        <AuthPrimaryButton
+          label="Reset Password"
+          showArrow
+          disabled={!canReset}
+          onPress={() => router.replace("/login")}
+        />
       </View>
 
       <View className="mt-10 items-center gap-6">
-        <AuthFooterLink
-          prompt="Didn’t receive the code?"
-          action="Resend OTP"
-          onPress={() => {}}
-        />
+        <AuthFooterLink prompt="Didn’t receive the code?" action="Resend OTP" />
       </View>
     </AuthScreen>
   );

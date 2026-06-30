@@ -1,6 +1,6 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function AuthLayout() {
   const { colors } = useAppTheme();

@@ -5,8 +5,8 @@ import { Pressable, Text, View } from "react-native";
 
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
-import { getBookingById } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { getBookingById } from "@/sample_data";
 
 const dateOptions = ["Thu 27", "Fri 28", "Sat 29"] as const;
 const timeOptions = ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"] as const;
@@ -16,8 +16,10 @@ export default function RescheduleBookingScreen() {
   const { colors } = useAppTheme();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const booking = getBookingById(bookingId);
-  const [selectedDate, setSelectedDate] = useState<(typeof dateOptions)[number]>("Thu 27");
-  const [selectedTime, setSelectedTime] = useState<(typeof timeOptions)[number]>("11:30 AM");
+  const [selectedDate, setSelectedDate] =
+    useState<(typeof dateOptions)[number]>("Thu 27");
+  const [selectedTime, setSelectedTime] =
+    useState<(typeof timeOptions)[number]>("11:30 AM");
   const [complete, setComplete] = useState(false);
 
   if (!booking) return null;
@@ -34,10 +36,16 @@ export default function RescheduleBookingScreen() {
               className="h-16 w-16 items-center justify-center rounded-full"
               style={{ backgroundColor: colors.success }}
             >
-              <MaterialCommunityIcons name="calendar-check" size={32} color={colors.contrastText} />
+              <MaterialCommunityIcons
+                name="calendar-check"
+                size={32}
+                color={colors.contrastText}
+              />
             </View>
           </View>
           <Text
+            accessibilityRole="header"
+            accessibilityLiveRegion="polite"
             className="mt-7 text-center text-[28px] leading-9"
             style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
           >
@@ -45,18 +53,31 @@ export default function RescheduleBookingScreen() {
           </Text>
           <Text
             className="mt-3 text-center text-[14px] leading-6"
-            style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+            style={{
+              color: colors.textMuted,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
           >
             Your lesson is now booked for {selectedDate} at {selectedTime}.
           </Text>
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace({ pathname: "/student/sessions/[bookingId]", params: { bookingId: booking.id } })}
+          onPress={() =>
+            router.replace({
+              pathname: "/student/sessions/[bookingId]",
+              params: { bookingId: booking.id },
+            })
+          }
           className="mt-10 h-14 items-center justify-center rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
-          <Text style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>
+          <Text
+            style={{
+              color: colors.onPrimary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
             Back to booking details
           </Text>
         </Pressable>
@@ -78,17 +99,27 @@ export default function RescheduleBookingScreen() {
         className="mt-6 flex-row items-center gap-3 rounded-2xl border p-4"
         style={{ backgroundColor: colors.surface, borderColor: colors.border }}
       >
-        <MaterialCommunityIcons name="calendar-clock" size={22} color={colors.primary} />
+        <MaterialCommunityIcons
+          name="calendar-clock"
+          size={22}
+          color={colors.primary}
+        />
         <View className="flex-1">
           <Text
             className="text-[10px] uppercase tracking-[0.8px]"
-            style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
+            style={{
+              color: colors.textSubtle,
+              fontFamily: fontFamily.figtreeBold,
+            }}
           >
             Current booking
           </Text>
           <Text
             className="mt-1 text-[13px]"
-            style={{ color: colors.text, fontFamily: fontFamily.figtreeSemibold }}
+            style={{
+              color: colors.text,
+              fontFamily: fontFamily.figtreeSemibold,
+            }}
           >
             {booking.date} · {booking.time}
           </Text>
@@ -116,7 +147,14 @@ export default function RescheduleBookingScreen() {
                 borderColor: selected ? colors.primary : colors.border,
               }}
             >
-              <Text style={{ color: colors.text, fontFamily: fontFamily.figtreeSemibold }}>{date}</Text>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeSemibold,
+                }}
+              >
+                {date}
+              </Text>
             </Pressable>
           );
         })}
@@ -143,7 +181,14 @@ export default function RescheduleBookingScreen() {
                 borderColor: selected ? colors.primary : colors.border,
               }}
             >
-              <Text style={{ color: colors.text, fontFamily: fontFamily.figtreeSemibold }}>{time}</Text>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeSemibold,
+                }}
+              >
+                {time}
+              </Text>
             </Pressable>
           );
         })}
@@ -157,11 +202,18 @@ export default function RescheduleBookingScreen() {
       >
         <Text
           className="text-[15px]"
-          style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}
+          style={{
+            color: colors.onPrimary,
+            fontFamily: fontFamily.figtreeBold,
+          }}
         >
           Confirm new schedule
         </Text>
-        <MaterialCommunityIcons name="check" size={20} color={colors.onPrimary} />
+        <MaterialCommunityIcons
+          name="check"
+          size={20}
+          color={colors.onPrimary}
+        />
       </Pressable>
     </DashboardScreen>
   );

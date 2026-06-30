@@ -17,6 +17,8 @@ export function StatCard({ icon, label, value, accent }: StatCardProps) {
 
   return (
     <View
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
       className="min-h-32 flex-1 justify-between rounded-3xl border p-5"
       style={{ borderColor: colors.border, backgroundColor: colors.surface }}
     >

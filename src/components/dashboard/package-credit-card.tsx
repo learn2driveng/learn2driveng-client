@@ -11,6 +11,10 @@ type PackageCreditCardProps = {
   remainingSessions: number;
   onPress?: () => void;
   selected?: boolean;
+  disabled?: boolean;
+  status?: "active" | "expired";
+  expiresOn?: string;
+  actionLabel?: string;
 };
 
 export function PackageCreditCard({
@@ -20,21 +24,44 @@ export function PackageCreditCard({
   remainingSessions,
   onPress,
   selected,
+  disabled = false,
+  status = "active",
+  expiresOn,
+  actionLabel,
 }: PackageCreditCardProps) {
   const { colors } = useAppTheme();
   const isSelectable = selected !== undefined;
+  const isExpired = status === "expired";
+  const accessibilityDescription = isExpired
+    ? `${name}. Expired${expiresOn ? ` on ${expiresOn}` : ""}. ${remainingSessions} unused sessions.`
+    : `${name}. ${remainingSessions} of ${totalSessions} sessions remaining.`;
   const remainingPercentage =
-    `${Math.round((remainingSessions / totalSessions) * 100)}%` as const;
+    `${totalSessions > 0 ? Math.round((remainingSessions / totalSessions) * 100) : 0}%` as const;
 
   return (
     <Pressable
       accessibilityRole={isSelectable ? "radio" : "button"}
-      accessibilityState={isSelectable ? { selected } : undefined}
+      accessibilityLabel={accessibilityDescription}
+      accessibilityHint={
+        disabled
+          ? undefined
+          : actionLabel
+            ? `${actionLabel} this package`
+            : isSelectable
+              ? "Selects this package for booking"
+              : "Opens package details"
+      }
+      accessibilityState={{
+        selected: isSelectable ? selected : undefined,
+        disabled,
+      }}
+      disabled={disabled}
       onPress={onPress}
       className="rounded-3xl border-2 p-5 active:opacity-70"
       style={{
         borderColor: selected ? colors.primary : colors.border,
         backgroundColor: colors.surface,
+        opacity: disabled ? 0.7 : 1,
       }}
     >
       <View className="flex-row items-center gap-4">
@@ -55,24 +82,50 @@ export function PackageCreditCard({
           >
             {name}
           </Text>
+          {isExpired ? (
+            <View
+              className="mt-2 self-start rounded-full px-2.5 py-1"
+              style={{ backgroundColor: colors.surfaceStrong }}
+            >
+              <Text
+                className="font-figtree-bold text-[10px] uppercase tracking-[0.8px]"
+                style={{ color: colors.error }}
+              >
+                Expired
+              </Text>
+            </View>
+          ) : null}
           <Text
-            className="mt-1 font-figtree text-[12px]"
+            className={`${isExpired ? "mt-2" : "mt-1"} font-figtree text-[12px]`}
             style={{ color: colors.textMuted }}
           >
-            {remainingSessions} of {totalSessions} sessions remaining
+            {isExpired
+              ? `Expired${expiresOn ? ` on ${expiresOn}` : ""} · ${remainingSessions} unused`
+              : `${remainingSessions} of ${totalSessions} sessions remaining`}
           </Text>
         </View>
-        <MaterialCommunityIcons
-          name={
-            isSelectable
-              ? selected
-                ? "check-circle"
-                : "circle-outline"
-              : "chevron-right"
-          }
-          size={23}
-          color={selected ? colors.primary : colors.textSubtle}
-        />
+        {actionLabel ? (
+          <Text
+            className="font-figtree-bold text-[12px]"
+            style={{ color: colors.primary }}
+          >
+            {actionLabel}
+          </Text>
+        ) : (
+          <MaterialCommunityIcons
+            name={
+              isSelectable
+                ? selected
+                  ? "check-circle"
+                  : disabled
+                    ? "minus-circle-outline"
+                    : "circle-outline"
+                : "chevron-right"
+            }
+            size={23}
+            color={selected ? colors.primary : colors.textSubtle}
+          />
+        )}
       </View>
       <View
         className="mt-4 h-1.5 overflow-hidden rounded-full"
@@ -82,7 +135,7 @@ export function PackageCreditCard({
           className="h-full rounded-full"
           style={{
             width: remainingPercentage,
-            backgroundColor: colors.primary,
+            backgroundColor: isExpired ? colors.textFaint : colors.primary,
           }}
         />
       </View>
