@@ -1,5 +1,6 @@
 import type { LearnerBooking } from "@/types";
 
+/** Presentation fixtures. Replace with booking API responses. */
 export const learnerBookings: LearnerBooking[] = [
   {
     id: "booking-a7",

@@ -28,6 +28,8 @@ export function SocialAuthButtons({
           key={provider.label}
           accessibilityRole="button"
           accessibilityLabel={`Continue with ${provider.label}`}
+          accessibilityState={{ disabled: !provider.onPress }}
+          disabled={!provider.onPress}
           onPress={provider.onPress}
           className={`${compact ? "h-14 w-14 rounded-full" : "h-14 flex-1 rounded-full"} flex-row items-center justify-center gap-3 border active:opacity-70`}
           style={{
@@ -35,6 +37,7 @@ export function SocialAuthButtons({
             backgroundColor: colors.surface,
             borderRadius: borderRadius.button,
             overflow: "hidden",
+            opacity: provider.onPress ? 1 : 0.7,
           }}
         >
           <FontAwesome name={provider.icon} size={20} color={colors.text} />

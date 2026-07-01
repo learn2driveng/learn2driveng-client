@@ -4,14 +4,17 @@ import { Text, View } from "react-native";
 
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const { colors, scheme } = useAppTheme();
+  const signOut = useAuthStore((state) => state.signOut);
 
   return (
     <DashboardScreen>
       <Text
+        accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
         style={{ color: colors.text }}
       >
@@ -127,6 +130,7 @@ export default function StudentProfileScreen() {
           icon="help-circle-outline"
           title="Help and support"
           description="FAQs and contact support"
+          onPress={() => router.push("/student/profile/help")}
         />
         <View
           className="mx-4 h-px"
@@ -136,7 +140,10 @@ export default function StudentProfileScreen() {
           icon="logout"
           title="Log out"
           destructive
-          onPress={() => router.replace("/login")}
+          onPress={() => {
+            signOut();
+            router.replace("/welcome");
+          }}
         />
       </View>
     </DashboardScreen>

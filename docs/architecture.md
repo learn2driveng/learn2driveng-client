@@ -50,6 +50,9 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 
 **Dependency rule:** Routes import from components/hooks/api. API layer must not import from routes.
 
+Feature screens shared by multiple route groups may live under
+`src/features/{domain}/screens`. Expo Router files remain thin entry points.
+
 ---
 
 ## 3. App Bootstrap
@@ -59,7 +62,7 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 1. Load fonts / hide splash screen
 2. Wrap app with providers (`SafeAreaProvider`, `QueryClientProvider` when added)
 3. Render root `<Stack />` for Expo Router
-4. Role-based redirects (auth → role route group)
+4. Public marketplace access and role-based redirects for protected areas
 
 ```typescript
 // Current root layout
@@ -82,7 +85,7 @@ export default function RootLayout() {
 ```mermaid
 flowchart TD
     A[App Launch] --> B{Token in SecureStore?}
-    B -->|No| C[AuthStack]
+    B -->|No| C[Public Marketplace or AuthStack]
     B -->|Yes| D[Validate / Refresh Token]
     D -->|Invalid| C
     D -->|Valid| E{user.role}
@@ -114,7 +117,34 @@ LearnerNavigator (Bottom Tabs)
 
 Other roles follow the same pattern: tabs for primary areas, stacks for drill-down.
 
-### 4.3 Auth Stack
+### 4.3 Public marketplace
+
+```
+PublicStack
+├── LocationConsent
+├── SchoolList
+├── SchoolDetail
+└── PackageBrowse
+```
+
+The public marketplace exposes non-sensitive school catalogue information
+without requiring an account. Location consent is requested after its value is
+explained and before nearby results are personalized. A manual/default area
+remains available when permission is declined.
+
+Protected actions cross an explicit authentication boundary:
+
+```
+Public PackageBrowse
+  → Login / Registration
+  → Protected root Checkout
+  → Learner Booking
+```
+
+`(app)/checkout` is a sibling of `(app)/student`, keeping payment screens
+outside the learner bottom-tab navigator.
+
+### 4.4 Auth Stack
 
 | Screen | Route name |
 |--------|------------|

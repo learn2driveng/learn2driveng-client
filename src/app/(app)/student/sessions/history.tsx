@@ -4,8 +4,9 @@ import { Pressable, Text, View } from "react-native";
 
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
-import { BookingCard, learnerBookings } from "@/features/session-booking";
+import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { learnerBookings } from "@/sample_data";
 import type { BookingStatus } from "@/types";
 
 type HistoryFilter = "all" | BookingStatus;
@@ -21,7 +22,9 @@ export default function BookingHistoryScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const [filter, setFilter] = useState<HistoryFilter>("all");
-  const bookings = learnerBookings.filter((booking) => filter === "all" || booking.status === filter);
+  const bookings = learnerBookings.filter(
+    (booking) => filter === "all" || booking.status === filter,
+  );
 
   return (
     <DashboardScreen>
@@ -80,7 +83,10 @@ export default function BookingHistoryScreen() {
       {bookings.length === 0 ? (
         <View
           className="mt-6 items-center rounded-3xl border px-6 py-12"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
           <Text
             className="text-[16px]"

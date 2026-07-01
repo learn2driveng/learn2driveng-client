@@ -1,23 +1,23 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, type Href } from 'expo-router';
-import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, type Href } from "expo-router";
+import { useEffect } from "react";
+import { Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Screen } from '@/components/common/screen';
-import { splashPalette } from '@/constants/theme';
+import { Screen } from "@/components/common/screen";
+import { splashPalette } from "@/constants/theme";
 
 const FRSC_SEAL_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk';
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 const GRID_ROWS = 18;
 const GRID_COLS = 14;
@@ -61,7 +61,7 @@ function Scanline() {
       pointerEvents="none"
     >
       <LinearGradient
-        colors={['transparent', `${PRIMARY}1A`, 'transparent']}
+        colors={["transparent", `${PRIMARY}1A`, "transparent"]}
         className="absolute inset-0"
       />
     </Animated.View>
@@ -82,7 +82,7 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/onboarding' as Href);
+      router.replace("/onboarding" as Href);
     }, 2800);
 
     return () => clearTimeout(timer);
@@ -128,21 +128,33 @@ export default function SplashScreen() {
               elevation: 8,
             }}
           >
-            <MaterialCommunityIcons name="car-emergency" size={48} color={PRIMARY} />
+            <MaterialCommunityIcons
+              name="car-emergency"
+              size={48}
+              color={PRIMARY}
+            />
             <View className="mt-1 flex-row items-center gap-1">
-              <MaterialCommunityIcons name="shield-check" size={20} color={`${PRIMARY}CC`} />
-              <MaterialCommunityIcons name="school" size={20} color={`${PRIMARY}CC`} />
+              <MaterialCommunityIcons
+                name="shield-check"
+                size={20}
+                color={`${PRIMARY}CC`}
+              />
+              <MaterialCommunityIcons
+                name="school"
+                size={20}
+                color={`${PRIMARY}CC`}
+              />
             </View>
           </View>
 
           <LinearGradient
-            colors={['transparent', `${PRIMARY}66`, 'transparent']}
+            colors={["transparent", `${PRIMARY}66`, "transparent"]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             className="absolute -left-12 h-px w-24"
           />
           <LinearGradient
-            colors={['transparent', `${PRIMARY}66`, 'transparent']}
+            colors={["transparent", `${PRIMARY}66`, "transparent"]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             className="absolute -right-12 h-px w-24"
@@ -172,7 +184,10 @@ export default function SplashScreen() {
             </Text>
           </View>
           <View className="h-1 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/5">
-            <Animated.View className="h-full rounded-full bg-primary" style={progressStyle} />
+            <Animated.View
+              className="h-full rounded-full bg-primary"
+              style={progressStyle}
+            />
           </View>
         </View>
       </View>
@@ -180,7 +195,11 @@ export default function SplashScreen() {
       <View className="z-10 items-center gap-4 pb-4">
         <View className="w-full max-w-sm flex-row items-center gap-4 rounded-xl border border-black/10 bg-black/5 px-6 py-3 dark:border-white/10 dark:bg-white/5">
           <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-black/10 dark:bg-white/10">
-            <Image source={{ uri: FRSC_SEAL_URI }} className="h-full w-full" contentFit="contain" />
+            <Image
+              source={{ uri: FRSC_SEAL_URI }}
+              className="h-full w-full"
+              contentFit="contain"
+            />
           </View>
           <View className="flex-1 gap-0.5">
             <Text className="font-sans text-caption font-bold uppercase tracking-wide text-primary">
@@ -190,7 +209,11 @@ export default function SplashScreen() {
               Certified safety and tracking standards compliant.
             </Text>
           </View>
-          <MaterialCommunityIcons name="check-decagram" size={16} color={`${PRIMARY}CC`} />
+          <MaterialCommunityIcons
+            name="check-decagram"
+            size={16}
+            color={`${PRIMARY}CC`}
+          />
         </View>
         <Text className="font-sans text-caption font-light uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
           Secure Fleet Connection Active

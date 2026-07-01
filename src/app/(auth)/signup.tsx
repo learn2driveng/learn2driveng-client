@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -11,17 +11,31 @@ import {
   SocialAuthButtons,
 } from "@/components/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuthStore } from "@/store/auth.store";
 
 const FRSC_SEAL_URI =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { colors } = useAppTheme();
+  const signIn = useAuthStore((state) => state.signIn);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+
+  const handleCreateAccount = () => {
+    const safeReturnTo =
+      typeof returnTo === "string" &&
+      (returnTo.startsWith("/student/") || returnTo.startsWith("/checkout/"))
+        ? (returnTo as Href)
+        : "/student";
+
+    signIn();
+    router.replace(safeReturnTo);
+  };
 
   return (
     <AuthScreen scrollEnabled={false} contentClassName="justify-between">
@@ -52,6 +66,7 @@ export default function SignupScreen() {
 
         <View className="mt-5">
           <Text
+            accessibilityRole="header"
             className="font-figtree-bold text-[30px] leading-[36px] tracking-[-0.8px]"
             style={{ color: colors.text }}
           >
@@ -110,7 +125,10 @@ export default function SignupScreen() {
         </View>
 
         <View className="mt-5">
-          <AuthPrimaryButton label="Create Account" />
+          <AuthPrimaryButton
+            label="Create Account"
+            onPress={handleCreateAccount}
+          />
         </View>
 
         <View className="mb-4 mt-5">
@@ -119,7 +137,7 @@ export default function SignupScreen() {
         <SocialAuthButtons compact />
       </View>
 
-      <View className="pt-4 items-center gap-3">
+      <View className="items-center gap-3 pt-4">
         <View className="flex-row flex-wrap items-center justify-center">
           <Text
             className="font-figtree text-[15px]"
@@ -129,7 +147,12 @@ export default function SignupScreen() {
           </Text>
           <Pressable
             accessibilityRole="link"
-            onPress={() => router.replace("/login")}
+            onPress={() =>
+              router.replace({
+                pathname: "/login",
+                params: typeof returnTo === "string" ? { returnTo } : undefined,
+              })
+            }
             className="active:opacity-60"
           >
             <Text

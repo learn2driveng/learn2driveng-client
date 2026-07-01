@@ -1,15 +1,15 @@
-import '../../global.css';
-import '@/lib/nativewind';
+import "../../global.css";
+import "@/lib/nativewind";
 
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import * as SystemUI from 'expo-system-ui';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import * as SystemUI from "expo-system-ui";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { useAppFonts } from '@/hooks/use-app-fonts';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { useAppFonts } from "@/hooks/use-app-fonts";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,7 +33,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerShown: false,

@@ -15,6 +15,9 @@ ends in a navigable learner outcome.
 | Progress | Overview, assessments, session history/detail | P1 | Overview implemented; detail screens pending |
 | Profile | Profile, account, notifications, location, support | P1 | Mostly implemented |
 
+School discovery is also available outside authenticated learner navigation.
+The learner Explore tab and public marketplace reuse the same feature screens.
+
 ## Required flow screens
 
 ### 1. Entry and identity
@@ -27,8 +30,9 @@ ends in a navigable learner outcome.
 6. Reset password
 7. Location permission
 
-The first six exist. Location permission currently exists as a settings page;
-the permission prompt should later be inserted before nearby discovery.
+The first six exist. Onboarding now hands off to public location consent before
+an explicit Explore-or-Login choice, with a Lagos fallback and a device-settings
+path after denial.
 
 ### 2. Discovery — Milestone M2
 
@@ -40,7 +44,9 @@ the permission prompt should later be inserted before nearby discovery.
 6. Training package selection
 
 The list, profile, instructor/vehicle sections, and package selection are now
-connected. Map discovery remains blocked on the maps dependency and API key.
+connected as public marketplace routes. Authentication begins when the user
+continues from a package into checkout. Map discovery remains blocked on the
+maps dependency and API key.
 
 ### 3. Purchase and booking — Milestone M3
 

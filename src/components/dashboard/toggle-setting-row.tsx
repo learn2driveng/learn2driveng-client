@@ -37,6 +37,7 @@ export function ToggleSettingRow({
       </View>
       <Switch
         accessibilityLabel={title}
+        accessibilityHint={description}
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: colors.surfaceStrong, true: colors.primary }}

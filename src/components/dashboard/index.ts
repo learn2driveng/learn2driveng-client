@@ -1,3 +1,4 @@
+export { DashboardEmptyState } from "./dashboard-empty-state";
 export { DashboardScreen } from "./dashboard-screen";
 export { DashboardPageHeader } from "./dashboard-page-header";
 export { PackageCreditCard } from "./package-credit-card";

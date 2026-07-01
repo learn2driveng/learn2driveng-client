@@ -28,7 +28,8 @@ export function BookingCard({ booking, onPress }: BookingCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`View booking for ${booking.date}`}
+      accessibilityLabel={`${booking.status} booking. ${booking.date} at ${booking.time}. ${booking.school}. ${booking.packageName}.`}
+      accessibilityHint="Opens booking details"
       onPress={onPress}
       className="rounded-3xl border p-5 active:opacity-75"
       style={{ backgroundColor: colors.surface, borderColor: colors.border }}
@@ -54,7 +55,10 @@ export function BookingCard({ booking, onPress }: BookingCardProps) {
           </Text>
           <Text
             className="mt-1 text-[13px]"
-            style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+            style={{
+              color: colors.textMuted,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
           >
             {booking.time} · {booking.instructor}
           </Text>
@@ -63,7 +67,11 @@ export function BookingCard({ booking, onPress }: BookingCardProps) {
           className="h-10 w-10 items-center justify-center rounded-full"
           style={{ backgroundColor: colors.surfaceStrong }}
         >
-          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.text} />
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={colors.text}
+          />
         </View>
       </View>
       <View className="mt-4 h-px" style={{ backgroundColor: colors.border }} />

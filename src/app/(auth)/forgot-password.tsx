@@ -60,6 +60,7 @@ export default function ForgotPasswordScreen() {
           />
         </View>
         <Text
+          accessibilityRole="header"
           className="font-figtree-bold text-[36px] leading-[43px] tracking-[-1px]"
           style={{ color: colors.text }}
         >

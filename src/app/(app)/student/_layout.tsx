@@ -41,11 +41,7 @@ export default function StudentLayout() {
         options={{
           title: "Explore",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="compass"
-              size={size}
-              color={color}
-            />
+            <MaterialCommunityIcons name="compass" size={size} color={color} />
           ),
         }}
       />

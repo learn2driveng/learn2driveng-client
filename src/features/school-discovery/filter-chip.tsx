@@ -22,12 +22,14 @@ export function FilterChip({
   accessibilityLabel,
 }: FilterChipProps) {
   const { colors } = useAppTheme();
+  const isToggle = label !== undefined;
 
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityRole={isToggle ? "togglebutton" : "button"}
+      accessibilityState={isToggle ? { checked: selected } : undefined}
       accessibilityLabel={accessibilityLabel ?? label}
+      hitSlop={4}
       onPress={onPress}
       className="h-9 flex-row items-center gap-2 rounded-full border px-4 active:opacity-70"
       style={{

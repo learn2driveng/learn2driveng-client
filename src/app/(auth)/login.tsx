@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -12,15 +12,29 @@ import {
   SocialAuthButtons,
 } from "@/components/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuthStore } from "@/store/auth.store";
 
 const FRSC_SEAL_URI =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const signIn = useAuthStore((state) => state.signIn);
   const { colors } = useAppTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const handleLogin = () => {
+    const safeReturnTo =
+      typeof returnTo === "string" &&
+      (returnTo.startsWith("/student/") || returnTo.startsWith("/checkout/"))
+        ? (returnTo as Href)
+        : "/student";
+
+    signIn();
+    router.replace(safeReturnTo);
+  };
 
   return (
     <AuthScreen scrollEnabled={false} contentClassName="justify-between">
@@ -49,6 +63,7 @@ export default function LoginScreen() {
 
         <View className="mt-8">
           <Text
+            accessibilityRole="header"
             className="font-figtree-bold text-[36px] leading-[42px] tracking-[-1px]"
             style={{ color: colors.text }}
           >
@@ -104,11 +119,11 @@ export default function LoginScreen() {
           <AuthPrimaryButton
             label="LOGIN TO DASHBOARD"
             showArrow
-            onPress={() => router.replace("/student")}
+            onPress={handleLogin}
           />
         </View>
 
-        <View className="mt-8 mb-6">
+        <View className="mb-6 mt-8">
           <AuthDivider />
         </View>
         <SocialAuthButtons />
@@ -124,7 +139,12 @@ export default function LoginScreen() {
           </Text>
           <Pressable
             accessibilityRole="link"
-            onPress={() => router.push("/signup")}
+            onPress={() =>
+              router.push({
+                pathname: "/signup",
+                params: typeof returnTo === "string" ? { returnTo } : undefined,
+              })
+            }
             className="active:opacity-60"
           >
             <Text

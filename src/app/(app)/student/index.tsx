@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import {
+  DashboardEmptyState,
   DashboardScreen,
   PackageCreditCard,
   QuickAction,
@@ -10,10 +11,26 @@ import {
   StatCard,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { studentPackages } from "@/sample_data";
 
 export default function StudentDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const activePackages = studentPackages.filter(
+    (item) => item.status === "active",
+  );
+  const expiredPackages = studentPackages.filter(
+    (item) => item.status === "expired",
+  );
+  const totalRemainingSessions = activePackages.reduce(
+    (total, item) => total + item.remainingSessions,
+    0,
+  );
+  const packagesWithCredits = activePackages.filter(
+    (item) => item.remainingSessions > 0,
+  );
+  const hasPackages = activePackages.length > 0;
+  const hasCredits = totalRemainingSessions > 0;
 
   return (
     <DashboardScreen>
@@ -26,6 +43,7 @@ export default function StudentDashboardScreen() {
             Good morning
           </Text>
           <Text
+            accessibilityRole="header"
             className="mt-1 font-figtree-bold text-[28px]"
             style={{ color: colors.text }}
           >
@@ -36,6 +54,7 @@ export default function StudentDashboardScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Notifications"
+            onPress={() => router.push("/student/profile/inbox")}
             className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
             style={{
               borderColor: colors.border,
@@ -50,7 +69,7 @@ export default function StudentDashboardScreen() {
           </Pressable>
           <View
             className="h-11 w-11 items-center justify-center rounded-full"
-            style={{ backgroundColor: colors.text }}
+            style={{ backgroundColor: colors.contrastSurface }}
           >
             <Text
               className="font-figtree-bold text-[14px]"
@@ -64,9 +83,12 @@ export default function StudentDashboardScreen() {
 
       <View
         className="mt-8 rounded-[28px] p-6"
-        style={{ backgroundColor: colors.text }}
+        style={{ backgroundColor: colors.contrastSurface }}
       >
-        <Text className="font-figtree-medium text-[15px] text-white/70">
+        <Text
+          className="font-figtree-medium text-[15px]"
+          style={{ color: colors.contrastMuted }}
+        >
           Available session balance
         </Text>
 
@@ -78,20 +100,38 @@ export default function StudentDashboardScreen() {
               fontSize: 20,
             }}
           >
-            20 Sessions
+            {totalRemainingSessions}{" "}
+            {totalRemainingSessions === 1 ? "Session" : "Sessions"}
           </Text>
         </View>
-        <Text className="mt-2 font-figtree text-[14px] text-white/65">
-          Across 2 active packages
+        <Text
+          className="mt-2 font-figtree text-[14px]"
+          style={{ color: colors.contrastMuted }}
+        >
+          {!hasPackages
+            ? expiredPackages.length > 0
+              ? "No active training packages"
+              : "No training packages yet"
+            : hasCredits
+              ? `Across ${packagesWithCredits.length} active ${
+                  packagesWithCredits.length === 1 ? "package" : "packages"
+                }`
+              : "No sessions remaining in your packages"}
         </Text>
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push("/student/sessions")}
-          className="mt-6 flex-row items-center justify-between border-t border-white/10 pt-4 active:opacity-70"
+          onPress={() =>
+            router.push(hasCredits ? "/student/sessions" : "/student/explore")
+          }
+          className="mt-6 flex-row items-center justify-between border-t pt-4 active:opacity-70"
+          style={{ borderTopColor: colors.contrastBorder }}
         >
-          <Text className="font-figtree-semibold text-[13px] text-white">
-            View breakdown
+          <Text
+            className="font-figtree-semibold text-[13px]"
+            style={{ color: colors.contrastText }}
+          >
+            {hasCredits ? "View breakdown" : "Explore packages"}
           </Text>
           <MaterialCommunityIcons
             name="arrow-right"
@@ -108,93 +148,150 @@ export default function StudentDashboardScreen() {
 
       <View className="mt-9">
         <SectionHeader
-          title="Active packages"
-          actionLabel="View all"
-          onActionPress={() => router.push("/student/sessions")}
+          title="Training packages"
+          actionLabel={
+            hasPackages ? (hasCredits ? "View all" : "Get more") : undefined
+          }
+          onActionPress={
+            hasPackages
+              ? () =>
+                  router.push(
+                    hasCredits ? "/student/sessions" : "/student/explore",
+                  )
+              : undefined
+          }
         />
-        <View className="mt-4 gap-3">
-          <PackageCreditCard
-            name="Defensive Driving Package"
-            icon="shield-car"
-            totalSessions={10}
-            remainingSessions={10}
-            onPress={() => router.push("/student/sessions")}
-          />
-          <PackageCreditCard
-            name="Professional Driving Package"
-            icon="steering"
-            totalSessions={10}
-            remainingSessions={10}
-            onPress={() => router.push("/student/sessions")}
-          />
-        </View>
-      </View>
-
-      <View className="mt-9">
-        <SectionHeader
-          title="Upcoming session"
-          actionLabel="View sessions"
-          onActionPress={() => router.push("/student/sessions")}
-        />
-        <Pressable
-          accessibilityRole="button"
-          className="mt-4 flex-row items-center gap-4 rounded-3xl border p-5 active:opacity-70"
-          style={{
-            borderColor: colors.border,
-            backgroundColor: colors.surface,
-          }}
-        >
-          <View
-            className="h-16 w-16 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: colors.surfaceStrong }}
-          >
-            <MaterialCommunityIcons
-              name="steering"
-              size={30}
-              color={colors.primary}
+        {hasPackages ? (
+          <View className="mt-4 gap-3">
+            {activePackages.map((item) => (
+              <PackageCreditCard
+                key={item.id}
+                name={item.name}
+                icon={item.icon}
+                totalSessions={item.totalSessions}
+                remainingSessions={item.remainingSessions}
+                status={item.status}
+                onPress={() => router.push("/student/sessions")}
+              />
+            ))}
+          </View>
+        ) : (
+          <View className="mt-4">
+            <DashboardEmptyState
+              icon="package-variant-plus"
+              title={
+                expiredPackages.length > 0
+                  ? "No active training packages"
+                  : "No training packages yet"
+              }
+              description={
+                expiredPackages.length > 0
+                  ? "Renew an expired package or choose a new one to continue booking lessons."
+                  : "Choose a verified driving school and purchase a package to start booking lessons."
+              }
+              actionLabel="Explore packages"
+              onActionPress={() => router.push("/student/explore")}
             />
           </View>
-          <View className="flex-1">
-            <Text
-              className="font-figtree-bold text-[17px]"
-              style={{ color: colors.text }}
-            >
-              Practical Driving Session
-            </Text>
-            <Text
-              className="mt-1 font-figtree text-[13px]"
-              style={{ color: colors.textMuted }}
-            >
-              Tomorrow · 10:00 AM · Instructor John
-            </Text>
-            <Text
-              className="mt-2 font-figtree-medium text-[12px]"
-              style={{ color: colors.primary }}
-            >
-              Defensive Driving Package · Session 1 of 10
-            </Text>
-          </View>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={24}
-            color={colors.textSubtle}
-          />
-        </Pressable>
+        )}
       </View>
+
+      {expiredPackages.length > 0 ? (
+        <View className="mt-9">
+          <SectionHeader title="Expired packages" />
+          <View className="mt-4 gap-3">
+            {expiredPackages.map((item) => (
+              <PackageCreditCard
+                key={item.id}
+                name={item.name}
+                icon={item.icon}
+                totalSessions={item.totalSessions}
+                remainingSessions={item.remainingSessions}
+                status={item.status}
+                expiresOn={item.expiresOn}
+                actionLabel="Renew"
+                onPress={() => router.push("/student/explore")}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {hasPackages ? (
+        <View className="mt-9">
+          <SectionHeader
+            title="Upcoming session"
+            actionLabel="View sessions"
+            onActionPress={() => router.push("/student/sessions")}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View upcoming session"
+            onPress={() => router.push("/student/sessions")}
+            className="mt-4 flex-row items-center gap-4 rounded-3xl border p-5 active:opacity-70"
+            style={{
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
+          >
+            <View
+              className="h-16 w-16 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: colors.surfaceStrong }}
+            >
+              <MaterialCommunityIcons
+                name="steering"
+                size={30}
+                color={colors.primary}
+              />
+            </View>
+            <View className="flex-1">
+              <Text
+                className="font-figtree-bold text-[17px]"
+                style={{ color: colors.text }}
+              >
+                Practical Driving Session
+              </Text>
+              <Text
+                className="mt-1 font-figtree text-[13px]"
+                style={{ color: colors.textMuted }}
+              >
+                Tomorrow · 10:00 AM · Instructor John
+              </Text>
+              <Text
+                className="mt-2 font-figtree-medium text-[12px]"
+                style={{ color: colors.primary }}
+              >
+                Defensive Driving Package · Session 1 of 10
+              </Text>
+            </View>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color={colors.textSubtle}
+            />
+          </Pressable>
+        </View>
+      ) : null}
 
       <View className="mt-9">
         <SectionHeader title="Quick actions" />
         <View className="mt-4 flex-row gap-3">
           <QuickAction
-            icon="calendar-plus"
-            label="Book session"
-            onPress={() => router.push("/student/sessions")}
+            icon={hasCredits ? "calendar-plus" : "package-variant-plus"}
+            label={hasCredits ? "Book session" : "Get a package"}
+            onPress={() =>
+              router.push(hasCredits ? "/student/sessions" : "/student/explore")
+            }
           />
           <QuickAction icon="clipboard-text-outline" label="Take a quiz" />
           <QuickAction
             icon="package-variant"
-            label="View packages"
-            onPress={() => router.push("/student/sessions")}
+            label={hasPackages ? "View packages" : "Explore packages"}
+            onPress={() =>
+              router.push(
+                hasPackages ? "/student/sessions" : "/student/explore",
+              )
+            }
           />
         </View>
       </View>

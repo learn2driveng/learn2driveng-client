@@ -76,6 +76,7 @@ export default function BookSessionScreen() {
         {step === 0 ? (
           <View>
             <Text
+              accessibilityRole="header"
               className="font-figtree-bold text-[24px]"
               style={{ color: colors.text }}
             >
@@ -167,6 +168,7 @@ export default function BookSessionScreen() {
         {step === 1 ? (
           <View>
             <Text
+              accessibilityRole="header"
               className="font-figtree-bold text-[24px]"
               style={{ color: colors.text }}
             >
@@ -213,6 +215,7 @@ export default function BookSessionScreen() {
         {step === 2 ? (
           <View>
             <Text
+              accessibilityRole="header"
               className="font-figtree-bold text-[24px]"
               style={{ color: colors.text }}
             >
