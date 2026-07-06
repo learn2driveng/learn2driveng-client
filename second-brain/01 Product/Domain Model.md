@@ -60,16 +60,19 @@ The exact credit reservation/refund policy is not yet defined. Track it in
 
 ## Current TypeScript coverage
 
-Current types cover school catalogue summaries, package definitions, and a
-presentation-level `LearnerBooking`. They do **not** yet model package
-purchases, credit ledgers, availability slots, payment intents, session
-reports, or role-specific profiles.
+Current types cover school catalogue summaries, package definitions, a
+presentation-level `LearnerBooking`, guardian links, training-session
+lifecycle, and learner-controlled live-location sharing. They do **not** yet
+model package purchases, credit ledgers, availability slots, payment intents,
+or production session reports.
 
 Code references:
 
 - `../src/types/school.ts`
 - `../src/types/booking.ts`
 - `../src/types/auth.ts`
+- `../src/types/guardian.ts`
+- `../src/types/training-session.ts`
 
 Related: [[03 Features/Checkout]], [[03 Features/Session Booking]],
 [[02 Architecture/State and Data]]

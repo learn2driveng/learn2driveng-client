@@ -61,7 +61,8 @@ export function SettingsRow({
       {value ? (
         <Text
           accessibilityLabel={`Current value: ${value}`}
-          className="font-figtree text-[13px]"
+          numberOfLines={2}
+          className="max-w-[48%] text-right font-figtree text-[13px]"
           style={{ color: colors.textMuted }}
         >
           {value}

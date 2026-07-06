@@ -19,11 +19,20 @@ flowchart TD
   Root --> App[(app) protected]
   App --> Checkout[checkout stack]
   App --> Student[student tabs]
+  App --> Instructor[instructor tabs]
+  App --> Guardian[guardian tabs]
   Student --> Home
   Student --> Explore
   Student --> Sessions
   Student --> Progress
   Student --> Profile
+  Instructor --> InstructorHome[Home]
+  Instructor --> Schedule
+  Instructor --> Availability
+  Instructor --> InstructorProfile[Profile]
+  Guardian --> GuardianHome[Home]
+  Guardian --> GuardianActivity[Activity]
+  Guardian --> GuardianProfile[Profile]
 ```
 
 ## Ownership rules
@@ -53,6 +62,27 @@ login flow resumes.
 | Sessions | `/student/sessions` | Package balances, bookings, booking workflow             |
 | Progress | `/student/progress` | Training statistics and progress                         |
 | Profile  | `/student/profile`  | Account, notifications, location, appearance, support    |
+
+## Instructor tabs
+
+| Tab          | URL                        | Purpose                                      |
+| ------------ | -------------------------- | -------------------------------------------- |
+| Home         | `/instructor`              | Availability, next lesson, daily summary     |
+| Schedule     | `/instructor/schedule`     | Assigned lessons and future lesson details   |
+| Availability | `/instructor/availability` | Teaching hours and unavailable dates         |
+| Profile      | `/instructor/profile`      | School affiliation, verification and account |
+
+## Guardian tabs
+
+| Tab      | URL                  | Purpose                                      |
+| -------- | -------------------- | -------------------------------------------- |
+| Home     | `/guardian`          | Linked learners and active-session status    |
+| Activity | `/guardian/activity` | Shared session history and progress activity |
+| Profile  | `/guardian/profile`  | Guardian account and preferences             |
+
+Linked-learner detail lives at `/guardian/learners/:learnerId` and is hidden
+from the tab bar. Active-session tracking lives at
+`/guardian/sessions/:sessionId` and is also hidden from the tab bar.
 
 See the complete file mapping in [[05 Reference/Route Inventory]].
 

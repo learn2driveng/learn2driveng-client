@@ -1,55 +1,13 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import {
   DashboardPageHeader,
   DashboardScreen,
   SettingsRow,
 } from "@/components/dashboard";
+import { FaqItem } from "@/features/profile";
 import { useAppTheme } from "@/hooks/use-app-theme";
-
-type FaqItemProps = {
-  question: string;
-  answer: string;
-};
-
-function FaqItem({ question, answer }: FaqItemProps) {
-  const { colors } = useAppTheme();
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ expanded }}
-      onPress={() => setExpanded((current) => !current)}
-      className="px-5 py-4 active:opacity-70"
-    >
-      <View className="flex-row items-center gap-4">
-        <Text
-          className="flex-1 font-figtree-bold text-[14px]"
-          style={{ color: colors.text }}
-        >
-          {question}
-        </Text>
-        <MaterialCommunityIcons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={21}
-          color={colors.textSubtle}
-        />
-      </View>
-      {expanded ? (
-        <Text
-          className="mt-3 font-figtree text-[13px] leading-5"
-          style={{ color: colors.textMuted }}
-        >
-          {answer}
-        </Text>
-      ) : null}
-    </Pressable>
-  );
-}
 
 export default function HelpSupportScreen() {
   const router = useRouter();

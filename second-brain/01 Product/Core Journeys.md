@@ -50,8 +50,9 @@ Password recovery uses an OTP, not a reset link.
 
 ## Future cross-role session journey
 
-`learner booking → school assignment → instructor conducts lesson → guardian
-tracks → instructor submits report → learner progress updates`
+`learner booking → school assignment → instructor starts lesson → learner may
+share live location with an attached guardian → instructor ends lesson and
+submits report → learner progress updates`
 
 Related: [[03 Features/Authentication and Entry]],
 [[03 Features/Session Booking]], [[01 Product/Domain Model]]

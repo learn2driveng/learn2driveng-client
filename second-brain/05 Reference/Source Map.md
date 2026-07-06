@@ -18,6 +18,8 @@ tags:
 | `src/components/common/`         | Generic screen/logo primitives              |
 | `src/components/dashboard/`      | Dashboard, package, metric, and settings UI |
 | `src/features/checkout/`         | Shared checkout shell                       |
+| `src/features/guardian/`         | Shared guardian presentation components     |
+| `src/features/instructor/`       | Shared instructor presentation components   |
 | `src/features/location/`         | Location permission behavior and UI         |
 | `src/features/school-discovery/` | Shared marketplace screens and cards        |
 | `src/features/session-booking/`  | Booking UI                                  |

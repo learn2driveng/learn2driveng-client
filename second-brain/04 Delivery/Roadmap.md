@@ -23,18 +23,24 @@ tags:
 
 ## Phase B — Complete session operations
 
-- [ ] Build instructor route tree first.
-- [ ] Add assigned schedule and availability.
-- [ ] Implement start/end session.
-- [ ] Add live location and reconnect strategy.
-- [ ] Add attendance and instructor reports.
+- [x] Build instructor route tree first.
+- [x] Add assigned schedule and availability UI.
+- [x] Implement start/end session UI.
+- [x] Move instructor start/end lifecycle into shared client session state.
+- [ ] Emit active-session state for learner and guardian experiences.
+- [x] Add attendance and instructor report UI.
+- [x] Add instructor profile, preferences, and support UI.
+- [x] Review instructor empty states, consistency, and accessibility.
 - [ ] Derive learner progress from completed sessions.
 
 ## Phase C — Guardian
 
+- [x] Guardian route tree and linked-learner overview UI.
 - [ ] Learner-linking permissions.
-- [ ] Active-session dashboard.
-- [ ] Live map and status.
+- [x] Active-session dashboard and tracking route.
+- [x] Learner per-session consent and foreground location publisher.
+- [x] Guardian local live map, stale, stopped, and unavailable states.
+- [ ] Replace local sharing with authorized realtime transport and reconnect.
 - [ ] Session history and progress.
 - [ ] Start/end notifications.
 

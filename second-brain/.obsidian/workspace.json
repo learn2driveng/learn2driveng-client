@@ -11,14 +11,17 @@
             "id": "584fc352ecbf4312",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "04 Delivery/Open Questions and Risks.md",
-                "mode": "source",
-                "source": false
+                "file": "Learn2Drive Map.canvas",
+                "viewState": {
+                  "x": 215,
+                  "y": 300,
+                  "zoom": -1.24971302733596
+                }
               },
-              "icon": "lucide-file",
-              "title": "Open Questions and Risks"
+              "icon": "lucide-layout-dashboard",
+              "title": "Learn2Drive Map"
             }
           }
         ]
@@ -185,6 +188,7 @@
   },
   "active": "584fc352ecbf4312",
   "lastOpenFiles": [
+    "04 Delivery/Open Questions and Risks.md",
     "04 Delivery/Current State.md",
     "06 Templates/ADR Template.md",
     "02 Architecture/Engineering Principles.md",

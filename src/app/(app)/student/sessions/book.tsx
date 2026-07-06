@@ -3,16 +3,22 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
+import {
+  DashboardEmptyState,
+  DashboardPageHeader,
+  DashboardScreen,
+} from "@/components/dashboard";
 import {
   BookingOptionCard,
   BookingStepIndicator,
 } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { bookingAvailability } from "@/sample_data/session-availability";
 
 const steps = ["Schedule", "Instructor", "Review"] as const;
-const dateOptions = ["Mon 24", "Tue 25", "Wed 26"] as const;
-const timeOptions = ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"] as const;
+const initialDate =
+  bookingAvailability.find((date) => date.times.length > 0) ??
+  bookingAvailability[0];
 
 export default function BookSessionScreen() {
   const router = useRouter();
@@ -23,8 +29,15 @@ export default function BookSessionScreen() {
   }>();
   const [step, setStep] = useState(0);
   const selectedPackage = packageName ?? "Selected package";
-  const [selectedDate, setSelectedDate] = useState("Tue 25");
-  const [selectedTime, setSelectedTime] = useState("11:30 AM");
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(
+    initialDate?.id ?? null,
+  );
+  const selectedDate = bookingAvailability.find(
+    (date) => date.id === selectedDateId,
+  );
+  const [selectedTime, setSelectedTime] = useState<string | null>(
+    initialDate?.times[0] ?? null,
+  );
   const [selectedLocation, setSelectedLocation] = useState(
     "Lekki Training Centre",
   );
@@ -34,6 +47,17 @@ export default function BookSessionScreen() {
 
   const canGoBack = step > 0;
   const isReview = step === steps.length - 1;
+  const hasDates = bookingAvailability.length > 0;
+  const hasTimes = Boolean(selectedDate?.times.length);
+  const canContinue =
+    step !== 0 ||
+    Boolean(selectedDate && selectedTime && selectedLocation && hasTimes);
+
+  const selectDate = (dateId: string) => {
+    const date = bookingAvailability.find((item) => item.id === dateId);
+    setSelectedDateId(dateId);
+    setSelectedTime(date?.times[0] ?? null);
+  };
 
   return (
     <DashboardScreen>
@@ -89,79 +113,139 @@ export default function BookSessionScreen() {
               Available times are based on your package and school.
             </Text>
 
-            <Text
-              className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-              style={{ color: colors.textSubtle }}
-            >
-              DATE
-            </Text>
-            <View className="flex-row gap-3">
-              {dateOptions.map((date) => (
-                <Pressable
-                  key={date}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: selectedDate === date }}
-                  onPress={() => setSelectedDate(date)}
-                  className="h-14 flex-1 items-center justify-center rounded-2xl border-2 active:opacity-70"
-                  style={{
-                    borderColor:
-                      selectedDate === date ? colors.primary : colors.border,
-                    backgroundColor: colors.surface,
-                  }}
+            {!hasDates ? (
+              <View className="mt-7">
+                <DashboardEmptyState
+                  icon="calendar-remove-outline"
+                  title="No dates available"
+                  description="This school has no open lesson dates for this package right now."
+                  actionLabel="Back to sessions"
+                  onActionPress={() => router.replace("/student/sessions")}
+                />
+              </View>
+            ) : (
+              <>
+                <Text
+                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
+                  style={{ color: colors.textSubtle }}
                 >
-                  <Text
-                    className="font-figtree-semibold text-[13px]"
-                    style={{ color: colors.text }}
-                  >
-                    {date}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                  DATE
+                </Text>
+                <View className="flex-row gap-3">
+                  {bookingAvailability.map((date) => {
+                    const selected = selectedDateId === date.id;
+                    const availabilityLabel = date.times.length
+                      ? `${date.times.length} times available`
+                      : "No times available";
 
-            <Text
-              className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-              style={{ color: colors.textSubtle }}
-            >
-              TIME
-            </Text>
-            <View className="flex-row flex-wrap gap-3">
-              {timeOptions.map((time) => (
-                <Pressable
-                  key={time}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: selectedTime === time }}
-                  onPress={() => setSelectedTime(time)}
-                  className="h-12 w-[47%] items-center justify-center rounded-2xl border-2 active:opacity-70"
-                  style={{
-                    borderColor:
-                      selectedTime === time ? colors.primary : colors.border,
-                    backgroundColor: colors.surface,
-                  }}
+                    return (
+                      <Pressable
+                        key={date.id}
+                        accessibilityRole="radio"
+                        accessibilityLabel={`${date.label}. ${availabilityLabel}`}
+                        accessibilityState={{ selected }}
+                        onPress={() => selectDate(date.id)}
+                        className="h-14 flex-1 items-center justify-center rounded-2xl border-2 active:opacity-70"
+                        style={{
+                          borderColor: selected
+                            ? colors.primary
+                            : colors.border,
+                          backgroundColor: colors.surface,
+                        }}
+                      >
+                        <Text
+                          className="font-figtree-semibold text-[13px]"
+                          style={{
+                            color: date.times.length
+                              ? colors.text
+                              : colors.textSubtle,
+                          }}
+                        >
+                          {date.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text
+                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
+                  style={{ color: colors.textSubtle }}
                 >
-                  <Text
-                    className="font-figtree-semibold text-[13px]"
-                    style={{ color: colors.text }}
+                  TIME
+                </Text>
+                {hasTimes ? (
+                  <View className="flex-row flex-wrap gap-3">
+                    {selectedDate?.times.map((time) => (
+                      <Pressable
+                        key={time}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: selectedTime === time }}
+                        onPress={() => setSelectedTime(time)}
+                        className="h-12 w-[47%] items-center justify-center rounded-2xl border-2 active:opacity-70"
+                        style={{
+                          borderColor:
+                            selectedTime === time
+                              ? colors.primary
+                              : colors.border,
+                          backgroundColor: colors.surface,
+                        }}
+                      >
+                        <Text
+                          className="font-figtree-semibold text-[13px]"
+                          style={{ color: colors.text }}
+                        >
+                          {time}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : (
+                  <View
+                    accessibilityLiveRegion="polite"
+                    className="flex-row items-start gap-3 rounded-2xl border p-4"
+                    style={{
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                    }}
                   >
-                    {time}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                    <MaterialCommunityIcons
+                      name="clock-alert-outline"
+                      size={22}
+                      color={colors.textSubtle}
+                    />
+                    <View className="flex-1">
+                      <Text
+                        className="font-figtree-bold text-[14px]"
+                        style={{ color: colors.text }}
+                      >
+                        No times available
+                      </Text>
+                      <Text
+                        className="mt-1 font-figtree text-[13px] leading-5"
+                        style={{ color: colors.textMuted }}
+                      >
+                        Choose another date to see its available lesson times.
+                      </Text>
+                    </View>
+                  </View>
+                )}
 
-            <Text
-              className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-              style={{ color: colors.textSubtle }}
-            >
-              LOCATION
-            </Text>
-            <BookingOptionCard
-              icon="map-marker-outline"
-              title="Lekki Training Centre"
-              description="12 Admiralty Way, Lekki Phase 1"
-              selected={selectedLocation === "Lekki Training Centre"}
-              onPress={() => setSelectedLocation("Lekki Training Centre")}
-            />
+                <Text
+                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
+                  style={{ color: colors.textSubtle }}
+                >
+                  LOCATION
+                </Text>
+                <BookingOptionCard
+                  icon="map-marker-outline"
+                  title="Lekki Training Centre"
+                  description="12 Admiralty Way, Lekki Phase 1"
+                  selected={selectedLocation === "Lekki Training Centre"}
+                  onPress={() => setSelectedLocation("Lekki Training Centre")}
+                />
+              </>
+            )}
           </View>
         ) : null}
 
@@ -237,8 +321,8 @@ export default function BookSessionScreen() {
               {[
                 ["School", schoolName ?? "Elite Safety Driving Academy"],
                 ["Package", selectedPackage],
-                ["Date", selectedDate],
-                ["Time", selectedTime],
+                ["Date", selectedDate?.label ?? "Not selected"],
+                ["Time", selectedTime ?? "Not selected"],
                 ["Location", selectedLocation],
                 ["Instructor", selectedInstructor],
                 ["Credit balance", "10 → 9 sessions"],
@@ -292,6 +376,8 @@ export default function BookSessionScreen() {
         ) : null}
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: !canContinue }}
+          disabled={!canContinue}
           onPress={() => {
             if (!isReview) {
               setStep((current) => current + 1);
@@ -303,25 +389,31 @@ export default function BookSessionScreen() {
               params: {
                 packageName: selectedPackage,
                 schoolName: schoolName ?? "Elite Safety Driving Academy",
-                date: selectedDate,
-                time: selectedTime,
+                date: selectedDate?.label ?? "",
+                time: selectedTime ?? "",
                 instructor: selectedInstructor,
               },
             });
           }}
           className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
-          style={{ backgroundColor: colors.primary }}
+          style={{
+            backgroundColor: canContinue
+              ? colors.primary
+              : colors.surfaceStrong,
+          }}
         >
           <Text
             className="font-figtree-bold text-[15px]"
-            style={{ color: colors.onPrimary }}
+            style={{
+              color: canContinue ? colors.onPrimary : colors.textSubtle,
+            }}
           >
             {isReview ? "Confirm booking" : "Continue"}
           </Text>
           <MaterialCommunityIcons
             name={isReview ? "check" : "arrow-right"}
             size={20}
-            color={colors.onPrimary}
+            color={canContinue ? colors.onPrimary : colors.textSubtle}
           />
         </Pressable>
       </View>

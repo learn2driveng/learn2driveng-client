@@ -33,7 +33,7 @@ export default function SignupScreen() {
         ? (returnTo as Href)
         : "/student";
 
-    signIn();
+    signIn("learner");
     router.replace(safeReturnTo);
   };
 

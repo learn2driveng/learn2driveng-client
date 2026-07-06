@@ -21,6 +21,11 @@ intentionally outside the learner tabs and outside Explore.
 The screens resolve school/package data from local catalogue fixtures and
 present the purchase flow. Payment is not yet integrated.
 
+The result route renders successful, pending, failed, and cancelled
+presentations from a status parameter. UI-only outcomes are mapped by payment
+method in `src/sample_data/payment-results.ts` so every variation remains
+reviewable without implying real provider behavior.
+
 ## Payment rules
 
 - Mobile clients must never contain payment-provider secrets.
@@ -41,12 +46,9 @@ present the purchase flow. Payment is not yet integrated.
 
 ## UX states still needed
 
-- user cancellation
 - network loss during provider handoff
-- payment pending
 - provider success awaiting backend verification
 - duplicate retry
-- failed payment with safe retry
 
 Related: [[01 Product/Domain Model]], [[03 Features/Session Booking]],
 [[04 Delivery/Open Questions and Risks]]

@@ -34,14 +34,23 @@ export default function PaymentMethodScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { schoolId, packageId } = useLocalSearchParams<{
+  const {
+    schoolId,
+    packageId,
+    method: initialMethod,
+  } = useLocalSearchParams<{
     schoolId?: string;
     packageId?: string;
+    method?: string;
   }>();
   const school = getSchoolById(schoolId);
   const selectedPackage = getPackageById(schoolId, packageId);
-  const [method, setMethod] =
-    useState<(typeof paymentMethods)[number]["id"]>("card");
+  const [method, setMethod] = useState<(typeof paymentMethods)[number]["id"]>(
+    () =>
+      paymentMethods.some((item) => item.id === initialMethod)
+        ? (initialMethod as (typeof paymentMethods)[number]["id"])
+        : "card",
+  );
 
   if (!school || !selectedPackage) return null;
 

@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { BookingCard } from "@/features/session-booking";
@@ -25,9 +26,8 @@ export default function BookingHistoryScreen() {
   const bookings = learnerBookings.filter(
     (booking) => filter === "all" || booking.status === filter,
   );
-
-  return (
-    <DashboardScreen>
+  const header = (
+    <>
       <DashboardPageHeader title="Booking history" />
       <Text
         className="mt-4 text-[14px] leading-5"
@@ -35,6 +35,29 @@ export default function BookingHistoryScreen() {
       >
         Review upcoming lessons and your past booking activity.
       </Text>
+    </>
+  );
+
+  if (learnerBookings.length === 0) {
+    return (
+      <DashboardScreen>
+        {header}
+        <View className="mt-8">
+          <ContentEmptyState
+            icon="calendar-blank-outline"
+            title="No booking history yet"
+            description="Your upcoming and completed lessons will appear here after you make a booking."
+            actionLabel="Book a session"
+            onActionPress={() => router.replace("/student/sessions")}
+          />
+        </View>
+      </DashboardScreen>
+    );
+  }
+
+  return (
+    <DashboardScreen>
+      {header}
 
       <View className="mt-6 flex-row flex-wrap gap-2">
         {filters.map((item) => {
@@ -81,25 +104,14 @@ export default function BookingHistoryScreen() {
       </View>
 
       {bookings.length === 0 ? (
-        <View
-          className="mt-6 items-center rounded-3xl border px-6 py-12"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <Text
-            className="text-[16px]"
-            style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-          >
-            No bookings here
-          </Text>
-          <Text
-            className="mt-2 text-center text-[13px]"
-            style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
-          >
-            Bookings matching this status will appear here.
-          </Text>
+        <View className="mt-6">
+          <ContentEmptyState
+            icon="filter-remove-outline"
+            title="No matching bookings"
+            description="There are no bookings with this status."
+            actionLabel="Show all bookings"
+            onActionPress={() => setFilter("all")}
+          />
         </View>
       ) : null}
     </DashboardScreen>
