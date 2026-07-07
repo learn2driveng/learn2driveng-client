@@ -40,6 +40,9 @@ This avoids two divergent discovery experiences.
 `src/sample_data/schools.ts` contains three typed school fixtures with
 packages, instructors, and vehicles. This is presentation data.
 
+The shared Explore screen distinguishes an empty school catalogue from filters
+that produce no matches. Both states provide a relevant recovery action.
+
 ## Handoff to checkout
 
 Package selection should carry stable school and package identifiers into the
@@ -49,7 +52,7 @@ destination.
 ## Next implementation needs
 
 - Catalogue/search API
-- Loading, empty, failure, and retry states
+- Loading, failure, offline, and retry states when an async source exists
 - Pagination and proper list virtualization
 - Server-controlled FRSC status
 - Real distance from resolved location

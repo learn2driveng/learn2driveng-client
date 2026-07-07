@@ -14,8 +14,8 @@ The planned role union is defined in `../src/types/auth.ts`.
 | Role                   | Code             | Primary need                                        | Current UI            |
 | ---------------------- | ---------------- | --------------------------------------------------- | --------------------- |
 | Learner/student        | `learner`        | Discover, purchase, book, train, track progress     | Active implementation |
-| Guardian               | `guardian`       | Monitor linked learner sessions and progress        | Planned               |
-| Instructor             | `instructor`     | Manage availability and conduct assigned sessions   | Planned               |
+| Guardian               | `guardian`       | Monitor linked learner sessions and progress        | Route foundation      |
+| Instructor             | `instructor`     | Manage availability and conduct assigned sessions   | Active implementation |
 | School administrator   | `school_admin`   | Manage staff, fleet, packages, bookings, operations | Planned               |
 | Platform administrator | `platform_admin` | Approve schools and oversee platform trust/safety   | Planned               |
 

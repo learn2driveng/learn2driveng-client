@@ -46,25 +46,54 @@ tags:
 
 ## Student tabs and details
 
-| Route                                     | Purpose                           |
-| ----------------------------------------- | --------------------------------- |
-| `/student`                                | Dashboard                         |
-| `/student/explore`                        | Shared authenticated discovery    |
-| `/student/explore/:schoolId`              | School profile                    |
-| `/student/explore/:schoolId/packages`     | Package selection                 |
-| `/student/sessions`                       | Packages and bookings             |
-| `/student/sessions/book`                  | Schedule/instructor/review wizard |
-| `/student/sessions/confirmation`          | Booking confirmation              |
-| `/student/sessions/history`               | Booking history                   |
-| `/student/sessions/:bookingId`            | Booking detail                    |
-| `/student/sessions/:bookingId/reschedule` | Rescheduling                      |
-| `/student/progress`                       | Progress overview                 |
-| `/student/profile`                        | Profile/settings index            |
-| `/student/profile/account`                | Account detail                    |
-| `/student/profile/help`                   | Help centre and FAQs              |
-| `/student/profile/inbox`                  | Notification centre               |
-| `/student/profile/notifications`          | Notification preferences          |
-| `/student/profile/location`               | Location preferences              |
-| `/student/profile/support`                | Contact and problem-report form   |
+| Route                                        | Purpose                           |
+| -------------------------------------------- | --------------------------------- |
+| `/student`                                   | Dashboard                         |
+| `/student/explore`                           | Shared authenticated discovery    |
+| `/student/explore/:schoolId`                 | School profile                    |
+| `/student/explore/:schoolId/packages`        | Package selection                 |
+| `/student/sessions`                          | Packages and bookings             |
+| `/student/sessions/book`                     | Schedule/instructor/review wizard |
+| `/student/sessions/confirmation`             | Booking confirmation              |
+| `/student/sessions/history`                  | Booking history                   |
+| `/student/sessions/:bookingId`               | Booking detail                    |
+| `/student/sessions/:bookingId/reschedule`    | Rescheduling                      |
+| `/student/sessions/:bookingId/live-location` | Learner live-location controls    |
+| `/student/progress`                          | Progress overview                 |
+| `/student/profile`                           | Profile/settings index            |
+| `/student/profile/account`                   | Account detail                    |
+| `/student/profile/help`                      | Help centre and FAQs              |
+| `/student/profile/inbox`                     | Notification centre               |
+| `/student/profile/notifications`             | Notification preferences          |
+| `/student/profile/location`                  | Location preferences              |
+| `/student/profile/support`                   | Contact and problem-report form   |
+
+## Instructor tabs
+
+| Route                                   | Purpose                              |
+| --------------------------------------- | ------------------------------------ |
+| `/instructor`                           | Instructor dashboard                 |
+| `/instructor/schedule`                  | Assigned schedule and filtering      |
+| `/instructor/schedule/:lessonId`        | Instructor lesson detail             |
+| `/instructor/sessions/:lessonId`        | Start, conduct and end lesson flow   |
+| `/instructor/sessions/:lessonId/report` | Attendance and lesson report         |
+| `/instructor/availability`              | Weekly hours and time-off management |
+| `/instructor/profile`                   | Instructor profile and settings      |
+| `/instructor/profile/account`           | Account and instructor details       |
+| `/instructor/profile/notifications`     | Notification preferences             |
+| `/instructor/profile/location`          | Teaching-session location settings   |
+| `/instructor/profile/security`          | Password and verification            |
+| `/instructor/profile/help`              | Instructor help centre               |
+| `/instructor/profile/support`           | School and app support request form  |
+
+## Guardian tabs
+
+| Route                           | Purpose                            |
+| ------------------------------- | ---------------------------------- |
+| `/guardian`                     | Linked-learner dashboard           |
+| `/guardian/learners/:learnerId` | Linked-learner training detail     |
+| `/guardian/sessions/:sessionId` | Active-session location tracking   |
+| `/guardian/activity`            | Shared learner activity foundation |
+| `/guardian/profile`             | Guardian profile and logout        |
 
 Related: [[02 Architecture/Navigation and Route Map]]

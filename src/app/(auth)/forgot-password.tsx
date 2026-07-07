@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -14,7 +14,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [email, setEmail] = useState("");
+  const { email: initialEmail } = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(initialEmail ?? "");
 
   return (
     <AuthScreen>

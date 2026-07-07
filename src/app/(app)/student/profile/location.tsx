@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Linking, Text, View } from "react-native";
 
 import {
   DashboardPageHeader,
   DashboardScreen,
   SettingsRow,
-  ToggleSettingRow,
 } from "@/components/dashboard";
 import { useUserLocation } from "@/features/location";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -17,7 +15,6 @@ export default function LocationSettingsScreen() {
   const setLocationPromptDismissed = useSettingsStore(
     (state) => state.setLocationPromptDismissed,
   );
-  const [shareDuringSessions, setShareDuringSessions] = useState(true);
   const locationValue = location.isChecking
     ? "Checking"
     : location.isGranted
@@ -57,11 +54,11 @@ export default function LocationSettingsScreen() {
           className="mx-4 h-px"
           style={{ backgroundColor: colors.border }}
         />
-        <ToggleSettingRow
-          title="Share during sessions"
-          description="Allow your assigned school to track active driving sessions."
-          value={shareDuringSessions}
-          onValueChange={setShareDuringSessions}
+        <SettingsRow
+          icon="shield-account-outline"
+          title="Live session sharing"
+          description="Never automatic—choose guardians during each active lesson."
+          value="Ask every time"
         />
       </View>
 

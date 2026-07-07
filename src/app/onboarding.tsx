@@ -486,8 +486,8 @@ function OnboardingSlide2({
       <View className="px-8 pb-2">
         <OnboardingTitle className="mb-2">Safety for Everyone</OnboardingTitle>
         <Text className="mx-auto mb-4 max-w-xs text-center font-sans text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          Share your live location with guardians during sessions so they know
-          you are safe.
+          Choose when to share your live location with linked guardians during
+          an active lesson.
         </Text>
       </View>
 

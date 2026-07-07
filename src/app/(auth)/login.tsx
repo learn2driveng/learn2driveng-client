@@ -8,11 +8,13 @@ import {
   AuthDivider,
   AuthField,
   AuthPrimaryButton,
+  AuthRoleSelect,
   AuthScreen,
   SocialAuthButtons,
 } from "@/components/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuthStore } from "@/store/auth.store";
+import type { UserRole } from "@/types";
 
 const FRSC_SEAL_URI =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
@@ -24,6 +26,8 @@ export default function LoginScreen() {
   const { colors } = useAppTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] =
+    useState<Exclude<UserRole, "platform_admin">>("learner");
 
   const handleLogin = () => {
     const safeReturnTo =
@@ -32,12 +36,18 @@ export default function LoginScreen() {
         ? (returnTo as Href)
         : "/student";
 
-    signIn();
-    router.replace(safeReturnTo);
+    signIn(role);
+    router.replace(
+      role === "instructor"
+        ? "/instructor"
+        : role === "guardian"
+          ? "/guardian"
+          : safeReturnTo,
+    );
   };
 
   return (
-    <AuthScreen scrollEnabled={false} contentClassName="justify-between">
+    <AuthScreen contentClassName="justify-between">
       <View>
         <View
           className="h-9 self-end flex-row items-center gap-2 rounded-full border px-3"
@@ -77,7 +87,11 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        <View className="mt-8 gap-4">
+        <View className="mt-8">
+          <AuthRoleSelect value={role} onChange={setRole} />
+        </View>
+
+        <View className="mt-6 gap-4">
           <AuthField
             label="EMAIL ADDRESS"
             icon="email"
@@ -117,8 +131,15 @@ export default function LoginScreen() {
 
         <View className="mt-6">
           <AuthPrimaryButton
-            label="LOGIN TO DASHBOARD"
+            label={
+              role === "learner" || role === "instructor" || role === "guardian"
+                ? "LOGIN TO DASHBOARD"
+                : "DASHBOARD COMING SOON"
+            }
             showArrow
+            disabled={
+              role !== "learner" && role !== "instructor" && role !== "guardian"
+            }
             onPress={handleLogin}
           />
         </View>

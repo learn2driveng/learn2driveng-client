@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -39,6 +40,13 @@ export function ExploreScreen({
       return matchesQuery && matchesRating && matchesPrice && matchesDistance;
     });
   }, [distanceFilter, priceFilter, query, ratingFilter]);
+
+  const resetFilters = () => {
+    setQuery("");
+    setRatingFilter(false);
+    setPriceFilter(false);
+    setDistanceFilter(false);
+  };
 
   return (
     <View
@@ -142,12 +150,7 @@ export function ExploreScreen({
           <FilterChip
             icon="tune-variant"
             accessibilityLabel="Reset all filters"
-            onPress={() => {
-              setQuery("");
-              setRatingFilter(false);
-              setPriceFilter(false);
-              setDistanceFilter(false);
-            }}
+            onPress={resetFilters}
           />
         </ScrollView>
       </View>
@@ -159,52 +162,47 @@ export function ExploreScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {filteredSchools.map((school) => (
-          <SchoolCard
-            key={school.id}
-            school={school}
-            onPress={() =>
-              router.push({
-                pathname: publicMarketplace
-                  ? "/explore/[schoolId]"
-                  : "/student/explore/[schoolId]",
-                params: { schoolId: school.id },
-              })
+        {schoolCatalog.length === 0 ? (
+          <ContentEmptyState
+            icon="school-outline"
+            title="No schools available yet"
+            description="There are no verified schools serving this location right now."
+            actionLabel="Change location"
+            onActionPress={() =>
+              router.push(
+                publicMarketplace ? "/location" : "/student/profile/location",
+              )
             }
           />
-        ))}
+        ) : null}
 
-        {filteredSchools.length === 0 ? (
-          <View
-            accessibilityLiveRegion="polite"
-            className="items-center rounded-3xl border px-6 py-12"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="school-outline"
-              size={36}
-              color={colors.textSubtle}
-            />
-            <Text
-              accessibilityRole="header"
-              className="mt-3 text-center text-[16px]"
-              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-            >
-              No schools found
-            </Text>
-            <Text
-              className="mt-1 text-center text-[13px]"
-              style={{
-                color: colors.textMuted,
-                fontFamily: fontFamily.figtreeMedium,
-              }}
-            >
-              Try another search or clear a filter.
-            </Text>
-          </View>
+        {schoolCatalog.length > 0 ? (
+          <>
+            {filteredSchools.map((school) => (
+              <SchoolCard
+                key={school.id}
+                school={school}
+                onPress={() =>
+                  router.push({
+                    pathname: publicMarketplace
+                      ? "/explore/[schoolId]"
+                      : "/student/explore/[schoolId]",
+                    params: { schoolId: school.id },
+                  })
+                }
+              />
+            ))}
+
+            {filteredSchools.length === 0 ? (
+              <ContentEmptyState
+                icon="filter-remove-outline"
+                title="No schools match"
+                description="Try another search or clear your current filters."
+                actionLabel="Clear filters"
+                onActionPress={resetFilters}
+              />
+            ) : null}
+          </>
         ) : null}
       </ScrollView>
     </View>

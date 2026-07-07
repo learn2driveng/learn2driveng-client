@@ -11,11 +11,24 @@ import {
   StatCard,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { studentPackages } from "@/sample_data";
+import { studentPackages, studentProfile } from "@/sample_data";
+import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
+import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function StudentDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const activeSession = useTrainingSessionStore((state) => {
+    if (!state.activeSessionId) return undefined;
+    const session = state.sessions[state.activeSessionId];
+    return session?.learnerId === studentProfile.id ? session : undefined;
+  });
+  const activeLocationShare = useTrainingSessionStore((state) =>
+    activeSession ? state.locationShares[activeSession.id] : undefined,
+  );
+  const activeLessonContext = getInstructorLessonContextBySessionId(
+    activeSession?.id,
+  );
   const activePackages = studentPackages.filter(
     (item) => item.status === "active",
   );
@@ -31,58 +44,137 @@ export default function StudentDashboardScreen() {
   );
   const hasPackages = activePackages.length > 0;
   const hasCredits = totalRemainingSessions > 0;
+  const header = (
+    <View className="flex-row items-center justify-between">
+      <View>
+        <Text
+          className="font-figtree text-[14px]"
+          style={{ color: colors.textMuted }}
+        >
+          Good morning
+        </Text>
+        <Text
+          accessibilityRole="header"
+          className="mt-1 font-figtree-bold text-[28px]"
+          style={{ color: colors.text }}
+        >
+          Welcome, {studentProfile.firstName}
+        </Text>
+      </View>
+      <View className="flex-row items-center gap-3">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Notifications"
+          onPress={() => router.push("/student/profile/inbox")}
+          className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <MaterialCommunityIcons
+            name="bell-outline"
+            size={22}
+            color={colors.text}
+          />
+        </Pressable>
+        <View
+          className="h-11 w-11 items-center justify-center rounded-full"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            className="font-figtree-bold text-[14px]"
+            style={{ color: colors.primary }}
+          >
+            {studentProfile.initials}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <DashboardScreen>
-      <View className="flex-row items-center justify-between">
-        <View>
+      {header}
+
+      {activeSession && activeLessonContext ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Active lesson with Instructor John. Location ${
+            activeLocationShare?.status === "sharing"
+              ? "is sharing"
+              : "is not sharing"
+          }.`}
+          accessibilityHint="Opens live location controls"
+          onPress={() =>
+            router.push({
+              pathname: "/student/sessions/[bookingId]/live-location",
+              params: { bookingId: activeSession.bookingId },
+            })
+          }
+          className="mt-8 overflow-hidden rounded-[28px] p-5 active:opacity-80"
+          style={{ backgroundColor: colors.success }}
+        >
+          <View className="flex-row items-center justify-between gap-4">
+            <View className="flex-row items-center gap-2">
+              <View
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: colors.contrastText }}
+              />
+              <Text
+                className="font-figtree-bold text-[10px] uppercase tracking-[1px]"
+                style={{ color: colors.contrastText }}
+              >
+                Lesson in progress
+              </Text>
+            </View>
+            <View
+              className="rounded-full px-3 py-1.5"
+              style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+            >
+              <Text
+                className="font-figtree-bold text-[10px]"
+                style={{ color: colors.contrastText }}
+              >
+                {activeLocationShare?.status === "sharing"
+                  ? "Sharing location"
+                  : "Not sharing"}
+              </Text>
+            </View>
+          </View>
           <Text
-            className="font-figtree text-[14px]"
-            style={{ color: colors.textMuted }}
+            className="mt-5 font-figtree-bold text-[21px]"
+            style={{ color: colors.contrastText }}
           >
-            Good morning
+            {activeLessonContext.lesson.packageName}
           </Text>
           <Text
-            accessibilityRole="header"
-            className="mt-1 font-figtree-bold text-[28px]"
-            style={{ color: colors.text }}
+            className="mt-2 font-figtree text-[12px]"
+            style={{ color: colors.contrastText }}
           >
-            Welcome, Alex
+            Instructor John · {activeLessonContext.lesson.location}
           </Text>
-        </View>
-        <View className="flex-row items-center gap-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-            onPress={() => router.push("/student/profile/inbox")}
-            className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
-            style={{
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="bell-outline"
-              size={22}
-              color={colors.text}
-            />
-          </Pressable>
           <View
-            className="h-11 w-11 items-center justify-center rounded-full"
-            style={{ backgroundColor: colors.contrastSurface }}
+            className="mt-5 flex-row items-center justify-between border-t pt-4"
+            style={{ borderTopColor: "rgba(255,255,255,0.24)" }}
           >
             <Text
-              className="font-figtree-bold text-[14px]"
-              style={{ color: colors.primary }}
+              className="font-figtree-bold text-[13px]"
+              style={{ color: colors.contrastText }}
             >
-              AJ
+              Manage live location
             </Text>
+            <MaterialCommunityIcons
+              name="arrow-right"
+              size={20}
+              color={colors.contrastText}
+            />
           </View>
-        </View>
-      </View>
+        </Pressable>
+      ) : null}
 
       <View
-        className="mt-8 rounded-[28px] p-6"
+        className={`${activeSession ? "mt-5" : "mt-8"} rounded-[28px] p-6`}
         style={{ backgroundColor: colors.contrastSurface }}
       >
         <Text

@@ -6,29 +6,38 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 
 type DashboardPageHeaderProps = {
   title: string;
+  showBack?: boolean;
 };
 
-export function DashboardPageHeader({ title }: DashboardPageHeaderProps) {
+export function DashboardPageHeader({
+  title,
+  showBack = true,
+}: DashboardPageHeaderProps) {
   const router = useRouter();
   const { colors } = useAppTheme();
 
   return (
     <View className="flex-row items-center gap-4">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        accessibilityHint="Returns to the previous screen"
-        hitSlop={12}
-        onPress={() => router.back()}
-        className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
-        style={{ borderColor: colors.border, backgroundColor: colors.surface }}
-      >
-        <MaterialCommunityIcons
-          name="arrow-left"
-          size={20}
-          color={colors.text}
-        />
-      </Pressable>
+      {showBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          accessibilityHint="Returns to the previous screen"
+          hitSlop={12}
+          onPress={() => router.back()}
+          className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <MaterialCommunityIcons
+            name="arrow-left"
+            size={20}
+            color={colors.text}
+          />
+        </Pressable>
+      ) : null}
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[24px]"

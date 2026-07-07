@@ -38,6 +38,14 @@ Related screens include history, detail, reschedule, cancellation, and
 confirmation. They use typed presentation data from
 `src/sample_data/bookings.ts`.
 
+Booking and rescheduling read date-specific presentation availability from
+`src/sample_data/session-availability.ts`. Dates without time slots remain
+selectable so the UI can explain the unavailable state, while an empty calendar
+blocks progression and provides a route back.
+
+Booking history distinguishes an account with no booking history from a status
+filter with no matching bookings.
+
 Cancellation uses a dedicated confirmation sheet that repeats the lesson and
 package, explains that credit return depends on school policy, preserves a
 clear “Keep lesson” escape, and shows confirmation after cancellation.

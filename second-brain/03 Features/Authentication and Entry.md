@@ -23,12 +23,17 @@ Auth screens share components from `src/components/auth` and use Figtree.
 Password recovery is designed around OTP verification rather than an emailed
 reset link.
 
+Login includes a reusable role selector for learner, instructor, school, and
+guardian access. Learner, instructor, and guardian route trees are available.
+School remains visible but disabled until its route tree exists.
+
 ## Current route behavior
 
 - Public browsing is available without authentication.
 - Entering `(app)` while signed out redirects to `/login`.
 - The protected layout passes an internal `returnTo` value.
-- Login currently flips an in-memory Zustand boolean.
+- Login currently stores an in-memory authenticated flag and selected role in
+  Zustand.
 - Location consent uses Expo's foreground-permission hook and stores the current
   coordinates after permission is granted.
 

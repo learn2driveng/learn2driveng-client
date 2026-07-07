@@ -7,6 +7,7 @@ import { fontFamily } from "@/constants/fonts";
 import { CheckoutShell } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getPackageById, getSchoolById } from "@/sample_data";
+import { getSamplePaymentResult } from "@/sample_data/payment-results";
 
 const methodLabels: Record<string, string> = {
   card: "Debit or credit card",
@@ -182,7 +183,12 @@ export default function PurchaseReviewScreen() {
           onPress={() =>
             router.replace({
               pathname: "/checkout/[schoolId]/result",
-              params: { schoolId: school.id, packageId: selectedPackage.id },
+              params: {
+                schoolId: school.id,
+                packageId: selectedPackage.id,
+                method,
+                status: getSamplePaymentResult(method),
+              },
             })
           }
           className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
