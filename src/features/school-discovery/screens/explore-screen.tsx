@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
@@ -54,26 +55,8 @@ export function ExploreScreen({
       style={{ backgroundColor: colors.background, paddingTop: insets.top }}
     >
       <View className="px-6 pb-2 pt-4">
-        <View className="mb-6 flex-row items-center justify-between">
-          <View className="flex-1 pr-3">
-            <Text
-              className="mb-1 text-[10px] uppercase tracking-[2px]"
-              style={{
-                color: colors.textMuted,
-                fontFamily: fontFamily.figtreeBold,
-              }}
-            >
-              FRSC Verified
-            </Text>
-            <Text
-              accessibilityRole="header"
-              className="text-[24px] leading-7 tracking-[-0.7px]"
-              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-            >
-              Top Rated Schools{" "}
-              <Text style={{ color: colors.primary }}>Near You</Text>
-            </Text>
-          </View>
+        <View className="mb-4 flex-row items-center justify-between">
+          <AppLogo height={44} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={publicMarketplace ? "Sign in" : "Open profile"}
@@ -94,6 +77,27 @@ export function ExploreScreen({
               color={colors.text}
             />
           </Pressable>
+        </View>
+        <View className="mb-6">
+          <View className="pr-3">
+            <Text
+              className="mb-1 text-[10px] uppercase tracking-[2px]"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              FRSC Verified
+            </Text>
+            <Text
+              accessibilityRole="header"
+              className="text-[24px] leading-7 tracking-[-0.7px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              Top Rated Schools{" "}
+              <Text style={{ color: colors.primary }}>Near You</Text>
+            </Text>
+          </View>
         </View>
 
         <View

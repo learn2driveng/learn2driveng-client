@@ -10,9 +10,9 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { guardianLinks } from "@/sample_data/guardian";
 import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
 import { studentProfile } from "@/sample_data/student";
+import { useGuardianAccessStore } from "@/store/guardian-access.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function LearnerLiveLocationScreen() {
@@ -30,6 +30,7 @@ export default function LearnerLiveLocationScreen() {
   const stopLocationSharing = useTrainingSessionStore(
     (state) => state.stopLocationSharing,
   );
+  const guardianLinks = useGuardianAccessStore((state) => state.guardianLinks);
   const availableGuardianLinks = guardianLinks.filter(
     (link) => link.learnerId === studentProfile.id && link.status === "active",
   );

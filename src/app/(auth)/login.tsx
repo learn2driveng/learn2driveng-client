@@ -12,6 +12,7 @@ import {
   AuthScreen,
   SocialAuthButtons,
 } from "@/components/auth";
+import { AppLogo } from "@/components/common/app-logo";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuthStore } from "@/store/auth.store";
 import type { UserRole } from "@/types";
@@ -32,7 +33,9 @@ export default function LoginScreen() {
   const handleLogin = () => {
     const safeReturnTo =
       typeof returnTo === "string" &&
-      (returnTo.startsWith("/student/") || returnTo.startsWith("/checkout/"))
+      (returnTo.startsWith("/student/") ||
+        returnTo.startsWith("/checkout/") ||
+        returnTo.startsWith("/school/"))
         ? (returnTo as Href)
         : "/student";
 
@@ -42,33 +45,38 @@ export default function LoginScreen() {
         ? "/instructor"
         : role === "guardian"
           ? "/guardian"
-          : safeReturnTo,
+          : role === "school_admin"
+            ? "/school"
+            : safeReturnTo,
     );
   };
 
   return (
     <AuthScreen contentClassName="justify-between">
       <View>
-        <View
-          className="h-9 self-end flex-row items-center gap-2 rounded-full border px-3"
-          style={{
-            borderColor: colors.border,
-            backgroundColor: colors.surface,
-          }}
-        >
-          <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-sm">
-            <Image
-              source={{ uri: FRSC_SEAL_URI }}
-              className="h-5 w-5"
-              contentFit="contain"
-            />
-          </View>
-          <Text
-            className="font-figtree-bold text-[11px] tracking-[0.7px]"
-            style={{ color: colors.textMuted }}
+        <View className="flex-row items-start justify-between gap-4">
+          <AppLogo height={50} />
+          <View
+            className="h-9 flex-row items-center gap-2 rounded-full border px-3"
+            style={{
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
-            FRSC VERIFIED
-          </Text>
+            <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-sm">
+              <Image
+                source={{ uri: FRSC_SEAL_URI }}
+                className="h-5 w-5"
+                contentFit="contain"
+              />
+            </View>
+            <Text
+              className="font-figtree-bold text-[11px] tracking-[0.7px]"
+              style={{ color: colors.textMuted }}
+            >
+              FRSC VERIFIED
+            </Text>
+          </View>
         </View>
 
         <View className="mt-8">
@@ -132,13 +140,19 @@ export default function LoginScreen() {
         <View className="mt-6">
           <AuthPrimaryButton
             label={
-              role === "learner" || role === "instructor" || role === "guardian"
+              role === "learner" ||
+              role === "instructor" ||
+              role === "guardian" ||
+              role === "school_admin"
                 ? "LOGIN TO DASHBOARD"
                 : "DASHBOARD COMING SOON"
             }
             showArrow
             disabled={
-              role !== "learner" && role !== "instructor" && role !== "guardian"
+              role !== "learner" &&
+              role !== "instructor" &&
+              role !== "guardian" &&
+              role !== "school_admin"
             }
             onPress={handleLogin}
           />

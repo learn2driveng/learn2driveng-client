@@ -1,21 +1,26 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-
-const skills = [
-  { name: "Vehicle control", progress: 82, icon: "steering" as const },
-  { name: "Road awareness", progress: 74, icon: "road-variant" as const },
-  { name: "Parking", progress: 58, icon: "parking" as const },
-];
+import {
+  learnerAssessments,
+  learnerProgressLessons,
+  progressSkills,
+} from "@/sample_data";
 
 export default function StudentProgressScreen() {
+  const router = useRouter();
   const { colors } = useAppTheme();
+  const latestAssessment = learnerAssessments[0];
+  const recentLesson = learnerProgressLessons[0];
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       <Text
         className="text-[10px] uppercase tracking-[2px]"
         style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}
@@ -137,9 +142,9 @@ export default function StudentProgressScreen() {
             borderColor: colors.border,
           }}
         >
-          {skills.map((skill, index) => (
+          {progressSkills.map((skill, index) => (
             <View
-              key={skill.name}
+              key={skill.id}
               className="py-4"
               style={
                 index
@@ -189,15 +194,31 @@ export default function StudentProgressScreen() {
                   }}
                 />
               </View>
+              <Text
+                className="ml-[52px] mt-2 text-[11px] leading-4"
+                style={{
+                  color: colors.textMuted,
+                  fontFamily: fontFamily.figtree,
+                }}
+              >
+                {skill.note}
+              </Text>
             </View>
           ))}
         </View>
       </View>
 
       <View className="mt-8">
-        <SectionHeader title="Latest achievement" />
-        <View
-          className="mt-4 flex-row items-center rounded-3xl border p-4"
+        <SectionHeader
+          title="Assessments"
+          actionLabel="View all"
+          onActionPress={() => router.push("/student/progress/assessments")}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View assessments"
+          onPress={() => router.push("/student/progress/assessments")}
+          className="mt-4 flex-row items-center rounded-3xl border p-4 active:opacity-80"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -218,7 +239,7 @@ export default function StudentProgressScreen() {
               className="text-[14px]"
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
-              Road signs assessment
+              {latestAssessment.title}
             </Text>
             <Text
               className="mt-1 text-[11px]"
@@ -227,7 +248,7 @@ export default function StudentProgressScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Passed with an 86% score
+              Passed with an {latestAssessment.score}% score
             </Text>
           </View>
           <View
@@ -241,16 +262,28 @@ export default function StudentProgressScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              86%
+              {latestAssessment.score}%
             </Text>
           </View>
-        </View>
+        </Pressable>
       </View>
 
       <View className="mt-8">
-        <SectionHeader title="Recent lesson" />
-        <View
-          className="mt-4 rounded-3xl border p-4"
+        <SectionHeader
+          title="Lesson history"
+          actionLabel="View all"
+          onActionPress={() => router.push("/student/progress/history")}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${recentLesson.title}`}
+          onPress={() =>
+            router.push({
+              pathname: "/student/progress/history/[lessonId]",
+              params: { lessonId: recentLesson.id },
+            })
+          }
+          className="mt-4 rounded-3xl border p-4 active:opacity-80"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -275,7 +308,7 @@ export default function StudentProgressScreen() {
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                City traffic and junctions
+                {recentLesson.title}
               </Text>
               <Text
                 className="mt-1 text-[11px]"
@@ -284,23 +317,22 @@ export default function StudentProgressScreen() {
                   fontFamily: fontFamily.figtreeMedium,
                 }}
               >
-                17 June · 1 hr 20 min
+                {recentLesson.completedAt} · {recentLesson.duration}
               </Text>
             </View>
             <MaterialCommunityIcons
-              name="check-circle"
-              size={20}
-              color={colors.success}
+              name="chevron-right"
+              size={22}
+              color={colors.textMuted}
             />
           </View>
           <Text
             className="mt-4 text-[12px] leading-5"
             style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
           >
-            Calm vehicle control in traffic. Practise earlier mirror checks
-            before changing lanes.
+            {recentLesson.feedback}
           </Text>
-        </View>
+        </Pressable>
       </View>
     </DashboardScreen>
   );

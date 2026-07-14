@@ -84,6 +84,26 @@ Linked-learner detail lives at `/guardian/learners/:learnerId` and is hidden
 from the tab bar. Active-session tracking lives at
 `/guardian/sessions/:sessionId` and is also hidden from the tab bar.
 
+## School routes
+
+`/school-signup` creates a draft administrator application. Draft,
+pending-review, and suspended schools are confined to `/school/onboarding/*`;
+the operational routes below require `verified` status.
+
+| Route                 | Purpose                                             | Tab visibility |
+| --------------------- | --------------------------------------------------- | -------------- |
+| `/school`             | School operations overview                          | Home           |
+| `/school/bookings`    | Lesson assignment queue                             | Bookings       |
+| `/school/instructors` | Instructor roster, onboarding, and invite lifecycle | Instructors    |
+| `/school/more`        | School management destinations                      | More           |
+| `/school/profile`     | School profile and verification maintenance         | Hidden         |
+| `/school/operations`  | Vehicle and package operations                      | Hidden         |
+| `/school/monitoring`  | Active lesson operational monitoring                | Hidden         |
+
+Instructor and booking detail routes stay within their parent tabs. Profile,
+fleet, package, and other operational child routes are reached through More and
+do not create additional tab buttons.
+
 See the complete file mapping in [[05 Reference/Route Inventory]].
 
 Related: [[03 Features/Public Marketplace]], [[03 Features/Checkout]],

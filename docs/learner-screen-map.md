@@ -12,7 +12,7 @@ ends in a navigable learner outcome.
 | Home | Learner dashboard, upcoming session, quick actions | P1 | Implemented |
 | Explore | School list/search/filter, school profile, packages | P0 | Implemented |
 | Sessions | Active packages, booking flow, booking confirmation, booking history/detail | P0 | Implemented with typed presentation data |
-| Progress | Overview, assessments, session history/detail | P1 | Overview implemented; detail screens pending |
+| Progress | Overview, assessments, session history/detail | P1 | Implemented with typed presentation data |
 | Profile | Profile, account, notifications, location, support | P1 | Mostly implemented |
 
 School discovery is also available outside authenticated learner navigation.
@@ -74,8 +74,9 @@ presentation data while API mutations remain pending.
 5. Assessments
 6. Session history
 
-These depend on the session API and realtime lifecycle. They should follow the
-completed booking history slice.
+The learner progress overview, assessments, lesson history, and lesson detail
+screens are connected with typed presentation data. Live scoring and instructor
+feedback should move to API-backed data when the session lifecycle lands.
 
 ## Implementation strategy
 

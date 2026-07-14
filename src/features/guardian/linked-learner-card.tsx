@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
+import { useSurfaceStyles } from "@/components/common/surface";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { GuardianLearnerSummary } from "@/types";
 
@@ -14,6 +15,7 @@ export function LinkedLearnerCard({
   onPress,
 }: LinkedLearnerCardProps) {
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const progress =
     learner.totalSessions > 0
       ? learner.completedSessions / learner.totalSessions
@@ -26,7 +28,7 @@ export function LinkedLearnerCard({
       accessibilityHint="Opens linked learner details"
       onPress={onPress}
       className="overflow-hidden rounded-[28px] border active:opacity-75"
-      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      style={surfaces.card}
     >
       <View className="p-5">
         <View className="flex-row items-center">

@@ -4,19 +4,26 @@ export type GuardianRelationship =
   | "family_member"
   | "other";
 
-export type GuardianLinkStatus = "pending" | "active" | "revoked";
+export type GuardianInviteStatus = "draft" | "sent" | "accepted" | "expired";
+
+export type GuardianLinkStatus = "pending" | "active" | "revoked" | "expired";
 
 export type GuardianLink = {
   id: string;
   guardianId: string;
   guardianName: string;
   guardianInitials: string;
+  guardianContact: string;
   learnerId: string;
   learnerName: string;
   learnerInitials: string;
   relationship: GuardianRelationship;
   status: GuardianLinkStatus;
+  inviteStatus: GuardianInviteStatus;
   linkedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  lastAccessedAt: string | null;
 };
 
 export type GuardianProfileSummary = {

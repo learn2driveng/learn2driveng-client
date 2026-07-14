@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
   DashboardPageHeader,
@@ -51,6 +52,7 @@ export default function InstructorScheduleScreen() {
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       <DashboardPageHeader title="Schedule" showBack={false} />
       <Text
         className="mt-3 mb-3 font-figtree text-[14px] leading-5"

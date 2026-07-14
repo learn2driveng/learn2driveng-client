@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -20,24 +21,7 @@ export default function StudentEntryChoiceScreen() {
         paddingBottom: Math.max(insets.bottom, 24),
       }}
     >
-      <View className="flex-row items-center gap-3">
-        <View
-          className="h-12 w-12 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: colors.contrastSurface }}
-        >
-          <MaterialCommunityIcons
-            name="car-emergency"
-            size={27}
-            color={colors.primary}
-          />
-        </View>
-        <Text
-          className="text-[22px] tracking-[-0.6px]"
-          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-        >
-          Learn<Text style={{ color: colors.primary }}>2</Text>Drive
-        </Text>
-      </View>
+      <AppLogo height={58} />
 
       <View className="flex-1 justify-center">
         <View

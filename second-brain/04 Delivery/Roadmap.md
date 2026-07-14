@@ -36,7 +36,8 @@ tags:
 ## Phase C — Guardian
 
 - [x] Guardian route tree and linked-learner overview UI.
-- [ ] Learner-linking permissions.
+- [x] Learner-managed safety-contact UI foundation.
+- [ ] Backend-authorized guardian invite, revoke, expiry, and access checks.
 - [x] Active-session dashboard and tracking route.
 - [x] Learner per-session consent and foreground location publisher.
 - [x] Guardian local live map, stale, stopped, and unavailable states.
@@ -46,12 +47,17 @@ tags:
 
 ## Phase D — School operations
 
-- [ ] School dashboard.
-- [ ] Instructor and vehicle management.
-- [ ] Package management.
-- [ ] Booking assignment and operations.
-- [ ] Active-session monitoring.
-- [ ] School profile/verification maintenance.
+- [x] School administrator registration and verification onboarding.
+- [x] Required document selection and application review gate.
+- [x] School dashboard foundation.
+- [x] Instructor roster and invite UI foundation.
+- [x] Instructor activation actions and detail screens.
+- [x] Vehicle management UI foundation.
+- [x] Package management UI foundation.
+- [x] Booking assignment UI foundation (queue, eligible instructor/vehicle matching, confirmation).
+- [x] Booking rescheduling and cancellation operations UI foundation.
+- [x] Active-session monitoring UI foundation.
+- [x] School profile/verification maintenance UI foundation.
 
 ## Phase E — Platform operations and hardening
 

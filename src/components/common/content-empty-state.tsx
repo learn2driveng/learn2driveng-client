@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -21,16 +22,14 @@ export function ContentEmptyState({
   onActionPress,
 }: ContentEmptyStateProps) {
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const showAction = Boolean(actionLabel && onActionPress);
 
   return (
     <View
       accessibilityLiveRegion="polite"
       className="items-center rounded-3xl border px-6 py-12"
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-      }}
+      style={surfaces.card}
     >
       <View
         className="h-16 w-16 items-center justify-center rounded-2xl"

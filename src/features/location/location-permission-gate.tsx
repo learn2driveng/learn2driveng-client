@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Linking, Pressable, Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -29,6 +30,7 @@ export function LocationPermissionGate({
       className="flex-1 px-6 pb-8 pt-12"
       style={{ backgroundColor: colors.background }}
     >
+      <AppLogo height={48} />
       <View className="flex-1 justify-center">
         <View
           className="h-20 w-20 items-center justify-center rounded-[24px]"

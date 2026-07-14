@@ -2,6 +2,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
+import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import {
   DashboardEmptyState,
   DashboardScreen,
@@ -18,6 +20,7 @@ import { useTrainingSessionStore } from "@/store/training-session.store";
 export default function StudentDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const activeSession = useTrainingSessionStore((state) => {
     if (!state.activeSessionId) return undefined;
     const session = state.sessions[state.activeSessionId];
@@ -95,6 +98,7 @@ export default function StudentDashboardScreen() {
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       {header}
 
       {activeSession && activeLessonContext ? (
@@ -173,9 +177,8 @@ export default function StudentDashboardScreen() {
         </Pressable>
       ) : null}
 
-      <View
+      <HeroSurface
         className={`${activeSession ? "mt-5" : "mt-8"} rounded-[28px] p-6`}
-        style={{ backgroundColor: colors.contrastSurface }}
       >
         <Text
           className="font-figtree-medium text-[15px]"
@@ -231,7 +234,7 @@ export default function StudentDashboardScreen() {
             color={colors.primary}
           />
         </Pressable>
-      </View>
+      </HeroSurface>
 
       <View className="mt-8 flex-row gap-4">
         <StatCard icon="calendar-check" value="4" label="Sessions completed" />
@@ -321,10 +324,7 @@ export default function StudentDashboardScreen() {
             accessibilityLabel="View upcoming session"
             onPress={() => router.push("/student/sessions")}
             className="mt-4 flex-row items-center gap-4 rounded-3xl border p-5 active:opacity-70"
-            style={{
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-            }}
+            style={surfaces.card}
           >
             <View
               className="h-16 w-16 items-center justify-center rounded-2xl"

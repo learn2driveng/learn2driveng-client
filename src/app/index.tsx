@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { Screen } from "@/components/common/screen";
 import { splashPalette } from "@/constants/theme";
 
@@ -128,23 +129,7 @@ export default function SplashScreen() {
               elevation: 8,
             }}
           >
-            <MaterialCommunityIcons
-              name="car-emergency"
-              size={48}
-              color={PRIMARY}
-            />
-            <View className="mt-1 flex-row items-center gap-1">
-              <MaterialCommunityIcons
-                name="shield-check"
-                size={20}
-                color={`${PRIMARY}CC`}
-              />
-              <MaterialCommunityIcons
-                name="school"
-                size={20}
-                color={`${PRIMARY}CC`}
-              />
-            </View>
+            <AppLogo height={78} />
           </View>
 
           <LinearGradient

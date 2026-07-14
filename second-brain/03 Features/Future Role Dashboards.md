@@ -83,8 +83,12 @@ subscription; only learner consent does.
 
 ### 3. School administrator
 
+Schools own instructor onboarding and operations. Instructors are not
+independent marketplace operators in the MVP; a school admin invites, reviews,
+and activates instructors before learner assignment.
+
 - operational dashboard
-- instructors and availability
+- instructor invite, roster, activation, and availability oversight
 - vehicles
 - packages
 - bookings and assignment

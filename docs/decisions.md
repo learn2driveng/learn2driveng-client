@@ -6,7 +6,7 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 
 ## ADR-001: Single Codebase, Multi-Role RBAC
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2025-06-15
 
 **Context:** Five user roles share overlapping domains (bookings, sessions) but different UX.
@@ -14,6 +14,7 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 **Decision:** One React Native app. Role determined post-login from JWT/profile. Root navigator swaps entire tree per role.
 
 **Consequences:**
+
 - Shared components in `schools`, `bookings`, `sessions` features
 - Role-specific UI in `learner`, `guardian`, `instructor`, `driving-school`, `admin`
 - Backend must enforce authorization; client RBAC is UX-only
@@ -22,14 +23,16 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 
 ## ADR-002: TanStack Query vs Zustand Split
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2025-06-15
 
 **Decision:**
+
 - TanStack Query: all server/async data
 - Zustand: auth tokens, session snapshot, selections, GPS, UI, settings
 
 **Consequences:**
+
 - No duplicate source of truth for API data
 - Auth store holds tokens + minimal user identity; full profile via `useProfile()` query
 
@@ -52,6 +55,7 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 React Navigation (`Stack`, `Tabs`) is used **inside** `_layout.tsx` files as Expo Router documents — not as a separate `src/navigation/` tree.
 
 **Consequences:**
+
 - Routes live in `src/app/`; no `src/screens/` or `src/navigation/` folders
 - Reusable UI in `src/components/`; hooks in `src/hooks/`; API in `src/api/`
 - RBAC enforced in root `src/app/_layout.tsx` via redirects (authenticated role → correct route group)
@@ -83,6 +87,7 @@ Explore tab. This prevents transaction screens from becoming tab-owned routes.
 **Decision:** Access + refresh JWT pair stored in `expo-secure-store`. Axios/fetch interceptor attaches Bearer token and handles 401 refresh flow.
 
 **Consequences:**
+
 - No tokens in Zustand persistence (memory only during session)
 - Logout clears secure store and query cache
 
@@ -93,12 +98,74 @@ Explore tab. This prevents transaction screens from becoming tab-owned routes.
 **Status:** Accepted  
 **Date:** 2025-06-15
 
-**Decision:** `socket.io-client` connects after auth. Rooms keyed by `sessionId`. Instructor publishes location; guardians subscribe.
+**Decision:** `socket.io-client` connects after auth. Rooms keyed by `sessionId`. The learner publishes location only after choosing linked guardians for an active lesson; authorized guardians subscribe.
 
 **Consequences:**
+
 - Reconnection logic in `src/services/socket.ts`
 - Location throttling (e.g. 5s / 10m) to reduce battery and bandwidth
 - Fallback: poll session status if socket disconnected
+
+---
+
+## ADR-008: Learner-Managed Guardian Access
+
+**Status:** Accepted
+**Date:** 2026-07-11
+
+**Decision:** Guardian access is represented as learner-managed safety contacts,
+not broad guardian ownership of the learner account. A guardian link is invited,
+accepted, expirable, revocable, and only grants live-location visibility when
+the learner selects that link for an active lesson share.
+
+**Consequences:**
+
+- Learner Profile owns safety-contact management.
+- Guardian dashboard remains a limited viewing surface.
+- Live location is session-bound and stops when the lesson ends.
+- Backend authorization must validate guardian link status, expiry, selected
+  share recipients, and session state for every guardian read.
+
+---
+
+## ADR-009: School-Owned Instructor Onboarding
+
+**Status:** Accepted
+**Date:** 2026-07-12
+
+**Decision:** Instructors are school-affiliated operators, not independent
+marketplace sellers in the MVP. A school admin invites, reviews, and activates
+instructors before they can receive learner assignments.
+
+**Consequences:**
+
+- School operations start with instructor lifecycle, not bookings.
+- Learners may express instructor preference, but final assignment belongs to
+  the school.
+- Instructor availability is constrained by school locations, vehicles, and
+  operating rules.
+- School admin UI owns instructor invite/roster workflows.
+
+---
+
+## ADR-013: Verification-Gated School Operations
+
+**Status:** Accepted
+**Date:** 2026-07-12
+
+**Decision:** A school account begins as a draft application. Operational
+school routes unlock only after platform verification. Required evidence is the
+FRSC operating licence, CAC registration, proof of address, and accountable
+administrator identity.
+
+**Consequences:**
+
+- Creating a school administrator account does not publish the school.
+- Draft, pending-review, and suspended schools cannot manage instructors,
+  packages, bookings, vehicles, or active sessions.
+- The mobile client selects and validates local document metadata; the backend
+  must own secure upload, scanning, reviewer decisions, and audit history.
+- Verification status is an authorization input, not a decorative badge.
 
 ---
 
@@ -123,6 +190,7 @@ in `src/components/`. Expo Router entry files in `src/app/` compose feature
 screens; there is no separate `src/screens/` navigation tree.
 
 **Consequences:**
+
 - Features may export hooks and components; avoid circular imports via `src/types/` and `src/api/`
 
 ---
@@ -133,6 +201,7 @@ screens; there is no separate `src/screens/` navigation tree.
 **Date:** 2025-06-15
 
 **Decision:**
+
 - `src/api/client.ts` — base HTTP client with auth interceptor
 - `src/api/{resource}.ts` — endpoint functions
 - `src/api/hooks/use{Resource}.ts` — TanStack Query hooks
@@ -148,6 +217,7 @@ screens; there is no separate `src/screens/` navigation tree.
 **Date:** 2025-06-15
 
 **Decision:**
+
 - Default map region: Nigeria center (~9.0820° N, 8.6753° E)
 - Currency display: NGN (₦)
 - Phone validation: Nigerian formats
@@ -182,11 +252,11 @@ screens; there is no separate `src/screens/` navigation tree.
 
 ```typescript
 type UserRole =
-  | 'learner'
-  | 'guardian'
-  | 'instructor'
-  | 'school_admin'
-  | 'platform_admin';
+  | "learner"
+  | "guardian"
+  | "instructor"
+  | "school_admin"
+  | "platform_admin";
 ```
 
 Stored in `src/types/auth.ts`. Must match backend enum exactly.
@@ -195,6 +265,6 @@ Stored in `src/types/auth.ts`. Must match backend enum exactly.
 
 ## Change Log
 
-| Date | ADR | Change |
-|------|-----|--------|
+| Date       | ADR | Change                          |
+| ---------- | --- | ------------------------------- |
 | 2025-06-15 | All | Initial ADRs from project setup |

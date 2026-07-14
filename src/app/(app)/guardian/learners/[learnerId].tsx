@@ -13,10 +13,10 @@ import { GuardianActiveSessionCard } from "@/features/guardian";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   getGuardianLearner,
-  guardianLinks,
   guardianProfile,
 } from "@/sample_data/guardian";
 import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
+import { useGuardianAccessStore } from "@/store/guardian-access.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function GuardianLearnerDetailScreen() {
@@ -36,6 +36,7 @@ export default function GuardianLearnerDetailScreen() {
   const activeLessonContext = getInstructorLessonContextBySessionId(
     activeSession?.id,
   );
+  const guardianLinks = useGuardianAccessStore((state) => state.guardianLinks);
 
   if (!learner) {
     return (

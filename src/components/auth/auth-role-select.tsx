@@ -48,7 +48,7 @@ const roles: {
     label: "School",
     description: "Manage instructors, packages and bookings",
     icon: "school-outline",
-    available: false,
+    available: true,
   },
 ];
 

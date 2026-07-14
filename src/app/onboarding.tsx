@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { Screen } from "@/components/common/screen";
 import { borderRadius, splashPalette } from "@/constants/theme";
 
@@ -37,33 +38,41 @@ function OnboardingHeader({
 }) {
   return (
     <View className="flex-row items-center px-6 py-3">
-      {onBack ? (
+      <View className="w-16 items-start">
+        {onBack ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Previous onboarding page"
+            onPress={onBack}
+            hitSlop={12}
+            className="h-11 w-11 items-center justify-center"
+          >
+            <MaterialCommunityIcons
+              name="chevron-left"
+              size={24}
+              color="#94a3b8"
+            />
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View pointerEvents="none" className="flex-1 items-center">
+        <AppLogo height={36} />
+      </View>
+
+      <View className="w-16 items-end">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Previous onboarding page"
-          onPress={onBack}
+          accessibilityLabel="Skip onboarding"
+          onPress={onSkip}
           hitSlop={12}
-          className="h-11 w-11 items-center justify-center"
+          className="min-h-11 justify-center px-2"
         >
-          <MaterialCommunityIcons
-            name="chevron-left"
-            size={24}
-            color="#94a3b8"
-          />
+          <Text className="font-sans text-sm font-medium text-neutral-500 dark:text-white/60">
+            Skip
+          </Text>
         </Pressable>
-      ) : null}
-      <View className="flex-1" />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Skip onboarding"
-        onPress={onSkip}
-        hitSlop={12}
-        className="min-h-11 justify-center px-2"
-      >
-        <Text className="font-sans text-sm font-medium text-neutral-500 dark:text-white/60">
-          Skip
-        </Text>
-      </Pressable>
+      </View>
     </View>
   );
 }

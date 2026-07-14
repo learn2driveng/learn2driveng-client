@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
+import { useSurfaceStyles } from "@/components/common/surface";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { InstructorLessonStatus, InstructorLessonSummary } from "@/types";
 
@@ -16,6 +17,7 @@ export function InstructorLessonCard({
   onPress,
 }: InstructorLessonCardProps) {
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const lessonStatus = statusOverride ?? lesson.status;
   const status = {
     upcoming: {
@@ -44,10 +46,7 @@ export function InstructorLessonCard({
       disabled={!onPress}
       onPress={onPress}
       className="flex-row items-center rounded-3xl border p-4 active:opacity-75"
-      style={{
-        backgroundColor: colors.surface,
-        borderColor: colors.border,
-      }}
+      style={surfaces.card}
     >
       <View
         className="h-12 w-12 items-center justify-center rounded-2xl"

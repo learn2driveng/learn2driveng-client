@@ -72,6 +72,7 @@ function PackageStat({
 type PackageCardProps = {
   item: TrainingPackage;
   index: number;
+  publicMarketplace: boolean;
   selected: boolean;
   onSelect: () => void;
   onContinue: () => void;
@@ -80,6 +81,7 @@ type PackageCardProps = {
 function PackageCard({
   item,
   index,
+  publicMarketplace,
   selected,
   onSelect,
   onContinue,
@@ -209,7 +211,11 @@ function PackageCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          selected ? `Continue with ${item.name}` : `Select ${item.name}`
+          selected
+            ? publicMarketplace
+              ? `Sign in to book ${item.name}`
+              : `Book ${item.name}`
+            : `Select ${item.name}`
         }
         onPress={selected ? onContinue : onSelect}
         className="mx-5 mb-5 items-center justify-center rounded-2xl border-2 active:opacity-80"
@@ -226,13 +232,17 @@ function PackageCard({
         }}
       >
         <Text
-          className="text-[13px]"
+          className="text-center text-[13px]"
           style={{
             color: selected ? colors.onPrimary : colors.text,
             fontFamily: fontFamily.figtreeBold,
           }}
         >
-          {selected ? "Continue with package" : "Select Package"}
+          {selected
+            ? publicMarketplace
+              ? "Sign in to book"
+              : "Book this package"
+            : "Select package"}
         </Text>
       </Pressable>
     </View>
@@ -276,7 +286,7 @@ export function PackageSelectionScreen({
 
   if (!school) return null;
 
-  const continueWithPackage = (item: TrainingPackage) => {
+  const bookPackage = (item: TrainingPackage) => {
     if (publicMarketplace) {
       router.push({
         pathname: "/login",
@@ -296,7 +306,7 @@ export function PackageSelectionScreen({
   return (
     <View
       className="flex-1"
-      style={{ backgroundColor: colors.surface, paddingTop: insets.top }}
+      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
     >
       <StatusBar style={isDark ? "light" : "dark"} />
 
@@ -311,7 +321,7 @@ export function PackageSelectionScreen({
             className="text-[17px]"
             style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
           >
-            Select Package
+            Packages
           </Text>
           <Text
             numberOfLines={1}
@@ -337,13 +347,14 @@ export function PackageSelectionScreen({
           className="mt-2 text-[24px] tracking-[-0.5px]"
           style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
         >
-          Training Programs
+          Compare training packages
         </Text>
         <Text
-          className="mt-1 text-[13px]"
+          className="mt-1 text-[13px] leading-5"
           style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
         >
-          Choose a plan that fits your schedule
+          Review the lesson count, training focus, and price before creating an
+          account or booking.
         </Text>
 
         <View className="mt-7 gap-6">
@@ -352,9 +363,10 @@ export function PackageSelectionScreen({
               key={item.id}
               item={item}
               index={index}
+              publicMarketplace={publicMarketplace}
               selected={selectedId === item.id}
               onSelect={() => setSelectedId(item.id)}
-              onContinue={() => continueWithPackage(item)}
+              onContinue={() => bookPackage(item)}
             />
           ))}
         </View>
@@ -363,7 +375,7 @@ export function PackageSelectionScreen({
       <View
         className="px-6 pt-3"
         style={{
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           paddingBottom: Math.max(insets.bottom, 14),
         }}
       >
@@ -371,7 +383,11 @@ export function PackageSelectionScreen({
           accessible
           accessibilityLabel="Not sure which package to pick? Compare the number of sessions and training focus before continuing."
           className="flex-row items-center rounded-2xl p-4"
-          style={{ backgroundColor: colors.contrastSurface }}
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderWidth: 1,
+          }}
         >
           <View
             className="h-10 w-10 items-center justify-center rounded-full"
@@ -387,7 +403,7 @@ export function PackageSelectionScreen({
             <Text
               className="text-[12px]"
               style={{
-                color: colors.contrastText,
+                color: colors.text,
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
@@ -396,7 +412,7 @@ export function PackageSelectionScreen({
             <Text
               className="mt-0.5 text-[10px]"
               style={{
-                color: colors.contrastMuted,
+                color: colors.textMuted,
                 fontFamily: fontFamily.figtree,
               }}
             >
@@ -406,7 +422,7 @@ export function PackageSelectionScreen({
           <MaterialCommunityIcons
             name="chevron-right"
             size={22}
-            color={colors.contrastText}
+            color={colors.text}
           />
         </View>
       </View>
