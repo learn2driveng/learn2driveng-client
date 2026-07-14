@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import {
@@ -9,12 +10,9 @@ import {
   LinkedLearnerCard,
 } from "@/features/guardian";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import {
-  guardianLearners,
-  guardianLinks,
-  guardianProfile,
-} from "@/sample_data/guardian";
+import { guardianLearners, guardianProfile } from "@/sample_data/guardian";
 import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
+import { useGuardianAccessStore } from "@/store/guardian-access.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function GuardianDashboardScreen() {
@@ -29,6 +27,7 @@ export default function GuardianDashboardScreen() {
   const locationShare = useTrainingSessionStore((state) =>
     activeSessionId ? state.locationShares[activeSessionId] : undefined,
   );
+  const guardianLinks = useGuardianAccessStore((state) => state.guardianLinks);
   const activeLearner = guardianLearners.find(
     (learner) => learner.id === activeSession?.learnerId,
   );
@@ -50,6 +49,7 @@ export default function GuardianDashboardScreen() {
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text
@@ -82,39 +82,6 @@ export default function GuardianDashboardScreen() {
           >
             {guardianProfile.initials}
           </Text>
-        </View>
-      </View>
-
-      <View
-        className="mt-7 overflow-hidden rounded-[28px] p-5"
-        style={{ backgroundColor: colors.contrastSurface }}
-      >
-        <View className="flex-row items-start gap-4">
-          <View
-            className="h-11 w-11 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <MaterialCommunityIcons
-              name="shield-account-outline"
-              size={23}
-              color={colors.onPrimary}
-            />
-          </View>
-          <View className="flex-1">
-            <Text
-              className="font-figtree-bold text-[16px]"
-              style={{ color: colors.contrastText }}
-            >
-              Learner-controlled sharing
-            </Text>
-            <Text
-              className="mt-2 font-figtree text-[12px] leading-5"
-              style={{ color: colors.contrastMuted }}
-            >
-              Live location appears only during an active lesson after the
-              learner chooses to share it with you.
-            </Text>
-          </View>
         </View>
       </View>
 

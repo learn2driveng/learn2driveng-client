@@ -33,6 +33,7 @@ tags:
 | ------------------ | ---------------------------- |
 | `/login`           | `(auth)/login.tsx`           |
 | `/signup`          | `(auth)/signup.tsx`          |
+| `/school-signup`   | `(auth)/school-signup.tsx`   |
 | `/forgot-password` | `(auth)/forgot-password.tsx` |
 | `/reset-password`  | `(auth)/reset-password.tsx`  |
 
@@ -66,6 +67,8 @@ tags:
 | `/student/profile/inbox`                     | Notification centre               |
 | `/student/profile/notifications`             | Notification preferences          |
 | `/student/profile/location`                  | Location preferences              |
+| `/student/profile/guardians`                 | Safety contact management         |
+| `/student/profile/guardians/new`             | Safety contact invite form        |
 | `/student/profile/support`                   | Contact and problem-report form   |
 
 ## Instructor tabs
@@ -95,5 +98,31 @@ tags:
 | `/guardian/sessions/:sessionId` | Active-session location tracking   |
 | `/guardian/activity`            | Shared learner activity foundation |
 | `/guardian/profile`             | Guardian profile and logout        |
+
+## School routes
+
+| Route                             | Purpose                              |
+| --------------------------------- | ------------------------------------ |
+| `/school`                         | School operations dashboard          |
+| `/school/onboarding`              | School identity onboarding           |
+| `/school/onboarding/documents`    | Required evidence selection          |
+| `/school/onboarding/review`       | Submission and pending-review gate   |
+| `/school/instructors`             | Instructor roster                    |
+| `/school/instructors/:id`         | Instructor detail and activation     |
+| `/school/instructors/invite`      | Instructor invite form               |
+| `/school/operations`              | Vehicle fleet management             |
+| `/school/operations/vehicles`     | Focused vehicle inventory            |
+| `/school/operations/vehicles/:id` | Vehicle detail and status            |
+| `/school/operations/vehicles/new` | Add vehicle                          |
+| `/school/operations/packages/:id` | Package detail and status            |
+| `/school/operations/packages`     | Focused package inventory            |
+| `/school/operations/packages/new` | Add package definition               |
+| `/school/bookings`                | Upcoming lesson assignment queue     |
+| `/school/bookings/:id`            | Instructor and vehicle assignment    |
+| `/school/bookings/:id/reschedule` | School-controlled schedule change    |
+| `/school/bookings/:id/cancel`     | School-controlled cancellation       |
+| `/school/more`                    | School management destinations       |
+| `/school/monitoring`              | Active lesson operational monitoring |
+| `/school/profile`                 | School profile and verification view |
 
 Related: [[02 Architecture/Navigation and Route Map]]

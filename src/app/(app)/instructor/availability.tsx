@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppLogo } from "@/components/common/app-logo";
 import {
   DashboardPageHeader,
   DashboardScreen,
@@ -49,6 +50,7 @@ export default function InstructorAvailabilityScreen() {
   return (
     <>
       <DashboardScreen>
+        <AppLogo height={48} className="mb-6" />
         <DashboardPageHeader title="Availability" showBack={false} />
         <Text
           className="mt-3 font-figtree text-[14px] leading-5"

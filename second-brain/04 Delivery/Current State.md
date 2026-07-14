@@ -44,6 +44,19 @@ are still local fixtures or UI state.
 | Learner live-location consent and foreground updates  | Implemented locally               |
 | Guardian active-session tracking and native map       | Implemented locally               |
 | Guardian active-session/map preview fixture           | Implemented                       |
+| School admin route shell and dashboard foundation     | Implemented UI                    |
+| School registration and verification onboarding       | Implemented locally               |
+| School verification document selection                | Implemented locally               |
+| School-owned instructor roster and invite foundation  | Implemented UI                    |
+| School instructor detail/activation/suspension        | Implemented locally               |
+| School vehicle list/detail/status/add foundation      | Implemented locally               |
+| School package list/detail/status/add foundation      | Implemented locally               |
+| School booking assignment queue and matching          | Implemented locally               |
+| School booking rescheduling and cancellation          | Implemented locally               |
+| School active-session operational monitor             | Implemented locally               |
+| School marketplace profile maintenance                | Implemented locally               |
+| School operating-area management and theme selector   | Implemented locally               |
+| School booking filters and monitoring consistency     | Implemented UI                    |
 | No-package and zero-credit learner states             | Implemented UI                    |
 | Expired-package display and booking prevention        | Implemented UI                    |
 | Package-aware session booking                         | Implemented UI                    |
@@ -58,6 +71,7 @@ are still local fixtures or UI state.
 | Dedicated sample-data boundary                        | Implemented                       |
 | Progress overview                                     | Implemented UI                    |
 | Profile/account/notifications/location                | Mostly implemented UI             |
+| Learner-managed safety contacts                       | Implemented UI foundation         |
 | Light/dark theme resolution                           | Implemented                       |
 
 ## Not production-ready
@@ -69,7 +83,7 @@ are still local fixtures or UI state.
 | Payments       | Presentation only; no provider/backend verification                                  |
 | Booking        | Local choices; no availability, holds, credit ledger, or mutations                   |
 | Progress       | Static data; no session/report source                                                |
-| Other roles    | Guardian is foundational; no school-admin or platform-admin route trees              |
+| Other roles    | School and Guardian are foundational; no platform-admin route tree                   |
 | Realtime       | No socket service or live location lifecycle                                         |
 | Notifications  | No infrastructure                                                                    |
 | Maps           | Native Guardian map added; production Android deployment still needs map credentials |
@@ -82,6 +96,7 @@ are still local fixtures or UI state.
 - `src/sample_data/student-packages.ts`
 - `src/sample_data/guardian.ts`
 - `src/sample_data/student.ts`
+- `src/sample_data/school-operations.ts`
 
 ## Documentation warning
 

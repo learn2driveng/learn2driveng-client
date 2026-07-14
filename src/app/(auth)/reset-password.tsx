@@ -9,6 +9,7 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
+import { AppLogo } from "@/components/common/app-logo";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function ResetPasswordScreen() {
@@ -43,16 +44,7 @@ export default function ResetPasswordScreen() {
             color={colors.text}
           />
         </Pressable>
-        <View
-          className="h-11 w-11 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: colors.text }}
-        >
-          <MaterialCommunityIcons
-            name="car-emergency"
-            size={25}
-            color={colors.primary}
-          />
-        </View>
+        <AppLogo height={46} />
       </View>
 
       <View className="mt-12">

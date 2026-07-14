@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { useSurfaceStyles } from "@/components/common/surface";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type DashboardEmptyStateProps = {
@@ -20,11 +21,12 @@ export function DashboardEmptyState({
   onActionPress,
 }: DashboardEmptyStateProps) {
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
 
   return (
     <View
       className="items-center rounded-3xl border px-6 py-8"
-      style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+      style={surfaces.card}
     >
       <View
         className="h-14 w-14 items-center justify-center rounded-2xl"

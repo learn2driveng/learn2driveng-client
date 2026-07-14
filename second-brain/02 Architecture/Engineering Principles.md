@@ -9,7 +9,7 @@ tags:
 
 # Engineering principles
 
-## Avoid overengineering at all costs
+## Avoid over-engineering at all costs
 
 Build the simplest implementation that correctly handles the current product
 requirement.

@@ -221,21 +221,22 @@ Screen → useSchools() → queryFn → api/schools.getNearby()
 
 ```mermaid
 sequenceDiagram
-    participant I as Instructor App
+    participant L as Learner App
     participant S as Socket Server
     participant G as Guardian App
 
-    I->>S: join session:{id}
-    I->>S: location:update { lat, lng }
+    L->>S: join session:{id}
+    L->>S: location:update { lat, lng }
     S->>G: location:update (subscribed)
-    I->>S: session:end
+    L->>S: location:stop or session:end
     S->>G: session:ended
 ```
 
 **Client modules:**
 - `src/services/socket.ts` — connect, disconnect, emit, subscribe
 - `src/features/tracking/hooks/useSessionTracking.ts`
-- `src/services/location.ts` — expo-location background updates (instructor)
+- `src/services/location.ts` — expo-location updates while an active learner
+  lesson is sharing
 
 ---
 
@@ -323,6 +324,8 @@ src/types/
 - Certificate pinning — evaluate for production (ADR TBD)
 - No PII in logs
 - Location shared only during active sessions
+- Guardian access is learner-managed, revocable, expirable, and scoped to
+  selected active lesson shares
 - Guardian linked to learner via server-verified relationship
 
 ---

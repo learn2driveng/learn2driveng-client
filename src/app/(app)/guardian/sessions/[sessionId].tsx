@@ -13,10 +13,10 @@ import { LiveLocationMap } from "@/features/guardian";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   getGuardianLearner,
-  guardianLinks,
   guardianProfile,
 } from "@/sample_data/guardian";
 import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
+import { useGuardianAccessStore } from "@/store/guardian-access.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 function formatUpdateAge(lastUpdatedAt: string | null, now: number) {
@@ -45,6 +45,7 @@ export default function GuardianSessionTrackingScreen() {
   const [now, setNow] = useState(() => Date.now());
   const learner = getGuardianLearner(session?.learnerId);
   const lessonContext = getInstructorLessonContextBySessionId(session?.id);
+  const guardianLinks = useGuardianAccessStore((state) => state.guardianLinks);
   const guardianLink = session
     ? guardianLinks.find(
         (link) =>

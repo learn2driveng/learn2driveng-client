@@ -2,6 +2,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
+import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
   DashboardScreen,
@@ -23,6 +25,7 @@ import { useTrainingSessionStore } from "@/store/training-session.store";
 export default function InstructorDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const sessions = useTrainingSessionStore((state) => state.sessions);
   const getLessonStatus = (
     sessionId: string,
@@ -50,6 +53,7 @@ export default function InstructorDashboardScreen() {
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text
@@ -96,10 +100,7 @@ export default function InstructorDashboardScreen() {
 
       <View
         className="mt-7 flex-row items-center justify-between rounded-2xl border px-4 py-3"
-        style={{
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-        }}
+        style={surfaces.card}
       >
         <View className="flex-row items-center gap-3">
           <View
@@ -146,10 +147,7 @@ export default function InstructorDashboardScreen() {
       </View>
 
       {featuredLesson ? (
-        <View
-          className="mt-8 overflow-hidden rounded-[28px] p-6"
-          style={{ backgroundColor: colors.contrastSurface }}
-        >
+        <HeroSurface className="mt-8 overflow-hidden rounded-[28px] p-6">
           <View className="flex-row items-center justify-between">
             <Text
               className="font-figtree-bold text-[10px] uppercase tracking-[1.4px]"
@@ -223,7 +221,7 @@ export default function InstructorDashboardScreen() {
               color={colors.onPrimary}
             />
           </Pressable>
-        </View>
+        </HeroSurface>
       ) : (
         <View className="mt-8">
           <ContentEmptyState

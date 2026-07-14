@@ -18,6 +18,7 @@ tags:
 | `src/components/common/`         | Generic screen/logo primitives              |
 | `src/components/dashboard/`      | Dashboard, package, metric, and settings UI |
 | `src/features/checkout/`         | Shared checkout shell                       |
+| `src/features/guardian-access/`  | Learner-managed safety contact UI          |
 | `src/features/guardian/`         | Shared guardian presentation components     |
 | `src/features/instructor/`       | Shared instructor presentation components   |
 | `src/features/location/`         | Location permission behavior and UI         |
@@ -48,6 +49,7 @@ tags:
 | `docs/architecture.md`                    | Architecture narrative                   |
 | `docs/decisions.md`                       | Historical ADRs                          |
 | `docs/public-marketplace-architecture.md` | Public/protected boundary                |
+| `docs/school-operations-architecture.md`  | School-owned instructor lifecycle        |
 | `docs/learner-screen-map.md`              | Learner screen progress                  |
 | `docs/feature-roadmap.md`                 | Original phased backlog                  |
 | `docs/development-milestones.md`          | Delivery milestones                      |

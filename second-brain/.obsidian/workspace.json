@@ -11,17 +11,14 @@
             "id": "584fc352ecbf4312",
             "type": "leaf",
             "state": {
-              "type": "canvas",
+              "type": "markdown",
               "state": {
-                "file": "Learn2Drive Map.canvas",
-                "viewState": {
-                  "x": 215,
-                  "y": 300,
-                  "zoom": -1.24971302733596
-                }
+                "file": "Inbox.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-layout-dashboard",
-              "title": "Learn2Drive Map"
+              "icon": "lucide-file",
+              "title": "Inbox"
             }
           }
         ]
@@ -188,12 +185,18 @@
   },
   "active": "584fc352ecbf4312",
   "lastOpenFiles": [
+    "02 Architecture/State and Data.md",
+    "02 Architecture/Engineering Principles.md",
+    "01 Product/Product Overview.md",
+    "01 Product/Glossary.md",
+    "01 Product/Domain Model.md",
+    "01 Product/Core Journeys.md",
+    "00 - Home.md",
+    "Learn2Drive Map.canvas",
     "04 Delivery/Open Questions and Risks.md",
     "04 Delivery/Current State.md",
     "06 Templates/ADR Template.md",
-    "02 Architecture/Engineering Principles.md",
     "06 Templates/Feature Note Template.md",
-    "06 Templates/Work Session Template.md",
-    "Learn2Drive Map.canvas"
+    "06 Templates/Work Session Template.md"
   ]
 }

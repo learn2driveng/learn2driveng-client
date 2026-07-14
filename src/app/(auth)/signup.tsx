@@ -10,6 +10,7 @@ import {
   AuthScreen,
   SocialAuthButtons,
 } from "@/components/auth";
+import { AppLogo } from "@/components/common/app-logo";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -40,7 +41,8 @@ export default function SignupScreen() {
   return (
     <AuthScreen scrollEnabled={false} contentClassName="justify-between">
       <View>
-        <View className="items-end">
+        <View className="flex-row items-start justify-between gap-4">
+          <AppLogo height={46} />
           <View
             className="h-9 flex-row items-center gap-2 rounded-full border px-3"
             style={{
@@ -138,6 +140,18 @@ export default function SignupScreen() {
       </View>
 
       <View className="items-center gap-3 pt-4">
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push("/school-signup")}
+          className="active:opacity-60"
+        >
+          <Text
+            className="font-figtree-semibold text-[14px]"
+            style={{ color: colors.primary }}
+          >
+            Register a driving school
+          </Text>
+        </Pressable>
         <View className="flex-row flex-wrap items-center justify-center">
           <Text
             className="font-figtree text-[15px]"

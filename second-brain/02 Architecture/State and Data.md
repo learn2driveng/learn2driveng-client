@@ -48,6 +48,18 @@ This store exists so instructor, learner, and guardian screens can observe the
 same local lifecycle. Production server session state should replace it rather
 than being copied into another client cache.
 
+`useGuardianAccessStore`
+
+- initialized from typed guardian-link fixtures for the UI phase
+- owns learner-managed safety contact links
+- exposes local `createGuardianInvite()`, `resendGuardianInvite()`, and
+  `revokeGuardianLink()` actions
+- is consumed by learner safety-contact screens, learner per-session sharing,
+  and guardian access checks
+
+This store is a temporary presentation bridge. Production guardian links should
+come from backend authorization and TanStack Query mutations.
+
 ### Local screen state
 
 Booking selections, form inputs, and other interaction state currently live
@@ -93,5 +105,10 @@ provide typed local fixtures; they are not backend truth.
 - Booking creation, reschedule, cancellation
 - Production session lifecycle and progress-report API contracts
 - Role-specific profile records
+
+School onboarding and verification evidence use
+`src/store/school-operations.store.ts`. Document picker results are local
+metadata only; secure upload URLs, malware scanning, reviewer decisions, and
+audit history belong to the backend/platform boundary.
 
 Related: [[01 Product/Domain Model]], [[04 Delivery/Open Questions and Risks]]

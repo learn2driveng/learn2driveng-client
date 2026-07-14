@@ -2,17 +2,22 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
 
+import { AppLogo } from "@/components/common/app-logo";
+import { ThemeSelector } from "@/components/common/theme-selector";
+import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
-  const { colors, scheme } = useAppTheme();
+  const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const signOut = useAuthStore((state) => state.signOut);
 
   return (
     <DashboardScreen>
+      <AppLogo height={48} className="mb-6" />
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
@@ -68,7 +73,7 @@ export default function StudentProfileScreen() {
       </Text>
       <View
         className="overflow-hidden rounded-3xl border"
-        style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        style={surfaces.card}
       >
         <SettingsRow
           icon="account-outline"
@@ -86,7 +91,7 @@ export default function StudentProfileScreen() {
       </Text>
       <View
         className="overflow-hidden rounded-3xl border"
-        style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        style={surfaces.card}
       >
         <SettingsRow
           icon="bell-outline"
@@ -109,12 +114,20 @@ export default function StudentProfileScreen() {
           style={{ backgroundColor: colors.border }}
         />
         <SettingsRow
-          icon="theme-light-dark"
-          title="Appearance"
-          description="Theme and display preferences"
-          value={scheme === "dark" ? "Dark" : "Light"}
+          icon="shield-account-outline"
+          title="Safety contacts"
+          description="Manage who can view live lesson location"
+          onPress={() => router.push("/student/profile/guardians")}
         />
       </View>
+
+      <Text
+        className="mb-3 mt-8 ml-1 font-figtree-bold text-[11px] tracking-[1.5px]"
+        style={{ color: colors.textSubtle }}
+      >
+        APPEARANCE
+      </Text>
+      <ThemeSelector />
 
       <Text
         className="mb-3 mt-8 ml-1 font-figtree-bold text-[11px] tracking-[1.5px]"
@@ -124,7 +137,7 @@ export default function StudentProfileScreen() {
       </Text>
       <View
         className="overflow-hidden rounded-3xl border"
-        style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        style={surfaces.card}
       >
         <SettingsRow
           icon="help-circle-outline"

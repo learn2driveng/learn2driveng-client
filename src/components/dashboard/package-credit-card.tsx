@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { useSurfaceStyles } from "@/components/common/surface";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type PackageCreditCardProps = {
@@ -30,6 +31,7 @@ export function PackageCreditCard({
   actionLabel,
 }: PackageCreditCardProps) {
   const { colors } = useAppTheme();
+  const surfaces = useSurfaceStyles();
   const isSelectable = selected !== undefined;
   const isExpired = status === "expired";
   const accessibilityDescription = isExpired
@@ -59,8 +61,8 @@ export function PackageCreditCard({
       onPress={onPress}
       className="rounded-3xl border-2 p-5 active:opacity-70"
       style={{
+        ...surfaces.card,
         borderColor: selected ? colors.primary : colors.border,
-        backgroundColor: colors.surface,
         opacity: disabled ? 0.7 : 1,
       }}
     >

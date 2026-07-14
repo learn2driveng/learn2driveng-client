@@ -1,0 +1,222 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { Pressable, Text, View } from "react-native";
+
+import { ContentEmptyState } from "@/components/common/content-empty-state";
+import {
+  DashboardPageHeader,
+  DashboardScreen,
+  SectionHeader,
+} from "@/components/dashboard";
+import { fontFamily } from "@/constants/fonts";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSchoolOperationsStore } from "@/store/school-operations.store";
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+export default function SchoolVehicleDetailScreen() {
+  const { colors } = useAppTheme();
+  const { vehicleId } = useLocalSearchParams<{ vehicleId?: string }>();
+  const vehicle = useSchoolOperationsStore((state) =>
+    state.vehicles.find((item) => item.id === vehicleId),
+  );
+  const setVehicleStatus = useSchoolOperationsStore(
+    (state) => state.setVehicleStatus,
+  );
+
+  if (!vehicle) {
+    return (
+      <DashboardScreen>
+        <DashboardPageHeader title="Vehicle" />
+        <View className="mt-8">
+          <ContentEmptyState
+            icon="car-off"
+            title="Vehicle not found"
+            description="This vehicle is not in the school fleet."
+          />
+        </View>
+      </DashboardScreen>
+    );
+  }
+
+  return (
+    <DashboardScreen>
+      <DashboardPageHeader title="Vehicle details" />
+
+      <View
+        className="mt-7 rounded-[28px] p-5"
+        style={{ backgroundColor: colors.contrastSurface }}
+      >
+        <View className="flex-row items-center gap-4">
+          <View
+            className="h-16 w-16 items-center justify-center rounded-3xl"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons
+              name="car-hatchback"
+              size={32}
+              color={colors.onPrimary}
+            />
+          </View>
+          <View className="flex-1">
+            <Text
+              accessibilityRole="header"
+              className="text-[23px] leading-7 tracking-[-0.5px]"
+              style={{
+                color: colors.contrastText,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {vehicle.name}
+            </Text>
+            <Text
+              className="mt-2 text-[12px]"
+              style={{
+                color: colors.contrastMuted,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {vehicle.plateNumber} · {vehicle.transmission}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View className="mt-8">
+        <SectionHeader title="Fleet details" />
+        <View
+          className="mt-4 rounded-3xl border p-4"
+          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+        >
+          {[
+            ["Status", vehicle.status],
+            ["Assigned location", vehicle.assignedLocation],
+            ["Last inspection", formatDate(vehicle.lastInspectionAt)],
+            ["Lessons this week", String(vehicle.lessonsThisWeek)],
+          ].map(([label, value]) => (
+            <View
+              key={label}
+              className="flex-row items-center justify-between gap-4 py-3"
+            >
+              <Text
+                className="text-[12px]"
+                style={{
+                  color: colors.textMuted,
+                  fontFamily: fontFamily.figtreeMedium,
+                }}
+              >
+                {label}
+              </Text>
+              <Text
+                className="flex-1 text-right text-[12px] capitalize"
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
+              >
+                {value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View
+        className="mt-8 rounded-3xl border p-4"
+        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      >
+        <Text
+          className="text-[14px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          Assignment eligibility
+        </Text>
+        <Text
+          className="mt-2 text-[12px] leading-5"
+          style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
+        >
+          Only active vehicles should be eligible for booking assignment.
+          Maintenance or inactive vehicles stay visible for operations but
+          should not be matched to learner sessions.
+        </Text>
+      </View>
+
+      <View className="mt-7 gap-3">
+        {vehicle.status !== "active" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setVehicleStatus(vehicle.id, "active")}
+            className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons
+              name="check-circle-outline"
+              size={20}
+              color={colors.onPrimary}
+            />
+            <Text
+              className="text-[15px]"
+              style={{
+                color: colors.onPrimary,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Mark active
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {vehicle.status !== "maintenance" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setVehicleStatus(vehicle.id, "maintenance")}
+            className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="wrench-outline"
+              size={20}
+              color={colors.text}
+            />
+            <Text
+              className="text-[15px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              Mark maintenance
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {vehicle.status !== "inactive" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setVehicleStatus(vehicle.id, "inactive")}
+            className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
+            style={{ backgroundColor: colors.surface, borderColor: colors.error }}
+          >
+            <MaterialCommunityIcons
+              name="car-off"
+              size={20}
+              color={colors.error}
+            />
+            <Text
+              className="text-[15px]"
+              style={{ color: colors.error, fontFamily: fontFamily.figtreeBold }}
+            >
+              Mark inactive
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </DashboardScreen>
+  );
+}
