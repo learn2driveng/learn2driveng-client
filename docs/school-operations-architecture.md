@@ -78,6 +78,8 @@ Initial screens:
 - editable marketplace profile and verification status;
 - editable operating areas and theme preferences;
 - work-focused booking filters and active/upcoming session monitoring.
+- learner roster with enrolment, instructor, lesson, and readiness oversight;
+- learner-level assessment assignment and school assessment library.
 
 School operation fixtures live in `src/sample_data/school-operations.ts` and
 types live in `src/types/school-operations.ts`. These are presentation
@@ -92,7 +94,8 @@ Build in this order:
 3. package definitions;
 4. booking assignment, rescheduling, and cancellation operations;
 5. active session monitoring;
-6. school profile and verification maintenance.
+6. school profile and verification maintenance;
+7. learner management and readiness assessment oversight.
 
 Earnings, analytics, backend persistence, notification delivery, and platform
 verification review remain later integrations rather than school MVP gaps.

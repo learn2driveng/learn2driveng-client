@@ -92,6 +92,8 @@ and activates instructors before learner assignment.
 - vehicles
 - packages
 - bookings and assignment
+- learner roster with enrolment, instructor, lesson, and readiness oversight
+- school-assigned, scenario-based learner readiness assessments
 - active sessions
 - profile and verification
 - earnings/analytics later

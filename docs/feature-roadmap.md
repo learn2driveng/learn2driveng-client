@@ -23,19 +23,20 @@ Prioritized feature backlog for Learn2Drive mobile MVP → nationwide scale.
 
 ## Phase 2 — Learner Core (P0)
 
-| ID    | Feature                            | Roles   | Priority |
-| ----- | ---------------------------------- | ------- | -------- |
-| F2.1  | Nearby schools (map + list)        | Learner | P0       |
-| F2.2  | School search & filters            | Learner | P0       |
-| F2.3  | School profile (FRSC status, info) | Learner | P0       |
-| F2.4  | Instructor list on school profile  | Learner | P0       |
-| F2.5  | Vehicle list on school profile     | Learner | P0       |
-| F2.6  | Training packages listing          | Learner | P0       |
-| F2.7  | Package purchase flow              | Learner | P0       |
-| F2.8  | Book lesson (date/time picker)     | Learner | P0       |
-| F2.9  | Booking history                    | Learner | P0       |
-| F2.10 | Training progress overview         | Learner | P1       |
-| F2.11 | Session history                    | Learner | P1       |
+| ID    | Feature                               | Roles                 | Priority |
+| ----- | ------------------------------------- | --------------------- | -------- |
+| F2.1  | Nearby schools (map + list)           | Learner               | P0       |
+| F2.2  | School search & filters               | Learner               | P0       |
+| F2.3  | School profile (FRSC status, info)    | Learner               | P0       |
+| F2.4  | Instructor list on school profile     | Learner               | P0       |
+| F2.5  | Vehicle list on school profile        | Learner               | P0       |
+| F2.6  | Training packages listing             | Learner               | P0       |
+| F2.7  | Package purchase flow                 | Learner               | P0       |
+| F2.8  | Book lesson (date/time picker)        | Learner               | P0       |
+| F2.9  | Booking history                       | Learner               | P0       |
+| F2.10 | Training progress overview            | Learner               | P1       |
+| F2.11 | Session history                       | Learner               | P1       |
+| F2.12 | School-assigned readiness assessments | Learner, School admin | P1       |
 
 ---
 
@@ -80,17 +81,19 @@ Prioritized feature backlog for Learn2Drive mobile MVP → nationwide scale.
 
 ## Phase 6 — Driving School Admin (P1)
 
-| ID   | Feature                                          | Roles        | Priority |
-| ---- | ------------------------------------------------ | ------------ | -------- |
-| F6.0 | School registration and verification application | School admin | P1       |
-| F6.1 | School dashboard                                 | School admin | P1       |
-| F6.2 | Instructor invite and activation lifecycle       | School admin | P1       |
-| F6.3 | Vehicle CRUD                                     | School admin | P1       |
-| F6.4 | Package CRUD                                     | School admin | P1       |
-| F6.5 | Bookings management                              | School admin | P1       |
-| F6.6 | Active sessions monitor                          | School admin | P2       |
-| F6.7 | Earnings & analytics                             | School admin | P2       |
-| F6.8 | School profile edit                              | School admin | P1       |
+| ID    | Feature                                          | Roles        | Priority |
+| ----- | ------------------------------------------------ | ------------ | -------- |
+| F6.0  | School registration and verification application | School admin | P1       |
+| F6.1  | School dashboard                                 | School admin | P1       |
+| F6.2  | Instructor invite and activation lifecycle       | School admin | P1       |
+| F6.3  | Vehicle CRUD                                     | School admin | P1       |
+| F6.4  | Package CRUD                                     | School admin | P1       |
+| F6.5  | Bookings management                              | School admin | P1       |
+| F6.6  | Active sessions monitor                          | School admin | P2       |
+| F6.7  | Earnings & analytics                             | School admin | P2       |
+| F6.8  | School profile edit                              | School admin | P1       |
+| F6.9  | Learner roster and learner oversight             | School admin | P1       |
+| F6.10 | Assessment assignment and readiness review       | School admin | P1       |
 
 ---
 

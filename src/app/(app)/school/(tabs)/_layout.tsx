@@ -46,6 +46,19 @@ export default function SchoolTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="learners"
+        options={{
+          title: "Learners",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="account-school"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="instructors"
         options={{
           title: "Instructors",

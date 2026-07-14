@@ -363,9 +363,9 @@ export default function SchoolDashboardScreen() {
             style={surfaces.card}
           />
           <QuickAction
-            icon="clipboard-list-outline"
-            label="Assignments"
-            onPress={() => router.push("/school/bookings")}
+            icon="account-school-outline"
+            label="Learners"
+            onPress={() => router.push("/school/learners")}
             style={surfaces.card}
           />
         </View>
