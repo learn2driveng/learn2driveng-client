@@ -79,7 +79,8 @@ Initial screens:
 - editable operating areas and theme preferences;
 - work-focused booking filters and active/upcoming session monitoring.
 - learner roster with enrolment, instructor, lesson, and readiness oversight;
-- learner-level assessment assignment and school assessment library.
+- learner-level assessment assignment, school-owned assessment library, and
+  guided question authoring with review and publishing.
 
 School operation fixtures live in `src/sample_data/school-operations.ts` and
 types live in `src/types/school-operations.ts`. These are presentation

@@ -72,6 +72,8 @@ export const readinessAssessments: ReadinessAssessment[] = [
   {
     id: "assessment-road-signs",
     schoolId: "school-elite-safety",
+    createdBy: "Adewale Martins",
+    createdAt: "2026-05-30T09:00:00.000Z",
     title: "Road signs essentials",
     description:
       "Checks recognition of regulatory, warning, and information signs used on Nigerian roads.",
@@ -128,6 +130,8 @@ export const readinessAssessments: ReadinessAssessment[] = [
   {
     id: "assessment-hazard-awareness",
     schoolId: "school-elite-safety",
+    createdBy: "Grace Okafor",
+    createdAt: "2026-06-05T11:30:00.000Z",
     title: "Hazard awareness",
     description:
       "Uses short road scenarios to test observation, safe following distance, and early decisions.",
@@ -198,6 +202,8 @@ export const readinessAssessments: ReadinessAssessment[] = [
   {
     id: "assessment-vehicle-safety",
     schoolId: "school-elite-safety",
+    createdBy: "John Adeyemi",
+    createdAt: "2026-06-12T08:45:00.000Z",
     title: "Pre-drive safety check",
     description:
       "Confirms the learner can prepare the vehicle and identify basic safety concerns before moving.",

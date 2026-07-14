@@ -45,11 +45,33 @@ export default function SchoolAssessmentLibraryScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Scenario-led readiness checks owned by your school. Open a learner to
-        assign the right check at the right stage.
+        Create scenario-led readiness checks for your school, then assign the
+        right check to each learner at the right stage.
       </Text>
 
-      <HeroSurface className="mt-7 overflow-hidden rounded-[28px] p-5">
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push("/school/learners/assessments/new")}
+        className="mt-6 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+        style={{ backgroundColor: colors.primary }}
+      >
+        <MaterialCommunityIcons
+          name="plus"
+          size={20}
+          color={colors.onPrimary}
+        />
+        <Text
+          className="text-[14px]"
+          style={{
+            color: colors.onPrimary,
+            fontFamily: fontFamily.figtreeBold,
+          }}
+        >
+          Create assessment
+        </Text>
+      </Pressable>
+
+      <HeroSurface className="mt-5 overflow-hidden rounded-[28px] p-5">
         <View className="flex-row items-center gap-4">
           <View
             className="h-14 w-14 items-center justify-center rounded-2xl"
@@ -182,6 +204,15 @@ export default function SchoolAssessmentLibraryScreen() {
                     Pass {assessment.passingScore}%
                   </Text>
                 </View>
+                <Text
+                  className="mt-3 text-[10px]"
+                  style={{
+                    color: colors.textSubtle,
+                    fontFamily: fontFamily.figtreeMedium,
+                  }}
+                >
+                  Created by {assessment.createdBy}
+                </Text>
                 <View
                   className="my-4 h-px"
                   style={{ backgroundColor: colors.border }}

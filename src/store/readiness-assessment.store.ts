@@ -18,6 +18,12 @@ type ReadinessAssessmentState = {
   assessments: ReadinessAssessment[];
   assignments: AssessmentAssignment[];
   attempts: AssessmentAttempt[];
+  createAssessment: (
+    input: Omit<
+      ReadinessAssessment,
+      "id" | "schoolId" | "createdAt" | "status"
+    >,
+  ) => ReadinessAssessment;
   assignAssessment: (assessmentId: string, learnerId: string) => boolean;
   startAssessment: (assignmentId: string) => void;
   submitAssessment: (
@@ -32,6 +38,20 @@ export const useReadinessAssessmentStore = create<ReadinessAssessmentState>(
     assessments: readinessAssessments,
     assignments: assessmentAssignments,
     attempts: assessmentAttempts,
+    createAssessment: (input) => {
+      const assessment: ReadinessAssessment = {
+        ...input,
+        id: `assessment-${Date.now().toString(36)}`,
+        schoolId: "school-elite-safety",
+        createdAt: new Date().toISOString(),
+        status: "published",
+      };
+
+      set((state) => ({
+        assessments: [assessment, ...state.assessments],
+      }));
+      return assessment;
+    },
     assignAssessment: (assessmentId, learnerId) => {
       const state = get();
       const assessment = state.assessments.find(

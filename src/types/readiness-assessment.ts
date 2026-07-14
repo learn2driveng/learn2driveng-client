@@ -24,6 +24,8 @@ export type AssessmentQuestion = {
 export type ReadinessAssessment = {
   id: string;
   schoolId: string;
+  createdBy: string;
+  createdAt: string;
   title: string;
   description: string;
   area: ReadinessArea;

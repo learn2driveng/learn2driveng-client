@@ -13,8 +13,11 @@ the appropriate authority.
 
 ## Roles and ownership
 
-- A verified school owns its assessment library and assigns checks to learners
-  registered with that school.
+- A verified school owns its assessment library. Its authorized administrators
+  create, review, publish, and assign assessments to learners registered with
+  that school.
+- Learn2Drive may later provide optional templates or reference material, but a
+  school is not limited to a centrally controlled question bank.
 - A learner can take an assigned assessment, see the score, and review teaching
   explanations.
 - The school can see assignment status, scores, and pass/follow-up signals in
@@ -56,10 +59,10 @@ src/sample_data/readiness-assessments.ts
   Presentation fixtures for later API replacement
 
 src/store/readiness-assessment.store.ts
-  Temporary Zustand actions for assignment, start, and submission
+  Temporary Zustand actions for creation, assignment, start, and submission
 
 src/app/(app)/school/(tabs)/learners/
-  School learner overview, learner record, and assessment library
+  School learner overview, learner record, assessment library, and guided authoring
 
 src/app/(app)/student/progress/assessments*
   Learner assignment list, briefing, questions, result, and answer review
@@ -76,6 +79,9 @@ Expected resources:
 GET    /schools/:schoolId/learners
 GET    /schools/:schoolId/learners/:learnerId
 GET    /schools/:schoolId/assessments
+POST   /schools/:schoolId/assessments
+PATCH  /schools/:schoolId/assessments/:assessmentId
+POST   /schools/:schoolId/assessments/:assessmentId/publish
 POST   /schools/:schoolId/assessment-assignments
 GET    /learners/me/assessment-assignments
 POST   /assessment-assignments/:assignmentId/attempts
@@ -86,7 +92,10 @@ assessment, assignment visibility, attempt immutability after submission, and
 role-based access. The server should calculate the authoritative score; the
 client-side calculation exists only for the current integration-free slice.
 
-Question authoring, versioning, randomization, retake policies, audit history,
-notifications, and regulatory question-bank review are intentionally later
-integrations. Published assessment versions must become immutable once assigned
-so historical attempts remain explainable.
+The current local slice includes guided school authoring and immediate
+publication. Backend integration must add draft persistence, authorized-editor
+permissions, versioning, randomization, retake policies, audit history, and
+notifications. Published assessment versions must become immutable once
+assigned so historical attempts remain explainable. A school may publish its
+own content, but it remains accountable for accuracy and must not label an
+internal readiness check as an official FRSC examination.
