@@ -56,6 +56,12 @@ model should eventually show:
 Progress should derive from completed sessions and assessments, not manually
 duplicated dashboard values.
 
+Readiness assessments are authored and assigned by the learner's registered
+school. They use short road scenarios, pass thresholds, and answer explanations
+rather than generic trivia. Quiz results are a theory-readiness signal only and
+must appear alongside practical lesson progress; they do not grant or replace
+an FRSC certification or licence.
+
 ## Dashboard data needs
 
 One learner-summary endpoint or composed query may provide:

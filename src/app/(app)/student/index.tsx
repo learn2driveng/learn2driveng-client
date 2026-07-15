@@ -375,7 +375,11 @@ export default function StudentDashboardScreen() {
               router.push(hasCredits ? "/student/sessions" : "/student/explore")
             }
           />
-          <QuickAction icon="clipboard-text-outline" label="Take a quiz" />
+          <QuickAction
+            icon="clipboard-text-outline"
+            label="Take a quiz"
+            onPress={() => router.push("/student/progress/assessments")}
+          />
           <QuickAction
             icon="package-variant"
             label={hasPackages ? "View packages" : "Explore packages"}

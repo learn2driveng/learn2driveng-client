@@ -7,3 +7,4 @@ export * from "./instructor";
 export * from "./guardian";
 export * from "./training-session";
 export * from "./progress";
+export * from "./readiness-assessment";

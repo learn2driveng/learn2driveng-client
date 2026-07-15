@@ -6,16 +6,27 @@ import { AppLogo } from "@/components/common/app-logo";
 import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import {
-  learnerAssessments,
-  learnerProgressLessons,
-  progressSkills,
-} from "@/sample_data";
+import { learnerProgressLessons, progressSkills } from "@/sample_data";
+import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 
 export default function StudentProgressScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const latestAssessment = learnerAssessments[0];
+  const assignments = useReadinessAssessmentStore((state) => state.assignments);
+  const assessments = useReadinessAssessmentStore((state) => state.assessments);
+  const attempts = useReadinessAssessmentStore((state) => state.attempts);
+  const learnerAssignments = assignments.filter(
+    (item) => item.learnerId === "learner-amara",
+  );
+  const assessmentAssignment =
+    learnerAssignments.find((item) => item.status !== "completed") ??
+    learnerAssignments[0];
+  const latestAssessment = assessments.find(
+    (item) => item.id === assessmentAssignment?.assessmentId,
+  );
+  const latestAttempt = attempts.find(
+    (item) => item.id === assessmentAssignment?.latestAttemptId,
+  );
   const recentLesson = learnerProgressLessons[0];
 
   return (
@@ -239,7 +250,7 @@ export default function StudentProgressScreen() {
               className="text-[14px]"
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
-              {latestAssessment.title}
+              {latestAssessment?.title ?? "Readiness assessments"}
             </Text>
             <Text
               className="mt-1 text-[11px]"
@@ -248,23 +259,33 @@ export default function StudentProgressScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Passed with an {latestAssessment.score}% score
+              {assessmentAssignment?.status === "completed" && latestAttempt
+                ? `Completed with a ${latestAttempt.score}% score`
+                : "A readiness check is waiting for you"}
             </Text>
           </View>
-          <View
-            className="rounded-full px-3 py-1.5"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <Text
-              className="text-[11px]"
-              style={{
-                color: colors.onPrimary,
-                fontFamily: fontFamily.figtreeBold,
-              }}
+          {latestAttempt ? (
+            <View
+              className="rounded-full px-3 py-1.5"
+              style={{ backgroundColor: colors.primary }}
             >
-              {latestAssessment.score}%
-            </Text>
-          </View>
+              <Text
+                className="text-[11px]"
+                style={{
+                  color: colors.onPrimary,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
+              >
+                {latestAttempt.score}%
+              </Text>
+            </View>
+          ) : (
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={colors.textSubtle}
+            />
+          )}
         </Pressable>
       </View>
 

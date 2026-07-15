@@ -7,13 +7,13 @@ ends in a navigable learner outcome.
 
 ## Primary navigation
 
-| Area | Required screens | Priority | Current state |
-| --- | --- | --- | --- |
-| Home | Learner dashboard, upcoming session, quick actions | P1 | Implemented |
-| Explore | School list/search/filter, school profile, packages | P0 | Implemented |
-| Sessions | Active packages, booking flow, booking confirmation, booking history/detail | P0 | Implemented with typed presentation data |
-| Progress | Overview, assessments, session history/detail | P1 | Implemented with typed presentation data |
-| Profile | Profile, account, notifications, location, support | P1 | Mostly implemented |
+| Area     | Required screens                                                                            | Priority | Current state                                                          |
+| -------- | ------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| Home     | Learner dashboard, upcoming session, quick actions                                          | P1       | Implemented                                                            |
+| Explore  | School list/search/filter, school profile, packages                                         | P0       | Implemented                                                            |
+| Sessions | Active packages, booking flow, booking confirmation, booking history/detail                 | P0       | Implemented with typed presentation data                               |
+| Progress | Overview, school-assigned readiness assessments, quiz/result review, session history/detail | P1       | Implemented with typed local presentation data pending API integration |
+| Profile  | Profile, account, notifications, location, support                                          | P1       | Mostly implemented                                                     |
 
 School discovery is also available outside authenticated learner navigation.
 The learner Explore tab and public marketplace reuse the same feature screens.
