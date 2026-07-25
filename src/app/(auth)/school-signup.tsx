@@ -29,7 +29,7 @@ export default function SchoolSignupScreen() {
   const createApplication = () => {
     if (!complete) return;
     beginOnboarding({ schoolName, adminName, email, phone });
-    signIn("school_admin");
+    signIn("driving_school");
     router.replace("/school/onboarding");
   };
 

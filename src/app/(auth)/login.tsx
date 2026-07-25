@@ -28,7 +28,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] =
-    useState<Exclude<UserRole, "platform_admin">>("learner");
+    useState<Exclude<UserRole, "admin">>("learner");
 
   const handleLogin = () => {
     const safeReturnTo =
@@ -45,7 +45,7 @@ export default function LoginScreen() {
         ? "/instructor"
         : role === "guardian"
           ? "/guardian"
-          : role === "school_admin"
+          : role === "driving_school"
             ? "/school"
             : safeReturnTo,
     );
@@ -143,7 +143,7 @@ export default function LoginScreen() {
               role === "learner" ||
               role === "instructor" ||
               role === "guardian" ||
-              role === "school_admin"
+              role === "driving_school"
                 ? "LOGIN TO DASHBOARD"
                 : "DASHBOARD COMING SOON"
             }
@@ -152,7 +152,7 @@ export default function LoginScreen() {
               role !== "learner" &&
               role !== "instructor" &&
               role !== "guardian" &&
-              role !== "school_admin"
+              role !== "driving_school"
             }
             onPress={handleLogin}
           />

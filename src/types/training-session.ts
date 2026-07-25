@@ -1,9 +1,84 @@
+export type TrainingSessionType =
+  | "theory"
+  | "practical"
+  | "mock_test"
+  | "assessment";
+
 export type TrainingSessionStatus =
   | "scheduled"
-  | "active"
+  | "in_progress"
   | "completed"
   | "cancelled";
 
+export type TrainingSessionParticipantStatus =
+  | "scheduled"
+  | "present"
+  | "absent"
+  | "cancelled";
+
+export type SessionCoordinates = {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  accuracyInMeters?: number | null;
+  recordedAt?: string;
+};
+
+/** Canonical training session (server TrainingSession). */
+export type TrainingSession = {
+  id: string;
+  schoolId: string;
+  instructorId: string;
+  vehicleId?: string | null;
+  eligiblePackageIds: string[];
+  title: string;
+  sessionType: TrainingSessionType;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  capacity: number;
+  participantCount: number;
+  status: TrainingSessionStatus;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
+  startedByInstructorId?: string | null;
+  endedByInstructorId?: string | null;
+  startLocation?: SessionCoordinates | null;
+  endLocation?: SessionCoordinates | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TrainingSessionParticipant = {
+  id: string;
+  sessionId: string;
+  learnerId: string;
+  bookingId: string;
+  packageId: string;
+  status: TrainingSessionParticipantStatus;
+  joinedAt: string;
+  attendanceMarkedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+/** Instructor-emitted GPS ping during an active session (server entity). */
+export type TrainingSessionLocationPing = {
+  id: string;
+  sessionId: string;
+  instructorId: string;
+  latitude: number;
+  longitude: number;
+  accuracyInMeters?: number | null;
+  recordedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+/**
+ * Local device state for learner→guardian live sharing.
+ * Not a server entity — separate from TrainingSessionLocationPing.
+ */
 export type LocationSharingStatus =
   | "inactive"
   | "requesting_permission"
@@ -14,24 +89,6 @@ export type LocationSharingStatus =
 export type LocationSharingFailureReason =
   | "permission_denied"
   | "location_unavailable";
-
-export type SessionCoordinates = {
-  latitude: number;
-  longitude: number;
-  accuracy: number | null;
-};
-
-export type TrainingSession = {
-  id: string;
-  bookingId: string;
-  learnerId: string;
-  instructorId: string;
-  schoolId: string;
-  status: TrainingSessionStatus;
-  scheduledAt: string;
-  startedAt: string | null;
-  endedAt: string | null;
-};
 
 export type LiveLocationShare = {
   sessionId: string;

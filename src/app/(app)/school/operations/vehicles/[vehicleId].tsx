@@ -10,6 +10,7 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { formatTransmissionLabel } from "@/lib/school/format";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
 function formatDate(value: string) {
@@ -26,8 +27,8 @@ export default function SchoolVehicleDetailScreen() {
   const vehicle = useSchoolOperationsStore((state) =>
     state.vehicles.find((item) => item.id === vehicleId),
   );
-  const setVehicleStatus = useSchoolOperationsStore(
-    (state) => state.setVehicleStatus,
+  const setVehicleActive = useSchoolOperationsStore(
+    (state) => state.setVehicleActive,
   );
 
   if (!vehicle) {
@@ -82,7 +83,8 @@ export default function SchoolVehicleDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {vehicle.plateNumber} · {vehicle.transmission}
+              {vehicle.plateNumber} ·{" "}
+              {formatTransmissionLabel(vehicle.transmissionType)}
             </Text>
           </View>
         </View>
@@ -95,9 +97,9 @@ export default function SchoolVehicleDetailScreen() {
           style={{ backgroundColor: colors.surface, borderColor: colors.border }}
         >
           {[
-            ["Status", vehicle.status],
+            ["Status", vehicle.isActive ? "active" : "inactive"],
             ["Assigned location", vehicle.assignedLocation],
-            ["Last inspection", formatDate(vehicle.lastInspectionAt)],
+            ["Last inspection", formatDate(vehicle.lastInspectionAt ?? new Date().toISOString())],
             ["Lessons this week", String(vehicle.lessonsThisWeek)],
           ].map(([label, value]) => (
             <View
@@ -148,10 +150,10 @@ export default function SchoolVehicleDetailScreen() {
       </View>
 
       <View className="mt-7 gap-3">
-        {vehicle.status !== "active" ? (
+        {!vehicle.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setVehicleStatus(vehicle.id, "active")}
+            onPress={() => setVehicleActive(vehicle.id, true)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -172,34 +174,10 @@ export default function SchoolVehicleDetailScreen() {
           </Pressable>
         ) : null}
 
-        {vehicle.status !== "maintenance" ? (
+        {vehicle.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setVehicleStatus(vehicle.id, "maintenance")}
-            className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="wrench-outline"
-              size={20}
-              color={colors.text}
-            />
-            <Text
-              className="text-[15px]"
-              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-            >
-              Mark maintenance
-            </Text>
-          </Pressable>
-        ) : null}
-
-        {vehicle.status !== "inactive" ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setVehicleStatus(vehicle.id, "inactive")}
+            onPress={() => setVehicleActive(vehicle.id, false)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{ backgroundColor: colors.surface, borderColor: colors.error }}
           >

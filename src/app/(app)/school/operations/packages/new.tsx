@@ -9,14 +9,12 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { formatTransmissionLabel } from "@/lib/school/format";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { SchoolPackageDefinition } from "@/types";
+import type { VehicleTransmissionType } from "@/types";
 
-const transmissionOptions: SchoolPackageDefinition["eligibleTransmissions"] = [
-  "Automatic",
-  "Manual",
-];
+const transmissionOptions: VehicleTransmissionType[] = ["automatic", "manual"];
 
 export default function NewSchoolPackageScreen() {
   const router = useRouter();
@@ -25,38 +23,38 @@ export default function NewSchoolPackageScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [sessions, setSessions] = useState("6");
-  const [duration, setDuration] = useState("3 weeks");
+  const [numberOfLessons, setNumberOfLessons] = useState("6");
+  const [durationInDays, setDurationInDays] = useState("21");
   const [eligibleTransmissions, setEligibleTransmissions] = useState<
-    SchoolPackageDefinition["eligibleTransmissions"]
-  >(["Automatic", "Manual"]);
+    VehicleTransmissionType[]
+  >(["automatic", "manual"]);
 
   const canSavePackage = useMemo(() => {
     const parsedPrice = Number(price);
-    const parsedSessions = Number(sessions);
+    const parsedLessons = Number(numberOfLessons);
+    const parsedDuration = Number(durationInDays);
 
     return (
       name.trim().length >= 2 &&
       description.trim().length >= 8 &&
       Number.isFinite(parsedPrice) &&
       parsedPrice > 0 &&
-      Number.isInteger(parsedSessions) &&
-      parsedSessions > 0 &&
-      duration.trim().length >= 2 &&
+      Number.isInteger(parsedLessons) &&
+      parsedLessons > 0 &&
+      Number.isInteger(parsedDuration) &&
+      parsedDuration > 0 &&
       eligibleTransmissions.length > 0
     );
   }, [
     description,
-    duration,
+    durationInDays,
     eligibleTransmissions.length,
     name,
+    numberOfLessons,
     price,
-    sessions,
   ]);
 
-  const toggleTransmission = (
-    transmission: SchoolPackageDefinition["eligibleTransmissions"][number],
-  ) => {
+  const toggleTransmission = (transmission: VehicleTransmissionType) => {
     setEligibleTransmissions((current) =>
       current.includes(transmission)
         ? current.filter((item) => item !== transmission)
@@ -71,8 +69,8 @@ export default function NewSchoolPackageScreen() {
       name,
       description,
       price: Number(price),
-      sessions: Number(sessions),
-      duration,
+      numberOfLessons: Number(numberOfLessons),
+      durationInDays: Number(durationInDays),
       eligibleTransmissions,
     });
     router.replace("/school/operations/packages");
@@ -104,52 +102,22 @@ export default function NewSchoolPackageScreen() {
       multiline: false,
     },
     {
-      label: "Number of sessions",
-      value: sessions,
-      onChangeText: setSessions,
+      label: "Number of lessons",
+      value: numberOfLessons,
+      onChangeText: setNumberOfLessons,
       placeholder: "6",
       keyboardType: "number-pad" as const,
       multiline: false,
     },
     {
-      label: "Completion window",
-      value: duration,
-      onChangeText: setDuration,
-      placeholder: "3 weeks",
-      keyboardType: "default" as const,
+      label: "Completion window (days)",
+      value: durationInDays,
+      onChangeText: setDurationInDays,
+      placeholder: "21",
+      keyboardType: "number-pad" as const,
       multiline: false,
     },
   ];
-
-  const renderField = (field: (typeof fields)[number]) => (
-    <View key={field.label}>
-      <Text
-        className="mb-2 text-[11px] uppercase tracking-[1.4px]"
-        style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
-      >
-        {field.label}
-      </Text>
-      <TextInput
-        accessibilityLabel={field.label}
-        keyboardType={field.keyboardType}
-        multiline={field.multiline}
-        onChangeText={field.onChangeText}
-        placeholder={field.placeholder}
-        placeholderTextColor={colors.textFaint}
-        value={field.value}
-        className="rounded-2xl border px-4 text-[15px]"
-        style={{
-          minHeight: field.multiline ? 96 : 56,
-          paddingTop: field.multiline ? 14 : undefined,
-          backgroundColor: colors.background,
-          borderColor: colors.border,
-          color: colors.text,
-          fontFamily: fontFamily.figtreeMedium,
-          textAlignVertical: field.multiline ? "top" : "center",
-        }}
-      />
-    </View>
-  );
 
   return (
     <DashboardScreen>
@@ -161,80 +129,91 @@ export default function NewSchoolPackageScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Define the package learners can browse and buy. New packages start as
-        drafts so the school can review before publishing.
+        Packages define what learners purchase. Lesson count and duration must
+        match what you configure on the server.
       </Text>
 
       <View className="mt-8">
         <SectionHeader title="Package details" />
-        <View
-          className="mt-4 gap-5 rounded-3xl border p-4"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          {fields.slice(0, 2).map(renderField)}
-        </View>
       </View>
+      <View
+        className="mt-4 gap-5 rounded-3xl border p-4"
+        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      >
+        {fields.map((field) => (
+          <View key={field.label}>
+            <Text
+              className="mb-2 text-[11px] uppercase tracking-[1.4px]"
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {field.label}
+            </Text>
+            <TextInput
+              value={field.value}
+              onChangeText={field.onChangeText}
+              placeholder={field.placeholder}
+              placeholderTextColor={colors.textSubtle}
+              keyboardType={field.keyboardType}
+              multiline={field.multiline}
+              className="min-h-[52px] rounded-2xl border px-4 py-3 text-[14px]"
+              style={{
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceMuted,
+                fontFamily: fontFamily.figtree,
+                textAlignVertical: field.multiline ? "top" : "center",
+              }}
+            />
+          </View>
+        ))}
 
-      <View className="mt-8">
-        <SectionHeader title="Pricing and delivery" />
-        <View
-          className="mt-4 gap-5 rounded-3xl border p-4"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          {fields.slice(2).map(renderField)}
-        </View>
-      </View>
+        <View>
+          <Text
+            className="mb-2 text-[11px] uppercase tracking-[1.4px]"
+            style={{
+              color: colors.textSubtle,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Eligible transmissions
+          </Text>
+          <View className="flex-row gap-3">
+            {transmissionOptions.map((item) => {
+              const selected = eligibleTransmissions.includes(item);
 
-      <View className="mt-8">
-        <SectionHeader title="Vehicle eligibility" />
-        <Text
-          className="mb-3 mt-4 text-[11px] uppercase tracking-[1.4px]"
-          style={{
-            color: colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          Eligible vehicles
-        </Text>
-        <View className="flex-row gap-3">
-          {transmissionOptions.map((item) => {
-            const selected = eligibleTransmissions.includes(item);
-
-            return (
-              <Pressable
-                key={item}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                onPress={() => toggleTransmission(item)}
-                className="h-14 flex-1 flex-row items-center gap-2 rounded-2xl border px-4 active:opacity-75"
-                style={{
-                  backgroundColor: selected ? colors.primary : colors.surface,
-                  borderColor: selected ? colors.primary : colors.border,
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={selected ? "checkbox-marked-circle" : "circle-outline"}
-                  size={20}
-                  color={selected ? colors.onPrimary : colors.textSubtle}
-                />
-                <Text
-                  className="text-[13px]"
+              return (
+                <Pressable
+                  key={item}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  onPress={() => toggleTransmission(item)}
+                  className="h-14 flex-1 flex-row items-center gap-2 rounded-2xl border px-4 active:opacity-75"
                   style={{
-                    color: selected ? colors.onPrimary : colors.text,
-                    fontFamily: fontFamily.figtreeBold,
+                    backgroundColor: selected ? colors.primary : colors.surface,
+                    borderColor: selected ? colors.primary : colors.border,
                   }}
                 >
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <MaterialCommunityIcons
+                    name={selected ? "checkbox-marked" : "checkbox-blank-outline"}
+                    size={20}
+                    color={selected ? colors.onPrimary : colors.textSubtle}
+                  />
+                  <Text
+                    className="text-[13px]"
+                    style={{
+                      color: selected ? colors.onPrimary : colors.text,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  >
+                    {formatTransmissionLabel(item)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </View>
 
@@ -245,9 +224,7 @@ export default function NewSchoolPackageScreen() {
         onPress={savePackage}
         className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
         style={{
-          backgroundColor: canSavePackage
-            ? colors.primary
-            : colors.surfaceStrong,
+          backgroundColor: canSavePackage ? colors.primary : colors.surfaceStrong,
         }}
       >
         <Text
@@ -257,7 +234,7 @@ export default function NewSchoolPackageScreen() {
             fontFamily: fontFamily.figtreeBold,
           }}
         >
-          Save draft package
+          Save package
         </Text>
         <MaterialCommunityIcons
           name="check"

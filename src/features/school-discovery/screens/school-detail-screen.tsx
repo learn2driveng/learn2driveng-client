@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
+import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
+import { transmissionSummaryLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getSchoolById } from "@/sample_data";
 
 function SectionTitle({ children }: { children: string }) {
   const { colors } = useAppTheme();
@@ -55,8 +56,78 @@ export function SchoolDetailScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { schoolId } = useLocalSearchParams<{ schoolId?: string }>();
-  const school = getSchoolById(schoolId);
+  const { schoolId, distanceKm: distanceKmParam } = useLocalSearchParams<{
+    schoolId?: string;
+    distanceKm?: string;
+  }>();
+  const parsedDistanceKm = distanceKmParam
+    ? Number.parseFloat(distanceKmParam)
+    : undefined;
+  const distanceKm = Number.isFinite(parsedDistanceKm)
+    ? parsedDistanceKm
+    : undefined;
+
+  const { school, loading, error, refetch } = useDiscoverSchoolDetail(
+    schoolId,
+    { distanceKm },
+  );
+
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <MaterialCommunityIcons
+          name="cloud-off-outline"
+          size={44}
+          color={colors.textSubtle}
+        />
+        <Text
+          className="mt-4 text-center text-[16px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          {error.message}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={refetch}
+          className="mt-6 rounded-full px-6 py-3 active:opacity-75"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            style={{
+              color: colors.contrastText,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Try again
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   if (!school) {
     return (
@@ -104,7 +175,10 @@ export function SchoolDetailScreen({
       pathname: publicMarketplace
         ? "/explore/[schoolId]/packages"
         : "/student/explore/[schoolId]/packages",
-      params: { schoolId: school.id },
+      params: {
+        schoolId: school.id,
+        distanceKm: String(school.distanceKm),
+      },
     });
   };
 
@@ -330,7 +404,9 @@ export function SchoolDetailScreen({
                       fontFamily: fontFamily.figtreeSemibold,
                     }}
                   >
-                    {instructor.rating.toFixed(1)}
+                    {instructor.rating != null
+                      ? instructor.rating.toFixed(1)
+                      : "—"}
                   </Text>
                 </View>
                 {index < school.instructors.length - 1 ? (
@@ -388,7 +464,7 @@ export function SchoolDetailScreen({
                       fontFamily: fontFamily.figtree,
                     }}
                   >
-                    {vehicle.transmission}
+                    {transmissionSummaryLabel(vehicle.transmissionType)}
                   </Text>
                 </View>
               </View>

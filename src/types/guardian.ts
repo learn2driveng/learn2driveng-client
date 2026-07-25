@@ -1,29 +1,50 @@
 export type GuardianRelationship =
   | "parent"
-  | "legal_guardian"
-  | "family_member"
+  | "sibling"
+  | "spouse"
+  | "guardian"
   | "other";
 
-export type GuardianInviteStatus = "draft" | "sent" | "accepted" | "expired";
+export type GuardianLinkStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "revoked";
 
-export type GuardianLinkStatus = "pending" | "active" | "revoked" | "expired";
+export type GuardianLinkResponseAction = "approve" | "reject";
 
+/** Canonical guardian link (server GuardianLink). */
 export type GuardianLink = {
   id: string;
-  guardianId: string;
+  guardianUserId: string;
+  learnerUserId: string;
+  relationship: GuardianRelationship;
+  status: GuardianLinkStatus;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type CreateGuardianLinkPayload = {
+  learnerId: string;
+  relationship?: GuardianRelationship;
+};
+
+export type RespondGuardianLinkPayload = {
+  action: GuardianLinkResponseAction;
+};
+
+/**
+ * Enriched link for UI lists (names/contacts from joined user profiles).
+ */
+export type GuardianLinkView = GuardianLink & {
   guardianName: string;
   guardianInitials: string;
   guardianContact: string;
-  learnerId: string;
   learnerName: string;
   learnerInitials: string;
-  relationship: GuardianRelationship;
-  status: GuardianLinkStatus;
-  inviteStatus: GuardianInviteStatus;
-  linkedAt: string | null;
-  expiresAt: string | null;
-  revokedAt: string | null;
-  lastAccessedAt: string | null;
 };
 
 export type GuardianProfileSummary = {
@@ -35,6 +56,7 @@ export type GuardianProfileSummary = {
 
 export type GuardianLearnerNextSession = {
   bookingId: string;
+  sessionId?: string;
   dateLabel: string;
   timeLabel: string;
   instructorName: string;

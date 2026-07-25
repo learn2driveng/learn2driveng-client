@@ -18,10 +18,13 @@ import type {
   SchoolVerificationDocumentType,
 } from "@/types";
 
+import type { VehicleTransmissionType } from "@/types/school";
+import { parseVehicleDisplayName, vehicleNameFromParts } from "@/lib/school/vehicle-input";
+
 type VehicleInput = {
   name: string;
   plateNumber: string;
-  transmission: SchoolVehicle["transmission"];
+  transmissionType: VehicleTransmissionType;
   assignedLocation: string;
 };
 
@@ -29,8 +32,8 @@ type PackageInput = {
   name: string;
   description: string;
   price: number;
-  sessions: number;
-  duration: string;
+  numberOfLessons: number;
+  durationInDays: number;
   eligibleTransmissions: SchoolPackageDefinition["eligibleTransmissions"];
 };
 
@@ -46,15 +49,9 @@ type SchoolOperationsState = {
   suspendInstructor: (instructorId: string) => void;
   resendInstructorInvite: (instructorId: string) => void;
   addVehicle: (input: VehicleInput) => SchoolVehicle;
-  setVehicleStatus: (
-    vehicleId: string,
-    status: SchoolVehicle["status"],
-  ) => void;
+  setVehicleActive: (vehicleId: string, isActive: boolean) => void;
   addPackage: (input: PackageInput) => SchoolPackageDefinition;
-  setPackageStatus: (
-    packageId: string,
-    status: SchoolPackageDefinition["status"],
-  ) => void;
+  setPackageActive: (packageId: string, isActive: boolean) => void;
   assignBooking: (
     bookingId: string,
     instructorId: string,
@@ -131,13 +128,19 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
         ),
       })),
     addVehicle: (input) => {
+      const { make, model, year } = parseVehicleDisplayName(input.name);
       const vehicle: SchoolVehicle = {
         id: `vehicle-${Date.now().toString(36)}`,
-        name: input.name.trim(),
+        schoolId: schoolOperationsProfile.id,
+        make,
+        model,
+        year,
         plateNumber: input.plateNumber.trim().toUpperCase(),
-        transmission: input.transmission,
+        color: null,
+        transmissionType: input.transmissionType,
+        isActive: true,
+        name: vehicleNameFromParts({ make, model, year }),
         assignedLocation: input.assignedLocation.trim(),
-        status: "active",
         lastInspectionAt: new Date().toISOString(),
         lessonsThisWeek: 0,
       };
@@ -148,22 +151,24 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
 
       return vehicle;
     },
-    setVehicleStatus: (vehicleId, status) =>
+    setVehicleActive: (vehicleId, isActive) =>
       set((state) => ({
         vehicles: state.vehicles.map((vehicle) =>
-          vehicle.id === vehicleId ? { ...vehicle, status } : vehicle,
+          vehicle.id === vehicleId ? { ...vehicle, isActive } : vehicle,
         ),
       })),
     addPackage: (input) => {
       const packageDefinition: SchoolPackageDefinition = {
         id: `package-${Date.now().toString(36)}`,
+        schoolId: schoolOperationsProfile.id,
         name: input.name.trim(),
         description: input.description.trim(),
         price: input.price,
-        sessions: input.sessions,
-        duration: input.duration.trim(),
+        currency: "NGN",
+        numberOfLessons: input.numberOfLessons,
+        durationInDays: input.durationInDays,
+        isActive: false,
         eligibleTransmissions: input.eligibleTransmissions,
-        status: "draft",
         purchasesThisMonth: 0,
       };
 
@@ -173,11 +178,11 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
 
       return packageDefinition;
     },
-    setPackageStatus: (packageId, status) =>
+    setPackageActive: (packageId, isActive) =>
       set((state) => ({
         packages: state.packages.map((packageDefinition) =>
           packageDefinition.id === packageId
-            ? { ...packageDefinition, status }
+            ? { ...packageDefinition, isActive }
             : packageDefinition,
         ),
       })),
@@ -279,7 +284,7 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
         submitted = true;
         return {
           onboardingSubmitted: true,
-          profile: { ...state.profile, verificationStatus: "pending_review" },
+          profile: { ...state.profile, verificationStatus: "pending" },
         };
       });
       return submitted;

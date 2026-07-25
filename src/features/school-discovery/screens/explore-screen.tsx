@@ -1,15 +1,23 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
+import { useDiscoverSchools } from "@/features/school-discovery/use-discover-schools";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { schoolCatalog } from "@/sample_data";
+import { useLocationStore } from "@/store/location.store";
 
 type ExploreScreenProps = {
   publicMarketplace?: boolean;
@@ -21,26 +29,49 @@ export function ExploreScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const coordinates = useLocationStore((state) => state.coordinates);
   const [query, setQuery] = useState("");
-  const [ratingFilter, setRatingFilter] = useState(true);
+  const [ratingFilter, setRatingFilter] = useState(false);
   const [priceFilter, setPriceFilter] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(false);
 
+  const discoverQuery = useMemo(() => {
+    const base = {
+      page: 1,
+      limit: 20,
+      search: query.trim() || undefined,
+      minRating: ratingFilter ? 4.5 : undefined,
+    };
+
+    if (coordinates) {
+      return {
+        ...base,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        radiusKm: distanceFilter ? 5 : 50,
+        sort: "distance" as const,
+      };
+    }
+
+    return {
+      ...base,
+      sort: "rating" as const,
+    };
+  }, [
+    coordinates,
+    distanceFilter,
+    query,
+    ratingFilter,
+  ]);
+
+  const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
+
   const filteredSchools = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return schoolCatalog.filter((school) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        school.name.toLowerCase().includes(normalizedQuery) ||
-        school.location.toLowerCase().includes(normalizedQuery);
-      const matchesRating = !ratingFilter || school.rating >= 4.5;
-      const matchesPrice = !priceFilter || school.startingPrice < 50000;
-      const matchesDistance = !distanceFilter || school.distanceKm <= 5;
-
-      return matchesQuery && matchesRating && matchesPrice && matchesDistance;
-    });
-  }, [distanceFilter, priceFilter, query, ratingFilter]);
+    if (!priceFilter) {
+      return schools;
+    }
+    return schools.filter((school) => school.startingPrice < 50000);
+  }, [priceFilter, schools]);
 
   const resetFilters = () => {
     setQuery("");
@@ -100,6 +131,42 @@ export function ExploreScreen({
           </View>
         </View>
 
+        {!coordinates ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push(
+                publicMarketplace ? "/location" : "/student/profile/location",
+              )
+            }
+            className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker-radius"
+              size={22}
+              color={colors.primary}
+            />
+            <Text
+              className="flex-1 text-[12px] leading-5"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              Enable location to sort schools by distance from you.
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={colors.textSubtle}
+            />
+          </Pressable>
+        ) : null}
+
         <View
           className="h-13 flex-row items-center rounded-2xl border px-4"
           style={{
@@ -149,6 +216,7 @@ export function ExploreScreen({
             icon="map-marker-distance"
             label="Within 5km"
             selected={distanceFilter}
+            disabled={!coordinates}
             onPress={() => setDistanceFilter((current) => !current)}
           />
           <FilterChip
@@ -166,23 +234,70 @@ export function ExploreScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {schoolCatalog.length === 0 ? (
+        {loading ? (
+          <View className="items-center py-16">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text
+              className="mt-4 text-[13px]"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              Loading schools near you...
+            </Text>
+          </View>
+        ) : null}
+
+        {!loading && error ? (
           <ContentEmptyState
-            icon="school-outline"
-            title="No schools available yet"
-            description="There are no verified schools serving this location right now."
-            actionLabel="Change location"
-            onActionPress={() =>
-              router.push(
-                publicMarketplace ? "/location" : "/student/profile/location",
-              )
+            icon="cloud-off-outline"
+            title="Could not load schools"
+            description={error.message}
+            actionLabel="Try again"
+            onActionPress={refetch}
+          />
+        ) : null}
+
+        {!loading && !error && filteredSchools.length === 0 ? (
+          <ContentEmptyState
+            icon={
+              schools.length === 0
+                ? "school-outline"
+                : "filter-remove-outline"
+            }
+            title={
+              schools.length === 0
+                ? "No schools available yet"
+                : "No schools match"
+            }
+            description={
+              schools.length === 0
+                ? coordinates
+                  ? "There are no verified schools within range right now. Try widening your search or change location."
+                  : "There are no verified schools listed yet, or enable location for distance-based results."
+                : "Try another search or clear your current filters."
+            }
+            actionLabel={
+              schools.length === 0 && coordinates
+                ? "Change location"
+                : "Clear filters"
+            }
+            onActionPress={
+              schools.length === 0 && coordinates
+                ? () =>
+                    router.push(
+                      publicMarketplace
+                        ? "/location"
+                        : "/student/profile/location",
+                    )
+                : resetFilters
             }
           />
         ) : null}
 
-        {schoolCatalog.length > 0 ? (
-          <>
-            {filteredSchools.map((school) => (
+        {!loading && !error
+          ? filteredSchools.map((school) => (
               <SchoolCard
                 key={school.id}
                 school={school}
@@ -191,23 +306,15 @@ export function ExploreScreen({
                     pathname: publicMarketplace
                       ? "/explore/[schoolId]"
                       : "/student/explore/[schoolId]",
-                    params: { schoolId: school.id },
+                    params: {
+                      schoolId: school.id,
+                      distanceKm: String(school.distanceKm),
+                    },
                   })
                 }
               />
-            ))}
-
-            {filteredSchools.length === 0 ? (
-              <ContentEmptyState
-                icon="filter-remove-outline"
-                title="No schools match"
-                description="Try another search or clear your current filters."
-                actionLabel="Clear filters"
-                onActionPress={resetFilters}
-              />
-            ) : null}
-          </>
-        ) : null}
+            ))
+          : null}
       </ScrollView>
     </View>
   );

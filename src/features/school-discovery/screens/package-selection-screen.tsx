@@ -2,12 +2,16 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
+import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
+import {
+  packageDurationLabel,
+  packageLessonCount,
+} from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getSchoolById } from "@/sample_data";
 import type { TrainingPackage } from "@/types";
 
 function formatPrice(price: number) {
@@ -88,17 +92,19 @@ function PackageCard({
 }: PackageCardProps) {
   const { colors } = useAppTheme();
   const verified = index !== 1;
+  const lessonCount = packageLessonCount(item);
   const statLabels = [
-    `${Math.max(item.sessions, 5)} Hours`,
-    index === 0 ? "Senior Level" : index === 1 ? "Standard" : "Lead Expert",
+    packageDurationLabel(item),
+    `${lessonCount} lessons`,
     index === 1 ? "Auto Only" : index === 2 ? "All Types" : "Manual/Auto",
   ];
   const features =
-    index === 0
-      ? ["Defensive driving techniques", "Licence application assistance"]
-      : index === 1
-        ? ["City driving confidence", "Night driving session (1hr)"]
-        : ["Advanced road mastery", "Highway and fleet readiness"];
+    item.description?.trim()
+      ? item.description
+          .split(/[\n•]/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+      : [`${lessonCount} practical driving lessons`, packageDurationLabel(item)];
 
   return (
     <View
@@ -115,7 +121,7 @@ function PackageCard({
     >
       <Pressable
         accessibilityRole="radio"
-        accessibilityLabel={`${item.name}. ${formatPrice(item.price)}. ${item.sessions} sessions.`}
+        accessibilityLabel={`${item.name}. ${formatPrice(item.price)}. ${lessonCount} lessons.`}
         accessibilityState={{ selected }}
         onPress={onSelect}
         className="p-5 active:opacity-90"
@@ -162,7 +168,7 @@ function PackageCard({
                 fontFamily: fontFamily.figtree,
               }}
             >
-              {formatPrice(Math.round(item.price / item.sessions))} / session
+              {formatPrice(Math.round(item.price / Math.max(lessonCount, 1)))} / lesson
             </Text>
           </View>
         </View>
@@ -259,32 +265,115 @@ export function PackageSelectionScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { schoolId } = useLocalSearchParams<{ schoolId?: string }>();
-  const school = getSchoolById(schoolId);
+  const { schoolId, distanceKm: distanceKmParam } = useLocalSearchParams<{
+    schoolId?: string;
+    distanceKm?: string;
+  }>();
+  const parsedDistanceKm = distanceKmParam
+    ? Number.parseFloat(distanceKmParam)
+    : undefined;
+  const distanceKm = Number.isFinite(parsedDistanceKm)
+    ? parsedDistanceKm
+    : undefined;
+
+  const { school, loading, error, refetch } = useDiscoverSchoolDetail(
+    schoolId,
+    { distanceKm },
+  );
 
   const packages = useMemo<TrainingPackage[]>(() => {
     if (!school) return [];
-    if (school.packages.length >= 3) return school.packages;
-
-    return [
-      ...school.packages,
-      {
-        id: `${school.id}-professional`,
-        name: "Professional Plan",
-        description: "Advanced training for confident, work-ready driving.",
-        price: 85000,
-        sessions: 20,
-        duration: "8 weeks",
-        featured: true,
-      },
-    ];
+    return school.packages.filter((pkg) => pkg.isActive);
   }, [school]);
 
-  const [selectedId, setSelectedId] = useState<string | undefined>(
-    packages[0]?.id,
-  );
+  const [selectedId, setSelectedId] = useState<string | undefined>();
 
-  if (!school) return null;
+  const effectiveSelectedId = selectedId ?? packages[0]?.id;
+
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        }}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error || !school) {
+    return (
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        }}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text
+          className="text-center text-[16px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          {error?.message ?? "School not found"}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => (error ? refetch() : router.back())}
+          className="mt-6 rounded-full px-6 py-3 active:opacity-75"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            style={{
+              color: colors.contrastText,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            {error ? "Try again" : "Go back"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (packages.length === 0) {
+    return (
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        }}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text
+          className="text-center text-[16px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          No packages available
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          className="mt-6 rounded-full px-6 py-3 active:opacity-75"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            style={{
+              color: colors.contrastText,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Go back
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const bookPackage = (item: TrainingPackage) => {
     if (publicMarketplace) {
@@ -364,7 +453,7 @@ export function PackageSelectionScreen({
               item={item}
               index={index}
               publicMarketplace={publicMarketplace}
-              selected={selectedId === item.id}
+              selected={effectiveSelectedId === item.id}
               onSelect={() => setSelectedId(item.id)}
               onContinue={() => bookPackage(item)}
             />

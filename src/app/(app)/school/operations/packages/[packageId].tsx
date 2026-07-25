@@ -9,6 +9,8 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { formatTransmissionLabel } from "@/lib/school/format";
+import { packageDurationLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -22,8 +24,8 @@ export default function SchoolPackageDetailScreen() {
   const packageDefinition = useSchoolOperationsStore((state) =>
     state.packages.find((item) => item.id === packageId),
   );
-  const setPackageStatus = useSchoolOperationsStore(
-    (state) => state.setPackageStatus,
+  const setPackageActive = useSchoolOperationsStore(
+    (state) => state.setPackageActive,
   );
 
   if (!packageDefinition) {
@@ -78,7 +80,8 @@ export default function SchoolPackageDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {packageDefinition.status} · {formatPrice(packageDefinition.price)}
+              {packageDefinition.isActive ? "active" : "inactive"} ·{" "}
+              {formatPrice(packageDefinition.price)}
             </Text>
           </View>
         </View>
@@ -92,11 +95,13 @@ export default function SchoolPackageDetailScreen() {
         >
           {[
             ["Price", formatPrice(packageDefinition.price)],
-            ["Sessions", String(packageDefinition.sessions)],
-            ["Duration", packageDefinition.duration],
+            ["Lessons", String(packageDefinition.numberOfLessons)],
+            ["Duration", packageDurationLabel(packageDefinition)],
             [
               "Eligible vehicles",
-              packageDefinition.eligibleTransmissions.join(" / "),
+              (packageDefinition.eligibleTransmissions ?? [])
+                .map(formatTransmissionLabel)
+                .join(" / "),
             ],
             ["Purchases this month", String(packageDefinition.purchasesThisMonth)],
           ].map(([label, value]) => (
@@ -141,16 +146,16 @@ export default function SchoolPackageDetailScreen() {
           className="mt-2 text-[12px] leading-5"
           style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
         >
-          Active packages can be browsed by learners. Draft and paused packages
-          stay available to the school but should not appear for purchase.
+          Active packages (`isActive`) appear in public discovery. Inactive
+          packages stay in school operations but are hidden from learners.
         </Text>
       </View>
 
       <View className="mt-7 gap-3">
-        {packageDefinition.status !== "active" ? (
+        {!packageDefinition.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setPackageStatus(packageDefinition.id, "active")}
+            onPress={() => setPackageActive(packageDefinition.id, true)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -171,10 +176,10 @@ export default function SchoolPackageDetailScreen() {
           </Pressable>
         ) : null}
 
-        {packageDefinition.status !== "paused" ? (
+        {packageDefinition.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setPackageStatus(packageDefinition.id, "paused")}
+            onPress={() => setPackageActive(packageDefinition.id, false)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{
               backgroundColor: colors.surface,
@@ -191,30 +196,6 @@ export default function SchoolPackageDetailScreen() {
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
               Pause package
-            </Text>
-          </Pressable>
-        ) : null}
-
-        {packageDefinition.status !== "draft" ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setPackageStatus(packageDefinition.id, "draft")}
-            className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="file-document-edit-outline"
-              size={20}
-              color={colors.text}
-            />
-            <Text
-              className="text-[15px]"
-              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-            >
-              Move to draft
             </Text>
           </Pressable>
         ) : null}

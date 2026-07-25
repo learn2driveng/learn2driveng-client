@@ -1,3 +1,7 @@
+/**
+ * Client-only readiness assessment models. No matching server module yet —
+ * do not treat these as API DTOs during integration.
+ */
 export type ReadinessArea =
   | "road_rules"
   | "road_signs"

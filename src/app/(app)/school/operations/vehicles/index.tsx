@@ -9,6 +9,7 @@ import {
 } from "@/components/dashboard";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
+import { formatTransmissionLabel } from "@/lib/school/format";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -96,7 +97,8 @@ export default function SchoolFleetScreen() {
                     fontFamily: fontFamily.figtreeMedium,
                   }}
                 >
-                  {vehicle.plateNumber} · {vehicle.transmission}
+                  {vehicle.plateNumber} ·{" "}
+                  {formatTransmissionLabel(vehicle.transmissionType)}
                 </Text>
                 <Text
                   numberOfLines={1}
@@ -113,14 +115,11 @@ export default function SchoolFleetScreen() {
                 <Text
                   className="text-[10px] capitalize"
                   style={{
-                    color:
-                      vehicle.status === "active"
-                        ? colors.success
-                        : colors.textMuted,
+                    color: vehicle.isActive ? colors.success : colors.textMuted,
                     fontFamily: fontFamily.figtreeBold,
                   }}
                 >
-                  {vehicle.status}
+                  {vehicle.isActive ? "active" : "inactive"}
                 </Text>
                 <MaterialCommunityIcons
                   name="chevron-right"

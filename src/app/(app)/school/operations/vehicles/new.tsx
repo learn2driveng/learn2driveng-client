@@ -10,13 +10,11 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { formatTransmissionLabel } from "@/lib/school/format";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { SchoolVehicle } from "@/types";
+import type { VehicleTransmissionType } from "@/types";
 
-const transmissionOptions: Array<SchoolVehicle["transmission"]> = [
-  "Automatic",
-  "Manual",
-];
+const transmissionOptions: VehicleTransmissionType[] = ["automatic", "manual"];
 
 export default function NewSchoolVehicleScreen() {
   const router = useRouter();
@@ -27,8 +25,8 @@ export default function NewSchoolVehicleScreen() {
   const [assignedLocation, setAssignedLocation] = useState(
     "Wuse II Training Yard",
   );
-  const [transmission, setTransmission] =
-    useState<SchoolVehicle["transmission"]>("Automatic");
+  const [transmissionType, setTransmissionType] =
+    useState<VehicleTransmissionType>("automatic");
 
   const canAddVehicle = useMemo(
     () =>
@@ -45,7 +43,7 @@ export default function NewSchoolVehicleScreen() {
       name,
       plateNumber,
       assignedLocation,
-      transmission,
+      transmissionType,
     });
     router.replace("/school/operations/vehicles");
   };
@@ -133,14 +131,14 @@ export default function NewSchoolVehicleScreen() {
         </Text>
         <View className="flex-row gap-3">
           {transmissionOptions.map((item) => {
-            const selected = transmission === item;
+            const selected = transmissionType === item;
 
             return (
               <Pressable
                 key={item}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                onPress={() => setTransmission(item)}
+                onPress={() => setTransmissionType(item)}
                 className="h-14 flex-1 flex-row items-center gap-2 rounded-2xl border px-4 active:opacity-75"
                 style={{
                   backgroundColor: selected ? colors.primary : colors.surface,
@@ -159,7 +157,7 @@ export default function NewSchoolVehicleScreen() {
                     fontFamily: fontFamily.figtreeBold,
                   }}
                 >
-                  {item}
+                  {formatTransmissionLabel(item)}
                 </Text>
               </Pressable>
             );
