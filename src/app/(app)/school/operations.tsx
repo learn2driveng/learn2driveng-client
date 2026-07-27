@@ -18,12 +18,8 @@ export default function SchoolOperationsScreen() {
   const surfaces = useSurfaceStyles();
   const vehicles = useSchoolOperationsStore((state) => state.vehicles);
   const packages = useSchoolOperationsStore((state) => state.packages);
-  const activeVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "active",
-  ).length;
-  const activePackages = packages.filter(
-    (item) => item.status === "active",
-  ).length;
+  const activeVehicles = vehicles.filter((vehicle) => vehicle.isActive).length;
+  const activePackages = packages.filter((item) => item.isActive).length;
 
   const areas = [
     {

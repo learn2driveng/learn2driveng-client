@@ -5,12 +5,21 @@ export interface ApiError {
   details?: Record<string, string[]>;
 }
 
+/** Matches server discovery/list pagination envelope. */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: PaginationMeta;
+}
+
+export interface ApiSuccessResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
 }

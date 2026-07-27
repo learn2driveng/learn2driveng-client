@@ -12,7 +12,7 @@ export default function SchoolLayout() {
     (state) => state.profile.verificationStatus,
   );
 
-  if (role !== "school_admin") {
+  if (role !== "driving_school") {
     return (
       <Redirect
         href={
@@ -29,7 +29,7 @@ export default function SchoolLayout() {
   }
 
   if (
-    verificationStatus !== "verified" &&
+    verificationStatus !== "approved" &&
     !pathname.startsWith("/school/onboarding")
   ) {
     return <Redirect href="/school/onboarding" />;

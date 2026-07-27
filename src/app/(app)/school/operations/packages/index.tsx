@@ -9,6 +9,7 @@ import {
 } from "@/components/dashboard";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
+import { packageDurationLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -100,22 +101,19 @@ export default function SchoolPackagesScreen() {
                     fontFamily: fontFamily.figtreeMedium,
                   }}
                 >
-                  {formatPrice(item.price)} · {item.sessions} sessions ·{" "}
-                  {item.duration}
+                  {formatPrice(item.price)} · {item.numberOfLessons} lessons ·{" "}
+                  {packageDurationLabel(item)}
                 </Text>
               </View>
               <View className="items-end">
                 <Text
                   className="text-[10px] capitalize"
                   style={{
-                    color:
-                      item.status === "active"
-                        ? colors.success
-                        : colors.textMuted,
+                    color: item.isActive ? colors.success : colors.textMuted,
                     fontFamily: fontFamily.figtreeBold,
                   }}
                 >
-                  {item.status}
+                  {item.isActive ? "active" : "inactive"}
                 </Text>
                 <MaterialCommunityIcons
                   name="chevron-right"

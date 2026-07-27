@@ -1,5 +1,9 @@
 import type { MaterialCommunityIcons } from "@expo/vector-icons";
 
+/**
+ * Client-only progress models. No matching server module yet —
+ * do not treat these as API DTOs during integration.
+ */
 export type ProgressSkill = {
   id: string;
   name: string;

@@ -8,7 +8,7 @@ import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { UserRole } from "@/types";
 
-type LoginRole = Exclude<UserRole, "platform_admin">;
+type LoginRole = Exclude<UserRole, "admin">;
 
 type AuthRoleSelectProps = {
   value: LoginRole;
@@ -44,7 +44,7 @@ const roles: {
     available: true,
   },
   {
-    value: "school_admin",
+    value: "driving_school",
     label: "School",
     description: "Manage instructors, packages and bookings",
     icon: "school-outline",

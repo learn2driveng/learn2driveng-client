@@ -15,11 +15,13 @@ const previewSessionStartedAt = new Date(
 /** Presentation fixtures for the instructor experience. */
 export const instructorProfile: InstructorProfileSummary = {
   schoolId: "school-elite-safety",
+  instructorId: "L2D-INS-1048",
+  firstName: "John",
+  lastName: "Adeyemi",
   name: "John Adeyemi",
   initials: "JA",
   email: "john.ade@example.com",
   phone: "+234 803 555 0142",
-  instructorId: "L2D-INS-1048",
   licenceNumber: "LAG-DI-28419",
   schoolName: "Elite Safety Driving Academy",
   verified: true,
@@ -41,13 +43,15 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-ife-0800",
         learnerId: "learner-ife",
         scheduledAt: "2026-07-03T08:00:00.000+01:00",
+        scheduledStartTime: "2026-07-03T08:00:00.000+01:00",
+        scheduledEndTime: "2026-07-03T09:00:00.000+01:00",
         learnerName: "Ife Williams",
         learnerInitials: "IW",
         packageName: "Road Ready Starter",
         time: "8:00 AM",
         duration: "1 hr",
         location: "Lekki Training Centre",
-        transmission: "Automatic",
+        transmission: "automatic",
         status: "completed",
       },
       {
@@ -56,13 +60,15 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-alex-1000",
         learnerId: studentProfile.id,
         scheduledAt: "2026-07-03T10:00:00.000+01:00",
+        scheduledStartTime: "2026-07-03T10:00:00.000+01:00",
+        scheduledEndTime: "2026-07-03T11:30:00.000+01:00",
         learnerName: studentProfile.name,
         learnerInitials: studentProfile.initials,
         packageName: "Defensive Driving Pro",
         time: "10:00 AM",
         duration: "1 hr 30 min",
         location: "Lekki Training Centre",
-        transmission: "Automatic",
+        transmission: "automatic",
         status: "in_progress",
       },
       {
@@ -71,14 +77,16 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-chidi-1230",
         learnerId: "learner-chidi",
         scheduledAt: "2026-07-03T12:30:00.000+01:00",
+        scheduledStartTime: "2026-07-03T12:30:00.000+01:00",
+        scheduledEndTime: "2026-07-03T13:30:00.000+01:00",
         learnerName: "Chidi Eze",
         learnerInitials: "CE",
         packageName: "Road Ready Starter",
         time: "12:30 PM",
         duration: "1 hr",
         location: "Lekki Training Centre",
-        transmission: "Manual",
-        status: "upcoming",
+        transmission: "manual",
+        status: "scheduled",
       },
       {
         id: "lesson-zainab-1500",
@@ -86,14 +94,16 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-zainab-1500",
         learnerId: "learner-zainab",
         scheduledAt: "2026-07-03T15:00:00.000+01:00",
+        scheduledStartTime: "2026-07-03T15:00:00.000+01:00",
+        scheduledEndTime: "2026-07-03T16:30:00.000+01:00",
         learnerName: "Zainab Musa",
         learnerInitials: "ZM",
         packageName: "City Confidence",
         time: "3:00 PM",
         duration: "1 hr 30 min",
         location: "Victoria Island Route",
-        transmission: "Automatic",
-        status: "upcoming",
+        transmission: "automatic",
+        status: "scheduled",
       },
     ],
   },
@@ -110,14 +120,16 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-david-0900",
         learnerId: "learner-david",
         scheduledAt: "2026-07-04T09:00:00.000+01:00",
+        scheduledStartTime: "2026-07-04T09:00:00.000+01:00",
+        scheduledEndTime: "2026-07-04T10:30:00.000+01:00",
         learnerName: "David Mensah",
         learnerInitials: "DM",
         packageName: "Defensive Driving Pro",
         time: "9:00 AM",
         duration: "1 hr 30 min",
         location: "Lekki Training Centre",
-        transmission: "Automatic",
-        status: "upcoming",
+        transmission: "automatic",
+        status: "scheduled",
       },
       {
         id: "lesson-mariam-1130",
@@ -125,14 +137,16 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-mariam-1130",
         learnerId: "learner-mariam",
         scheduledAt: "2026-07-04T11:30:00.000+01:00",
+        scheduledStartTime: "2026-07-04T11:30:00.000+01:00",
+        scheduledEndTime: "2026-07-04T13:00:00.000+01:00",
         learnerName: "Mariam Bello",
         learnerInitials: "MB",
         packageName: "Professional Plan",
         time: "11:30 AM",
         duration: "1 hr 30 min",
         location: "Victoria Island Route",
-        transmission: "Manual",
-        status: "upcoming",
+        transmission: "manual",
+        status: "scheduled",
       },
     ],
   },
@@ -157,38 +171,73 @@ export const instructorScheduleDays: InstructorScheduleDay[] = [
         bookingId: "booking-tomi-1000",
         learnerId: "learner-tomi",
         scheduledAt: "2026-07-06T10:00:00.000+01:00",
+        scheduledStartTime: "2026-07-06T10:00:00.000+01:00",
+        scheduledEndTime: "2026-07-06T11:30:00.000+01:00",
         learnerName: "Tomi Adeola",
         learnerInitials: "TA",
         packageName: "City Confidence",
         time: "10:00 AM",
         duration: "1 hr 30 min",
         location: "Lekki Training Centre",
-        transmission: "Automatic",
-        status: "upcoming",
+        transmission: "automatic",
+        status: "scheduled",
       },
     ],
   },
 ];
 
+function durationMinutes(lesson: InstructorLessonSummary) {
+  if (lesson.scheduledStartTime && lesson.scheduledEndTime) {
+    return (
+      (new Date(lesson.scheduledEndTime).getTime() -
+        new Date(lesson.scheduledStartTime).getTime()) /
+      60000
+    );
+  }
+  return 60;
+}
+
 export const instructorTrainingSessions: TrainingSession[] =
   instructorScheduleDays.flatMap((day) =>
-    day.lessons.map((lesson) => ({
-      id: lesson.sessionId,
-      bookingId: lesson.bookingId,
-      learnerId: lesson.learnerId,
-      instructorId: instructorProfile.instructorId,
-      schoolId: instructorProfile.schoolId,
-      status:
-        lesson.status === "in_progress"
-          ? "active"
-          : lesson.status === "completed"
-            ? "completed"
-            : "scheduled",
-      scheduledAt: lesson.scheduledAt,
-      startedAt:
-        lesson.status === "in_progress" ? previewSessionStartedAt : null,
-      endedAt: null,
-    })),
+    day.lessons.map((lesson) => {
+      const start =
+        lesson.scheduledStartTime ?? lesson.scheduledAt;
+      const end =
+        lesson.scheduledEndTime ??
+        new Date(
+          new Date(start).getTime() + durationMinutes(lesson) * 60000,
+        ).toISOString();
+
+      return {
+        id: lesson.sessionId,
+        schoolId: instructorProfile.schoolId,
+        instructorId: instructorProfile.instructorId,
+        vehicleId: null,
+        eligiblePackageIds: [],
+        title: `${lesson.packageName} · ${lesson.learnerName}`,
+        sessionType: "practical" as const,
+        scheduledStartTime: start,
+        scheduledEndTime: end,
+        capacity: 1,
+        participantCount: 1,
+        status:
+          lesson.status === "in_progress"
+            ? ("in_progress" as const)
+            : lesson.status === "completed"
+              ? ("completed" as const)
+              : ("scheduled" as const),
+        actualStartTime:
+          lesson.status === "in_progress" || lesson.status === "completed"
+            ? previewSessionStartedAt
+            : null,
+        actualEndTime: null,
+        startedByInstructorId: null,
+        endedByInstructorId: null,
+        startLocation: null,
+        endLocation: null,
+        notes: null,
+      };
+    }),
   );
 
 export const instructorTodayLessons =

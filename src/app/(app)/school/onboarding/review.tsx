@@ -22,7 +22,7 @@ export default function SchoolOnboardingReviewScreen() {
   const submit = useSchoolOperationsStore(
     (state) => state.submitVerificationApplication,
   );
-  const underReview = profile.verificationStatus === "pending_review";
+  const underReview = profile.verificationStatus === "pending";
   const requiredComplete = documents
     .filter((document) => document.required)
     .every((document) => document.uri);
