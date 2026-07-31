@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,10 +14,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
+import { useUserLocation } from "@/features/location";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
 import { useDiscoverSchools } from "@/features/school-discovery/use-discover-schools";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { useLocationStore } from "@/store/location.store";
 
 type ExploreScreenProps = {
   publicMarketplace?: boolean;
@@ -29,11 +29,33 @@ export function ExploreScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const coordinates = useLocationStore((state) => state.coordinates);
+  const {
+    coordinates,
+    isChecking: isCheckingLocation,
+    isGranted: isLocationGranted,
+    isLocating,
+    error: locationError,
+    requestLocation,
+  } = useUserLocation();
+  const autoLocationAttempted = useRef(false);
   const [query, setQuery] = useState("");
   const [ratingFilter, setRatingFilter] = useState(false);
   const [priceFilter, setPriceFilter] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(false);
+
+  useEffect(() => {
+    if (
+      isCheckingLocation ||
+      !isLocationGranted ||
+      coordinates ||
+      autoLocationAttempted.current
+    ) {
+      return;
+    }
+
+    autoLocationAttempted.current = true;
+    void requestLocation();
+  }, [coordinates, isCheckingLocation, isLocationGranted, requestLocation]);
 
   const discoverQuery = useMemo(() => {
     const base = {
@@ -57,14 +79,10 @@ export function ExploreScreen({
       ...base,
       sort: "rating" as const,
     };
-  }, [
-    coordinates,
-    distanceFilter,
-    query,
-    ratingFilter,
-  ]);
+  }, [coordinates, distanceFilter, query, ratingFilter]);
 
-  const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
+  const { schools, loading, error, refetch } =
+    useDiscoverSchools(discoverQuery);
 
   const filteredSchools = useMemo(() => {
     if (!priceFilter) {
@@ -131,14 +149,21 @@ export function ExploreScreen({
           </View>
         </View>
 
-        {!coordinates ? (
+        {!coordinates && !isCheckingLocation ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() =>
+            disabled={isLocating}
+            onPress={() => {
+              if (isLocationGranted) {
+                autoLocationAttempted.current = true;
+                void requestLocation();
+                return;
+              }
+
               router.push(
                 publicMarketplace ? "/location" : "/student/profile/location",
-              )
-            }
+              );
+            }}
             className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
             style={{
               backgroundColor: colors.surface,
@@ -157,7 +182,10 @@ export function ExploreScreen({
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Enable location to sort schools by distance from you.
+              {isLocating
+                ? "Finding your current location…"
+                : (locationError ??
+                  "Enable location to sort schools by distance from you.")}
             </Text>
             <MaterialCommunityIcons
               name="chevron-right"
@@ -262,9 +290,7 @@ export function ExploreScreen({
         {!loading && !error && filteredSchools.length === 0 ? (
           <ContentEmptyState
             icon={
-              schools.length === 0
-                ? "school-outline"
-                : "filter-remove-outline"
+              schools.length === 0 ? "school-outline" : "filter-remove-outline"
             }
             title={
               schools.length === 0

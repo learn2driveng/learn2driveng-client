@@ -65,7 +65,19 @@ type SchoolOperationsState = {
       SchoolOperationsProfile,
       "name" | "email" | "phone" | "address" | "description" | "primaryLocation"
     > &
-      Partial<Pick<SchoolOperationsProfile, "operatingAreas">>,
+      Partial<
+        Pick<
+          SchoolOperationsProfile,
+          | "addressLine1"
+          | "addressLine2"
+          | "city"
+          | "state"
+          | "country"
+          | "latitude"
+          | "longitude"
+          | "operatingAreas"
+        >
+      >,
   ) => void;
   setVerificationDocument: (
     type: SchoolVerificationDocumentType,
@@ -304,6 +316,17 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
           adminName: input.adminName.trim(),
           email: input.email.trim(),
           phone: input.phone.trim(),
+          frscRegistrationNumber: "",
+          primaryLocation: "",
+          addressLine1: "",
+          addressLine2: null,
+          city: "",
+          state: "",
+          country: "Nigeria",
+          address: "",
+          description: "",
+          latitude: null,
+          longitude: null,
           verificationStatus: "draft",
         },
         verificationDocuments: state.verificationDocuments.map((document) => ({

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Linking, Text, View } from "react-native";
 
 import {
@@ -15,11 +16,32 @@ export default function LocationSettingsScreen() {
   const setLocationPromptDismissed = useSettingsStore(
     (state) => state.setLocationPromptDismissed,
   );
+  const autoLocationAttempted = useRef(false);
+  const { isChecking, isGranted, coordinates, requestLocation } = location;
+
+  useEffect(() => {
+    if (
+      isChecking ||
+      !isGranted ||
+      coordinates ||
+      autoLocationAttempted.current
+    ) {
+      return;
+    }
+
+    autoLocationAttempted.current = true;
+    void requestLocation();
+  }, [coordinates, isChecking, isGranted, requestLocation]);
+
   const locationValue = location.isChecking
     ? "Checking"
-    : location.isGranted
-      ? "Allowed"
-      : "Not allowed";
+    : location.isLocating
+      ? "Locating"
+      : location.coordinates
+        ? "Available"
+        : location.isGranted
+          ? "Retry"
+          : "Not allowed";
 
   return (
     <DashboardScreen>
@@ -41,7 +63,8 @@ export default function LocationSettingsScreen() {
           description="Use your location to find nearby schools and instructors."
           value={locationValue}
           onPress={() => {
-            if (!location.isGranted && location.canAskAgain) {
+            if (location.isGranted || location.canAskAgain) {
+              autoLocationAttempted.current = true;
               void location.requestLocation().then((coordinates) => {
                 if (coordinates) setLocationPromptDismissed(false);
               });
@@ -50,6 +73,14 @@ export default function LocationSettingsScreen() {
             void Linking.openSettings();
           }}
         />
+        {location.error ? (
+          <Text
+            className="px-4 pb-4 text-[11px] leading-4"
+            style={{ color: colors.error }}
+          >
+            {location.error}
+          </Text>
+        ) : null}
         <View
           className="mx-4 h-px"
           style={{ backgroundColor: colors.border }}
@@ -75,8 +106,12 @@ export default function LocationSettingsScreen() {
         <SettingsRow
           icon="map-marker-outline"
           title="Preferred location"
-          description="Used when searching for schools and sessions"
-          value="Lagos"
+          description={
+            location.coordinates
+              ? `${location.placeName ?? "Resolving location name…"}\n${location.coordinates.latitude.toFixed(5)}, ${location.coordinates.longitude.toFixed(5)}`
+              : "Fallback used when location access is unavailable"
+          }
+          value={location.coordinates ? "Current location" : "Lagos"}
         />
       </View>
     </DashboardScreen>

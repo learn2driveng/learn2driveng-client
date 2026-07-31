@@ -25,7 +25,7 @@ export default function StudentEntryChoiceScreen() {
 
       <View className="flex-1 justify-center">
         <View
-          className="h-20 w-20 items-center justify-center rounded-[24px]"
+          className="justify-center items-center rounded-[24px] w-20 h-20"
           style={{ backgroundColor: colors.primary }}
         >
           <MaterialCommunityIcons
@@ -62,14 +62,14 @@ export default function StudentEntryChoiceScreen() {
           packages, lessons, and progress.
         </Text>
 
-        <View className="mt-8 flex-row gap-3">
+        <View className="flex-row gap-3 mt-8">
           {[
             ["shield-check-outline", "Verified schools"],
             ["map-marker-radius-outline", "Nearby options"],
           ].map(([icon, label]) => (
             <View
               key={label}
-              className="flex-1 items-center rounded-2xl border px-3 py-4"
+              className="flex-1 items-center px-3 py-4 border rounded-2xl"
               style={{
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
@@ -81,7 +81,7 @@ export default function StudentEntryChoiceScreen() {
                 color={colors.primary}
               />
               <Text
-                className="mt-2 text-center text-[11px]"
+                className="mt-2 text-[11px] text-center"
                 style={{
                   color: colors.text,
                   fontFamily: fontFamily.figtreeSemibold,
@@ -98,7 +98,7 @@ export default function StudentEntryChoiceScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/explore")}
-          className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+          className="flex-row justify-center items-center gap-2 active:opacity-80 rounded-full h-14"
           style={{ backgroundColor: colors.primary }}
         >
           <Text
@@ -119,7 +119,7 @@ export default function StudentEntryChoiceScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/login")}
-          className="h-14 items-center justify-center rounded-full border active:opacity-70"
+          className="justify-center items-center active:opacity-70 border rounded-full h-14"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -129,11 +129,11 @@ export default function StudentEntryChoiceScreen() {
             className="text-[15px]"
             style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
           >
-            Log in to my account
+            Log in or create an account
           </Text>
         </Pressable>
         <Text
-          className="mt-1 text-center text-[10px] leading-4"
+          className="mt-1 text-[10px] text-center leading-4"
           style={{
             color: colors.textSubtle,
             fontFamily: fontFamily.figtreeMedium,

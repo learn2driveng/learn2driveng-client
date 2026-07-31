@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useCallback, useEffect, useRef } from "react";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,12 +12,49 @@ export default function PublicLocationConsentScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const location = useUserLocation();
+  const {
+    coordinates,
+    isChecking,
+    isGranted,
+    canAskAgain,
+    isLocating,
+    error,
+    requestLocation,
+    clearLocation,
+  } = useUserLocation();
+  const navigationHandled = useRef(false);
+  const locationAttempted = useRef(false);
   const setLocationPromptDismissed = useSettingsStore(
     (state) => state.setLocationPromptDismissed,
   );
 
-  if (location.isChecking) {
+  const continueWithCurrentLocation = useCallback(async () => {
+    if (navigationHandled.current) return;
+
+    locationAttempted.current = true;
+    const currentCoordinates = coordinates ?? (await requestLocation());
+
+    if (!currentCoordinates || navigationHandled.current) return;
+
+    navigationHandled.current = true;
+    setLocationPromptDismissed(false);
+    router.replace("/welcome");
+  }, [coordinates, requestLocation, router, setLocationPromptDismissed]);
+
+  useEffect(() => {
+    if (
+      isChecking ||
+      !isGranted ||
+      navigationHandled.current ||
+      locationAttempted.current
+    ) {
+      return;
+    }
+
+    void continueWithCurrentLocation();
+  }, [continueWithCurrentLocation, isChecking, isGranted]);
+
+  if (isChecking) {
     return (
       <View
         className="flex-1 items-center justify-center"
@@ -38,19 +76,16 @@ export default function PublicLocationConsentScreen() {
   return (
     <View className="flex-1" style={{ paddingTop: insets.top }}>
       <LocationPermissionGate
-        isGranted={location.isGranted}
-        canAskAgain={location.canAskAgain}
-        isLocating={location.isLocating}
-        error={location.error}
+        isGranted={isGranted}
+        canAskAgain={canAskAgain}
+        isLocating={isLocating}
+        error={error}
         onAllow={() => {
-          void location.requestLocation().then((coordinates) => {
-            if (!coordinates) return;
-            setLocationPromptDismissed(false);
-            router.replace("/welcome");
-          });
+          void continueWithCurrentLocation();
         }}
         onContinueWithoutLocation={() => {
-          location.clearLocation();
+          navigationHandled.current = true;
+          clearLocation();
           setLocationPromptDismissed(true);
           router.replace("/welcome");
         }}
