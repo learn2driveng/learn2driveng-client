@@ -1,25 +1,33 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Share, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
-import {
-  DashboardPageHeader,
-  DashboardScreen,
-  SectionHeader,
-} from "@/components/dashboard";
+import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
 import { studentProfile } from "@/sample_data/student";
-import { useGuardianAccessStore } from "@/store/guardian-access.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
+
+function formatExpiry(expiresAt: string) {
+  return new Intl.DateTimeFormat("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(expiresAt));
+}
 
 export default function LearnerLiveLocationScreen() {
   const { colors } = useAppTheme();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
+  const [shareError, setShareError] = useState<string | null>(null);
+  const participant = useTrainingSessionStore((state) =>
+    Object.values(state.participantsBySessionId).find(
+      (item) => item.bookingId === bookingId,
+    ),
+  );
   const session = useTrainingSessionStore((state) =>
-    Object.values(state.sessions).find((item) => item.bookingId === bookingId),
+    participant ? state.sessions[participant.sessionId] : undefined,
   );
   const locationShare = useTrainingSessionStore((state) =>
     session ? state.locationShares[session.id] : undefined,
@@ -29,13 +37,6 @@ export default function LearnerLiveLocationScreen() {
   );
   const stopLocationSharing = useTrainingSessionStore(
     (state) => state.stopLocationSharing,
-  );
-  const guardianLinks = useGuardianAccessStore((state) => state.guardianLinks);
-  const availableGuardianLinks = guardianLinks.filter(
-    (link) => link.learnerId === studentProfile.id && link.status === "active",
-  );
-  const [selectedGuardianLinkIds, setSelectedGuardianLinkIds] = useState(() =>
-    availableGuardianLinks.map((link) => link.id),
   );
   const lessonContext = getInstructorLessonContextBySessionId(session?.id);
 
@@ -54,7 +55,7 @@ export default function LearnerLiveLocationScreen() {
     );
   }
 
-  if (session.learnerId !== studentProfile.id) {
+  if (participant?.learnerId !== studentProfile.id) {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Live location" />
@@ -69,7 +70,7 @@ export default function LearnerLiveLocationScreen() {
     );
   }
 
-  if (session.status !== "active") {
+  if (session.status !== "in_progress") {
     const ended = session.status === "completed";
     return (
       <DashboardScreen>
@@ -80,8 +81,8 @@ export default function LearnerLiveLocationScreen() {
             title={ended ? "Sharing has ended" : "Lesson is not active"}
             description={
               ended
-                ? "Location sharing stops automatically when the instructor ends the lesson."
-                : "Location sharing becomes available after your instructor starts this lesson."
+                ? "The tracking link expired automatically when the lesson ended."
+                : "You can create a tracking link after your instructor starts the lesson."
             }
           />
         </View>
@@ -93,18 +94,20 @@ export default function LearnerLiveLocationScreen() {
   const sharingStatus = locationShare?.status ?? "inactive";
   const isRequesting = sharingStatus === "requesting_permission";
   const isSharing = sharingStatus === "sharing";
-  const canChooseRecipients = !isRequesting && !isSharing;
-  const canStartSharing =
-    !isRequesting &&
-    selectedGuardianLinkIds.length > 0 &&
-    availableGuardianLinks.length > 0;
-  const toggleGuardian = (guardianLinkId: string) => {
-    if (!canChooseRecipients) return;
-    setSelectedGuardianLinkIds((current) =>
-      current.includes(guardianLinkId)
-        ? current.filter((id) => id !== guardianLinkId)
-        : [...current, guardianLinkId],
-    );
+
+  const shareTrackingLink = async () => {
+    if (!locationShare?.shareUrl) return;
+
+    setShareError(null);
+    try {
+      await Share.share({
+        title: `${studentProfile.firstName}'s live driving lesson`,
+        message: `Follow ${studentProfile.firstName}'s live driving lesson on Learn2Drive. This private link expires when the lesson ends:\n${locationShare.shareUrl}`,
+        url: locationShare.shareUrl,
+      });
+    } catch {
+      setShareError("The share menu could not be opened. Please try again.");
+    }
   };
 
   return (
@@ -157,7 +160,7 @@ export default function LearnerLiveLocationScreen() {
         </View>
       </View>
 
-      {isSharing ? (
+      {isSharing && locationShare ? (
         <View
           accessibilityLiveRegion="polite"
           className="mt-7 rounded-[28px] border p-5"
@@ -172,7 +175,7 @@ export default function LearnerLiveLocationScreen() {
               style={{ backgroundColor: colors.success }}
             >
               <MaterialCommunityIcons
-                name="map-marker-radius"
+                name="link-variant"
                 size={25}
                 color={colors.contrastText}
               />
@@ -182,52 +185,69 @@ export default function LearnerLiveLocationScreen() {
                 className="font-figtree-bold text-[17px]"
                 style={{ color: colors.text }}
               >
-                Live location is sharing
+                Private tracking link is active
               </Text>
               <Text
                 className="mt-1 font-figtree text-[12px]"
                 style={{ color: colors.textMuted }}
               >
-                {locationShare?.guardianLinkIds.length ?? 0}{" "}
-                {(locationShare?.guardianLinkIds.length ?? 0) === 1
-                  ? "guardian"
-                  : "guardians"}{" "}
-                can view this active session.
+                Anyone you send it to can follow this lesson until{" "}
+                {formatExpiry(locationShare.expiresAt)}.
               </Text>
             </View>
           </View>
 
           <View
-            className="mt-5 flex-row items-center justify-between rounded-2xl px-4 py-3"
+            className="mt-5 rounded-2xl px-4 py-3"
             style={{ backgroundColor: colors.surface }}
           >
             <Text
-              className="font-figtree text-[12px]"
-              style={{ color: colors.textMuted }}
+              className="font-figtree-bold text-[10px] uppercase tracking-[1px]"
+              style={{ color: colors.textSubtle }}
             >
-              Location accuracy
+              Latest update
             </Text>
             <Text
-              className="font-figtree-bold text-[12px]"
+              className="mt-1 font-figtree-semibold text-[13px]"
               style={{ color: colors.text }}
             >
-              {locationShare?.lastLocation?.accuracy
-                ? `±${Math.round(locationShare.lastLocation.accuracy)} m`
-                : "Updating"}
+              {locationShare.lastLocation?.accuracy
+                ? `Accurate to about ${Math.round(locationShare.lastLocation.accuracy)} metres`
+                : "Getting a precise location…"}
             </Text>
           </View>
 
           <Pressable
             accessibilityRole="button"
+            onPress={() => void shareTrackingLink()}
+            className="mt-5 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons
+              name="share-variant"
+              size={20}
+              color={colors.onPrimary}
+            />
+            <Text
+              className="font-figtree-bold text-[15px]"
+              style={{ color: colors.onPrimary }}
+            >
+              Share tracking link
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
             onPress={() => stopLocationSharing(session.id)}
-            className="mt-5 h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
+            className="mt-3 h-13 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{
+              minHeight: 52,
               backgroundColor: colors.surface,
               borderColor: colors.error,
             }}
           >
             <MaterialCommunityIcons
-              name="map-marker-off-outline"
+              name="link-variant-off"
               size={20}
               color={colors.error}
             />
@@ -235,101 +255,40 @@ export default function LearnerLiveLocationScreen() {
               className="font-figtree-bold text-[14px]"
               style={{ color: colors.error }}
             >
-              Stop sharing
+              Stop sharing and expire link
             </Text>
           </Pressable>
         </View>
       ) : (
         <>
-          <View className="mt-9">
-            <SectionHeader title="Choose who can view" />
+          <View className="mt-8">
+            <Text
+              className="font-figtree-bold text-[22px]"
+              style={{ color: colors.text }}
+            >
+              Let someone follow this lesson
+            </Text>
             <Text
               className="mt-2 font-figtree text-[13px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              Select the linked guardians who can see your location during this
-              active lesson.
+              Create one private link and send it through WhatsApp, Messages or
+              any app you trust. The viewer does not need an account.
             </Text>
-
-            {availableGuardianLinks.length > 0 ? (
-              <View className="mt-4 gap-3">
-                {availableGuardianLinks.map((link) => {
-                  const selected = selectedGuardianLinkIds.includes(link.id);
-
-                  return (
-                    <Pressable
-                      key={link.id}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selected }}
-                      disabled={!canChooseRecipients}
-                      onPress={() => toggleGuardian(link.id)}
-                      className="flex-row items-center rounded-3xl border p-4 active:opacity-75"
-                      style={{
-                        backgroundColor: colors.surface,
-                        borderColor: selected ? colors.primary : colors.border,
-                      }}
-                    >
-                      <View
-                        className="h-12 w-12 items-center justify-center rounded-2xl"
-                        style={{ backgroundColor: colors.surfaceStrong }}
-                      >
-                        <Text
-                          className="font-figtree-bold text-[13px]"
-                          style={{ color: colors.text }}
-                        >
-                          {link.guardianInitials}
-                        </Text>
-                      </View>
-                      <View className="ml-3 flex-1">
-                        <Text
-                          className="font-figtree-bold text-[15px]"
-                          style={{ color: colors.text }}
-                        >
-                          {link.guardianName}
-                        </Text>
-                        <Text
-                          className="mt-1 font-figtree text-[11px]"
-                          style={{ color: colors.textMuted }}
-                        >
-                          Linked guardian
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name={
-                          selected
-                            ? "checkbox-marked-circle"
-                            : "checkbox-blank-circle-outline"
-                        }
-                        size={23}
-                        color={selected ? colors.primary : colors.textSubtle}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <View className="mt-4">
-                <ContentEmptyState
-                  icon="account-alert-outline"
-                  title="No guardian linked"
-                  description="Add a guardian to your account before sharing live location."
-                />
-              </View>
-            )}
           </View>
 
           <View
-            className="mt-7 rounded-3xl border p-5"
+            className="mt-5 rounded-3xl border p-5"
             style={{
               backgroundColor: colors.surface,
               borderColor: colors.border,
             }}
           >
             {[
-              "Sharing starts only after you approve it",
-              "Updates are sent only while Learn2Drive is open",
-              "You can stop sharing at any time",
-              "Sharing stops automatically when the lesson ends",
+              "Your location is shared only for this active lesson",
+              "The link contains no phone number or home address",
+              "You can expire the link at any time",
+              "The link stops working automatically when the lesson ends",
             ].map((item, index) => (
               <View
                 key={item}
@@ -391,38 +350,34 @@ export default function LearnerLiveLocationScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: !canStartSharing }}
-            disabled={!canStartSharing}
+            accessibilityState={{ disabled: isRequesting }}
+            disabled={isRequesting}
             onPress={() =>
-              requestLocationSharing(
-                session.id,
-                studentProfile.id,
-                selectedGuardianLinkIds,
-              )
+              requestLocationSharing(session.id, studentProfile.id)
             }
             className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{
-              backgroundColor: canStartSharing
-                ? colors.primary
-                : colors.surfaceStrong,
+              backgroundColor: isRequesting
+                ? colors.surfaceStrong
+                : colors.primary,
             }}
           >
             <MaterialCommunityIcons
-              name="map-marker-radius-outline"
+              name="link-plus"
               size={21}
-              color={canStartSharing ? colors.onPrimary : colors.textSubtle}
+              color={isRequesting ? colors.textSubtle : colors.onPrimary}
             />
             <Text
               className="font-figtree-bold text-[15px]"
               style={{
-                color: canStartSharing ? colors.onPrimary : colors.textSubtle,
+                color: isRequesting ? colors.textSubtle : colors.onPrimary,
               }}
             >
               {sharingStatus === "failed"
-                ? "Try sharing again"
+                ? "Try creating link again"
                 : isRequesting
-                  ? "Requesting permission"
-                  : "Share live location"}
+                  ? "Getting your location…"
+                  : "Create private tracking link"}
             </Text>
           </Pressable>
 
@@ -436,12 +391,22 @@ export default function LearnerLiveLocationScreen() {
                 className="font-figtree-bold text-[13px]"
                 style={{ color: colors.textMuted }}
               >
-                Cancel request
+                Cancel
               </Text>
             </Pressable>
           ) : null}
         </>
       )}
+
+      {shareError ? (
+        <Text
+          accessibilityRole="alert"
+          className="mt-4 text-center font-figtree-medium text-[12px]"
+          style={{ color: colors.error }}
+        >
+          {shareError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

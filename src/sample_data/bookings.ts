@@ -4,6 +4,8 @@ import type { LearnerBooking } from "@/types";
 export const learnerBookings: LearnerBooking[] = [
   {
     id: "booking-a7",
+    sessionId: "session-alex-1000",
+    bookingId: "booking-a7",
     reference: "L2D-240625-A7",
     school: "Elite Safety Driving Academy",
     packageName: "Defensive Driving Pro",
@@ -11,10 +13,12 @@ export const learnerBookings: LearnerBooking[] = [
     time: "11:30 AM",
     location: "Wuse II Training Centre",
     instructor: "John Adeyemi",
-    status: "upcoming",
+    status: "in_progress",
   },
   {
     id: "booking-f2",
+    sessionId: "session-f2",
+    bookingId: "booking-f2",
     reference: "L2D-170625-F2",
     school: "Elite Safety Driving Academy",
     packageName: "Defensive Driving Pro",
@@ -26,6 +30,8 @@ export const learnerBookings: LearnerBooking[] = [
   },
   {
     id: "booking-c4",
+    sessionId: "session-c4",
+    bookingId: "booking-c4",
     reference: "L2D-100625-C4",
     school: "Pro-Wheels Training",
     packageName: "Driving Essentials",

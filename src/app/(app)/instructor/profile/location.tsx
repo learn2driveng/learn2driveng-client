@@ -40,7 +40,7 @@ export default function InstructorLocationSettingsScreen() {
           description="Used for lesson check-in and active session records."
           value={locationValue}
           onPress={() => {
-            if (!location.isGranted && location.canAskAgain) {
+            if (location.isGranted || location.canAskAgain) {
               void location.requestLocation();
               return;
             }
@@ -67,8 +67,8 @@ export default function InstructorLocationSettingsScreen() {
           className="flex-1 font-figtree text-[12px] leading-5"
           style={{ color: colors.textMuted }}
         >
-          Guardian live-location sharing belongs to the learner. This setting
-          only controls the instructor-side session record.
+          Private live-location links belong to the learner. This setting only
+          controls the instructor-side session record.
         </Text>
       </View>
     </DashboardScreen>

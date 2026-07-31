@@ -7,10 +7,14 @@ type Coordinates = {
 
 type LocationState = {
   coordinates: Coordinates | null;
+  placeName: string | null;
   setCoordinates: (coordinates: Coordinates | null) => void;
+  setPlaceName: (placeName: string | null) => void;
 };
 
 export const useLocationStore = create<LocationState>((set) => ({
   coordinates: null,
-  setCoordinates: (coordinates) => set({ coordinates }),
+  placeName: null,
+  setCoordinates: (coordinates) => set({ coordinates, placeName: null }),
+  setPlaceName: (placeName) => set({ placeName }),
 }));

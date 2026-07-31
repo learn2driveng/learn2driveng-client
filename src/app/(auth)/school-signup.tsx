@@ -3,17 +3,28 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { AuthField, AuthPrimaryButton, AuthScreen } from "@/components/auth";
+import {
+  AuthDateOfBirthField,
+  AuthFeedback,
+  AuthField,
+  AuthPrimaryButton,
+  AuthScreen,
+} from "@/components/auth";
 import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { useAuthStore } from "@/store/auth.store";
+import { registerAccount } from "@/lib/api";
+import {
+  isStrongPassword,
+  isValidEmail,
+  PASSWORD_REQUIREMENTS,
+} from "@/lib/auth/validation";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { ApiError } from "@/types";
 
 export default function SchoolSignupScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const signIn = useAuthStore((state) => state.signIn);
   const beginOnboarding = useSchoolOperationsStore(
     (state) => state.beginSchoolOnboarding,
   );
@@ -21,16 +32,56 @@ export default function SchoolSignupScreen() {
   const [adminName, setAdminName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const adminNameParts = adminName.trim().split(/\s+/);
+  const firstName = adminNameParts[0] ?? "";
+  const lastName = adminNameParts.slice(1).join(" ");
   const complete =
-    [schoolName, adminName, email, phone].every((value) => value.trim()) &&
-    password.length >= 8;
+    [schoolName, phone].every((value) => value.trim()) &&
+    isValidEmail(email) &&
+    firstName.length >= 2 &&
+    lastName.length >= 2 &&
+    Boolean(dateOfBirth) &&
+    isStrongPassword(password) &&
+    acceptTerms;
 
-  const createApplication = () => {
+  const createApplication = async () => {
     if (!complete) return;
-    beginOnboarding({ schoolName, adminName, email, phone });
-    signIn("driving_school");
-    router.replace("/school/onboarding");
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await registerAccount({
+        firstName,
+        lastName,
+        email: email.trim(),
+        phone: phone.trim(),
+        password,
+        dateOfBirth: dateOfBirth.trim(),
+        acceptTerms: true,
+        role: "driving_school",
+      });
+      beginOnboarding({ schoolName, adminName, email, phone });
+      router.push({
+        pathname: "/verify-email",
+        params: { email: email.trim(), returnTo: "/school/onboarding" },
+      });
+    } catch (caught) {
+      setError(
+        caught &&
+          typeof caught === "object" &&
+          "message" in caught &&
+          typeof (caught as ApiError).message === "string"
+          ? (caught as ApiError).message
+          : "We could not create the school administrator account.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,6 +157,11 @@ export default function SchoolSignupScreen() {
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
+          error={
+            email && !isValidEmail(email)
+              ? "Enter a valid email address."
+              : null
+          }
         />
         <AuthField
           label="PHONE NUMBER"
@@ -115,6 +171,11 @@ export default function SchoolSignupScreen() {
           autoComplete="tel"
           keyboardType="phone-pad"
         />
+        <AuthDateOfBirthField
+          label="ADMINISTRATOR DATE OF BIRTH"
+          value={dateOfBirth}
+          onChange={setDateOfBirth}
+        />
         <AuthField
           label="CREATE PASSWORD"
           icon="lock"
@@ -123,14 +184,62 @@ export default function SchoolSignupScreen() {
           isPassword
           autoCapitalize="none"
           autoComplete="new-password"
+          error={
+            password && !isStrongPassword(password)
+              ? PASSWORD_REQUIREMENTS
+              : null
+          }
         />
       </View>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: acceptTerms }}
+        onPress={() => setAcceptTerms((accepted) => !accepted)}
+        className="mt-5 flex-row items-start active:opacity-70"
+      >
+        <View
+          className="mt-0.5 h-5 w-5 items-center justify-center rounded-md border"
+          style={{
+            borderColor: acceptTerms ? colors.primary : colors.border,
+            backgroundColor: acceptTerms ? colors.primary : colors.surface,
+          }}
+        >
+          {acceptTerms ? (
+            <MaterialCommunityIcons
+              name="check"
+              size={15}
+              color={colors.onPrimary}
+            />
+          ) : null}
+        </View>
+        <Text
+          className="ml-3 flex-1 text-[12px] leading-5"
+          style={{
+            color: colors.textMuted,
+            fontFamily: fontFamily.figtree,
+          }}
+        >
+          I agree to the Terms of Service and Privacy Policy as the accountable
+          school administrator.
+        </Text>
+      </Pressable>
       <View className="mt-8">
         <AuthPrimaryButton
           label="Start school verification"
-          onPress={createApplication}
+          disabled={!complete}
+          loading={isSubmitting}
+          onPress={() => void createApplication()}
         />
       </View>
+      {error ? (
+        <View className="mt-4">
+          <AuthFeedback
+            tone="error"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        </View>
+      ) : null}
       <Text
         className="mt-5 text-center text-[11px] leading-4"
         style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}

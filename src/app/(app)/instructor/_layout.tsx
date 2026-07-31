@@ -2,21 +2,21 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 
 import { fontFamily } from "@/constants/fonts";
+import { useRoleRouteAccess } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { useAuthStore } from "@/store/auth.store";
 
 export default function InstructorLayout() {
   const { colors } = useAppTheme();
-  const role = useAuthStore((state) => state.role);
+  const access = useRoleRouteAccess("instructor", "/instructor");
 
-  if (role !== "instructor") {
-    return <Redirect href={role === "learner" ? "/student" : "/login"} />;
-  }
+  if (access.status === "checking") return null;
+  if (access.status === "redirect") return <Redirect href={access.href} />;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,
         tabBarLabelStyle: {

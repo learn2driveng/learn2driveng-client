@@ -18,12 +18,12 @@ const statusMeta: Record<
   { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
 > = {
   invited: { label: "Invited", icon: "email-fast-outline" },
-  profile_pending: { label: "Profile pending", icon: "account-clock-outline" },
+  pending: { label: "Profile pending", icon: "account-clock-outline" },
   active: { label: "Active", icon: "check-circle-outline" },
   suspended: { label: "Suspended", icon: "account-cancel-outline" },
 };
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null | undefined) {
   if (!value) return "Not yet";
 
   return new Intl.DateTimeFormat("en-NG", {
@@ -67,8 +67,7 @@ export default function SchoolInstructorDetailScreen() {
   const meta = statusMeta[instructor.status];
   const active = instructor.status === "active";
   const canActivate =
-    instructor.status === "profile_pending" ||
-    instructor.status === "suspended";
+    instructor.status === "pending" || instructor.status === "suspended";
   const canSuspend = instructor.status === "active";
   const canResend = instructor.status === "invited";
 
@@ -130,14 +129,20 @@ export default function SchoolInstructorDetailScreen() {
         <SectionHeader title="Onboarding state" />
         <View
           className="mt-4 rounded-3xl border p-4"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
           {[
             ["Invite sent", formatDate(instructor.invitedAt)],
             ["Activated", formatDate(instructor.activatedAt)],
             ["Assigned location", instructor.assignedLocation],
-            ["Vehicle types", instructor.allowedTransmissions.join(" / ")],
-            ["Lessons this week", String(instructor.lessonsThisWeek)],
+            [
+              "Vehicle types",
+              instructor.allowedTransmissions?.join(" / ") ?? "Not set",
+            ],
+            ["Lessons this week", String(instructor.lessonsThisWeek ?? 0)],
           ].map(([label, value]) => (
             <View
               key={label}
@@ -170,7 +175,10 @@ export default function SchoolInstructorDetailScreen() {
         <SectionHeader title="Contact" />
         <View
           className="mt-4 rounded-3xl border p-4"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
           {[
             ["Email", instructor.email],
@@ -277,7 +285,10 @@ export default function SchoolInstructorDetailScreen() {
             accessibilityRole="button"
             onPress={() => suspendInstructor(instructor.id)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
-            style={{ backgroundColor: colors.surface, borderColor: colors.error }}
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.error,
+            }}
           >
             <MaterialCommunityIcons
               name="account-cancel-outline"
@@ -286,7 +297,10 @@ export default function SchoolInstructorDetailScreen() {
             />
             <Text
               className="text-[15px]"
-              style={{ color: colors.error, fontFamily: fontFamily.figtreeBold }}
+              style={{
+                color: colors.error,
+                fontFamily: fontFamily.figtreeBold,
+              }}
             >
               Suspend instructor
             </Text>

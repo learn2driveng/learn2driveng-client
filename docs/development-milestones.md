@@ -123,13 +123,13 @@ Sprint-oriented milestones for Learn2Drive mobile. Adjust dates with team capaci
 - [ ] `session.store.ts` for active session + coordinates
 - [ ] Instructor: start/end session screens
 - [ ] Instructor: background location updates
-- [ ] Guardian: live tracking map
+- [ ] Public expiring-link tracking map
 - [ ] Session history + detail for learner
 - [ ] Route polyline on map
 
 ### Exit Criteria
 
-- Guardian sees instructor location move on map during test session
+- Public viewer sees the learner’s current location during a shared session
 - Session status updates in real time
 - Session ends cleanly; socket disconnects
 
@@ -139,14 +139,14 @@ Sprint-oriented milestones for Learn2Drive mobile. Adjust dates with team capaci
 
 ---
 
-## M5 — Guardian & Instructor Polish (Weeks 11–12)
+## M5 — Safety Sharing & Instructor Polish (Weeks 11–12)
 
-**Goal:** Complete guardian monitoring and instructor daily workflow.
+**Goal:** Complete public safety-link tracking and instructor daily workflow.
 
 ### Tasks
 
-- [ ] Guardian: learner selector / linked learners
-- [ ] Guardian: session history + progress
+- [ ] Learner: create, share and revoke tracking link
+- [ ] Public: expired and active tracking states
 - [ ] Instructor: assigned bookings + upcoming
 - [ ] Instructor: availability management (MVP)
 - [ ] Instructor: progress report form
@@ -154,7 +154,7 @@ Sprint-oriented milestones for Learn2Drive mobile. Adjust dates with team capaci
 
 ### Exit Criteria
 
-- Guardian receives push when session starts
+- Shared link expires when the session ends
 - Instructor sees today's lessons
 
 ---
@@ -206,28 +206,28 @@ Sprint-oriented milestones for Learn2Drive mobile. Adjust dates with team capaci
 
 ## Milestone Summary
 
-| Milestone | Weeks | Theme | Release |
-|-----------|-------|-------|---------|
-| M0 | 1 | Bootstrap | — |
-| M1 | 2–3 | Auth + RBAC | Internal |
-| M2 | 4–5 | Discovery | Internal |
-| M3 | 6–7 | Booking | Alpha |
-| M4 | 8–10 | Live tracking | Alpha |
-| M5 | 11–12 | Guardian/Instructor | Beta |
-| M6 | 13–15 | Admin | Beta |
-| M7 | 16–18 | Hardening | Public beta |
+| Milestone | Weeks | Theme                     | Release     |
+| --------- | ----- | ------------------------- | ----------- |
+| M0        | 1     | Bootstrap                 | —           |
+| M1        | 2–3   | Auth + RBAC               | Internal    |
+| M2        | 4–5   | Discovery                 | Internal    |
+| M3        | 6–7   | Booking                   | Alpha       |
+| M4        | 8–10  | Live tracking             | Alpha       |
+| M5        | 11–12 | Safety Sharing/Instructor | Beta        |
+| M6        | 13–15 | Admin                     | Beta        |
+| M7        | 16–18 | Hardening                 | Public beta |
 
 ---
 
 ## Risk Register
 
-| Risk | Mitigation |
-|------|------------|
-| Backend API delays | MSW mocks; contract-first OpenAPI |
-| Maps in Expo Go | Early dev builds |
-| Battery drain (GPS) | Throttle updates; end on session stop |
-| Payment integration complexity | WebView checkout MVP |
-| FRSC data accuracy | Display disclaimer; server validation |
+| Risk                           | Mitigation                            |
+| ------------------------------ | ------------------------------------- |
+| Backend API delays             | MSW mocks; contract-first OpenAPI     |
+| Maps in Expo Go                | Early dev builds                      |
+| Battery drain (GPS)            | Throttle updates; end on session stop |
+| Payment integration complexity | WebView checkout MVP                  |
+| FRSC data accuracy             | Display disclaimer; server validation |
 
 ---
 

@@ -495,8 +495,8 @@ function OnboardingSlide2({
       <View className="px-8 pb-2">
         <OnboardingTitle className="mb-2">Safety for Everyone</OnboardingTitle>
         <Text className="mx-auto mb-4 max-w-xs text-center font-sans text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          Choose when to share your live location with linked guardians during
-          an active lesson.
+          Create a private, expiring link when you want someone you trust to
+          follow an active lesson.
         </Text>
       </View>
 
@@ -552,7 +552,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
-  const [page, setPage] = useState(0);
+  const [, setPage] = useState(0);
   const [slideHeight, setSlideHeight] = useState(0);
 
   const continueToDiscovery = () => {

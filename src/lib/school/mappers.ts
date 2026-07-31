@@ -14,9 +14,9 @@ import type {
   SchoolDetail,
   SchoolSummary,
   TrainingPackage,
+  Vehicle,
   VehicleSummary,
 } from "@/types/school";
-import type { Vehicle } from "@/types/school";
 
 /** Maps server `GET /discover/schools` list item into marketplace SchoolSummary. */
 export function mapPublicSchoolListItemToSummary(
@@ -51,8 +51,7 @@ export function mapPublicSchoolDetailToSchoolDetail(
   });
 
   const packages = school.packages ?? [];
-  const startingPrice =
-    school.startingPrice ?? computeStartingPrice(packages);
+  const startingPrice = school.startingPrice ?? computeStartingPrice(packages);
 
   return {
     id: school.id,
@@ -82,9 +81,7 @@ export function mapPublicSchoolDetailToSchoolDetail(
   };
 }
 
-export function mapSchoolDetailToSummary(
-  school: SchoolDetail,
-): SchoolSummary {
+export function mapSchoolDetailToSummary(school: SchoolDetail): SchoolSummary {
   return {
     id: school.id,
     name: school.name,

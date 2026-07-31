@@ -30,12 +30,7 @@ export function useDiscoverSchoolDetail(
   }, []);
 
   useEffect(() => {
-    if (!schoolId) {
-      setSchool(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    if (!schoolId) return;
 
     let cancelled = false;
     const id = schoolId;
@@ -81,5 +76,7 @@ export function useDiscoverSchoolDetail(
     };
   }, [schoolId, options.distanceKm, reloadToken]);
 
-  return { school, loading, error, refetch };
+  return schoolId
+    ? { school, loading, error, refetch }
+    : { school: null, loading: false, error: null, refetch };
 }

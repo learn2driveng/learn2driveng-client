@@ -5,6 +5,7 @@ import type {
   InstructorProfileSummary,
   InstructorScheduleDay,
   TrainingSession,
+  TrainingSessionParticipant,
 } from "@/types";
 import { studentProfile } from "./student";
 
@@ -200,8 +201,7 @@ function durationMinutes(lesson: InstructorLessonSummary) {
 export const instructorTrainingSessions: TrainingSession[] =
   instructorScheduleDays.flatMap((day) =>
     day.lessons.map((lesson) => {
-      const start =
-        lesson.scheduledStartTime ?? lesson.scheduledAt;
+      const start = lesson.scheduledStartTime ?? lesson.scheduledAt;
       const end =
         lesson.scheduledEndTime ??
         new Date(
@@ -238,6 +238,26 @@ export const instructorTrainingSessions: TrainingSession[] =
         notes: null,
       };
     }),
+  );
+
+export const instructorTrainingSessionParticipants: TrainingSessionParticipant[] =
+  instructorScheduleDays.flatMap((day) =>
+    day.lessons.map((lesson) => ({
+      id: lesson.participantId ?? `participant-${lesson.id}`,
+      sessionId: lesson.sessionId,
+      learnerId: lesson.learnerId,
+      bookingId: lesson.bookingId,
+      packageId: `package-${lesson.packageName.toLowerCase().replace(/\s+/g, "-")}`,
+      status:
+        lesson.status === "completed"
+          ? ("present" as const)
+          : ("scheduled" as const),
+      joinedAt: lesson.scheduledAt,
+      attendanceMarkedAt:
+        lesson.status === "completed"
+          ? (lesson.scheduledEndTime ?? null)
+          : null,
+    })),
   );
 
 export const instructorTodayLessons =

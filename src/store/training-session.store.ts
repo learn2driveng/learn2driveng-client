@@ -1,26 +1,26 @@
 import { create } from "zustand";
 
-import { guardianLocationShares } from "@/sample_data/guardian";
-import { instructorTrainingSessions } from "@/sample_data/instructor";
+import {
+  instructorTrainingSessionParticipants,
+  instructorTrainingSessions,
+} from "@/sample_data/instructor";
 import type {
   LiveLocationShare,
   LocationSharingFailureReason,
   SessionCoordinates,
   TrainingSession,
+  TrainingSessionParticipant,
 } from "@/types";
 
 type TrainingSessionState = {
   sessions: Record<string, TrainingSession>;
+  participantsBySessionId: Record<string, TrainingSessionParticipant>;
   activeSessionId: string | null;
   locationShares: Record<string, LiveLocationShare>;
   devicePublishingSessionId: string | null;
   startSession: (sessionId: string) => void;
   endSession: (sessionId: string) => void;
-  requestLocationSharing: (
-    sessionId: string,
-    learnerId: string,
-    guardianLinkIds: string[],
-  ) => void;
+  requestLocationSharing: (sessionId: string, learnerId: string) => void;
   startLocationSharing: (
     sessionId: string,
     location: SessionCoordinates,
@@ -40,16 +40,36 @@ const initialSessions = Object.fromEntries(
   instructorTrainingSessions.map((session) => [session.id, session]),
 );
 const initialActiveSessionId =
-  instructorTrainingSessions.find((session) => session.status === "active")
+  instructorTrainingSessions.find((session) => session.status === "in_progress")
     ?.id ?? null;
-const initialLocationShares = Object.fromEntries(
-  guardianLocationShares.map((share) => [share.sessionId, share]),
+const initialParticipantsBySessionId = Object.fromEntries(
+  instructorTrainingSessionParticipants.map((participant) => [
+    participant.sessionId,
+    participant,
+  ]),
 );
+
+const PUBLIC_APP_URL = (
+  process.env.EXPO_PUBLIC_WEB_APP_URL ?? "https://learn2drive.ng"
+).replace(/\/+$/, "");
+
+function createPreviewShareToken() {
+  return [
+    Date.now().toString(36),
+    Math.random().toString(36).slice(2),
+    Math.random().toString(36).slice(2),
+  ].join("-");
+}
+
+function createShareUrl(token: string) {
+  return `${PUBLIC_APP_URL}/track/${encodeURIComponent(token)}`;
+}
 
 export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
   sessions: initialSessions,
+  participantsBySessionId: initialParticipantsBySessionId,
   activeSessionId: initialActiveSessionId,
-  locationShares: initialLocationShares,
+  locationShares: {},
   devicePublishingSessionId: null,
   startSession: (sessionId) =>
     set((state) => {
@@ -68,9 +88,9 @@ export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
           ...state.sessions,
           [sessionId]: {
             ...session,
-            status: "active",
-            startedAt: new Date().toISOString(),
-            endedAt: null,
+            status: "in_progress",
+            actualStartTime: new Date().toISOString(),
+            actualEndTime: null,
           },
         },
       };
@@ -78,7 +98,7 @@ export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
   endSession: (sessionId) =>
     set((state) => {
       const session = state.sessions[sessionId];
-      if (!session || session.status !== "active") return state;
+      if (!session || session.status !== "in_progress") return state;
       const locationShare = state.locationShares[sessionId];
       const endedAt = new Date().toISOString();
 
@@ -104,30 +124,32 @@ export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
           [sessionId]: {
             ...session,
             status: "completed",
-            endedAt,
+            actualEndTime: endedAt,
           },
         },
       };
     }),
-  requestLocationSharing: (sessionId, learnerId, guardianLinkIds) =>
+  requestLocationSharing: (sessionId, learnerId) =>
     set((state) => {
       const session = state.sessions[sessionId];
       if (
         !session ||
-        session.status !== "active" ||
-        session.learnerId !== learnerId ||
-        guardianLinkIds.length === 0
+        session.status !== "in_progress" ||
+        state.participantsBySessionId[sessionId]?.learnerId !== learnerId
       ) {
         return state;
       }
 
+      const shareToken = createPreviewShareToken();
       return {
         locationShares: {
           ...state.locationShares,
           [sessionId]: {
             sessionId,
             learnerId,
-            guardianLinkIds,
+            shareToken,
+            shareUrl: createShareUrl(shareToken),
+            expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
             status: "requesting_permission",
             lastLocation: null,
             lastUpdatedAt: null,
@@ -144,7 +166,7 @@ export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
       const share = state.locationShares[sessionId];
       if (
         !session ||
-        session.status !== "active" ||
+        session.status !== "in_progress" ||
         !share ||
         share.status !== "requesting_permission"
       ) {

@@ -6,11 +6,11 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { useSettingsStore, type ThemePreference } from "@/store/settings.store";
 
-const options: Array<{
+const options: {
   value: ThemePreference;
   label: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
-}> = [
+}[] = [
   { value: "system", label: "System", icon: "cellphone-cog" },
   { value: "light", label: "Light", icon: "white-balance-sunny" },
   { value: "dark", label: "Dark", icon: "weather-night" },

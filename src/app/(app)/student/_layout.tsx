@@ -1,12 +1,17 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 
 import { fontFamily } from "@/constants/fonts";
+import { useRoleRouteAccess } from "@/features/auth";
 import { LearnerLocationPublisher } from "@/features/location";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function StudentLayout() {
   const { colors } = useAppTheme();
+  const access = useRoleRouteAccess("learner", "/student");
+
+  if (access.status === "checking") return null;
+  if (access.status === "redirect") return <Redirect href={access.href} />;
 
   return (
     <>
@@ -14,6 +19,7 @@ export default function StudentLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSubtle,
           tabBarLabelStyle: {

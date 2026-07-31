@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -40,15 +40,10 @@ export default function SchoolBookingAssignmentDetailScreen() {
   );
   const [selectedInstructorId, setSelectedInstructorId] = useState<
     string | null
-  >(null);
+  >(() => booking?.instructorId ?? null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null,
+    () => booking?.vehicleId ?? null,
   );
-
-  useEffect(() => {
-    setSelectedInstructorId(booking?.instructorId ?? null);
-    setSelectedVehicleId(booking?.vehicleId ?? null);
-  }, [booking?.id, booking?.instructorId, booking?.vehicleId]);
 
   if (!booking) {
     return (
@@ -68,12 +63,11 @@ export default function SchoolBookingAssignmentDetailScreen() {
   const eligibleInstructors = instructors.filter(
     (instructor) =>
       instructor.status === "active" &&
-      instructor.allowedTransmissions.includes(booking.transmission),
+      instructor.allowedTransmissions?.includes(booking.transmission),
   );
   const eligibleVehicles = vehicles.filter(
     (vehicle) =>
-      vehicle.status === "active" &&
-      vehicle.transmission === booking.transmission,
+      vehicle.isActive && vehicle.transmissionType === booking.transmission,
   );
   const hasSelection =
     selectedInstructorId !== null && selectedVehicleId !== null;

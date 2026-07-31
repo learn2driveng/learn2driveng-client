@@ -2,7 +2,7 @@ export interface ApiError {
   message: string;
   code?: string;
   statusCode: number;
-  details?: Record<string, string[]>;
+  details?: Record<string, unknown>;
 }
 
 /** Matches server discovery/list pagination envelope. */

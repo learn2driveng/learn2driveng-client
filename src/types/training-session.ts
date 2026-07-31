@@ -75,10 +75,7 @@ export type TrainingSessionLocationPing = {
   updatedAt?: string;
 };
 
-/**
- * Local device state for learner→guardian live sharing.
- * Not a server entity — separate from TrainingSessionLocationPing.
- */
+/** Local presentation state for a learner-controlled public session link. */
 export type LocationSharingStatus =
   | "inactive"
   | "requesting_permission"
@@ -93,7 +90,9 @@ export type LocationSharingFailureReason =
 export type LiveLocationShare = {
   sessionId: string;
   learnerId: string;
-  guardianLinkIds: string[];
+  shareToken: string;
+  shareUrl: string;
+  expiresAt: string;
   status: LocationSharingStatus;
   lastLocation: SessionCoordinates | null;
   lastUpdatedAt: string | null;

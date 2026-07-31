@@ -21,12 +21,14 @@ type AuthFieldProps = Omit<
   label: string;
   icon: IconName;
   isPassword?: boolean;
+  error?: string | null;
 };
 
 export function AuthField({
   label,
   icon,
   isPassword = false,
+  error,
   ...inputProps
 }: AuthFieldProps) {
   const { colors } = useAppTheme();
@@ -43,7 +45,7 @@ export function AuthField({
       <View
         className="h-16 flex-row items-center rounded-full border px-5"
         style={{
-          borderColor: colors.border,
+          borderColor: error ? colors.error : colors.border,
           backgroundColor: colors.surface,
           borderRadius: borderRadius.button,
           overflow: "hidden",
@@ -79,6 +81,15 @@ export function AuthField({
           </Pressable>
         ) : null}
       </View>
+      {error ? (
+        <Text
+          accessibilityRole="alert"
+          className="ml-5 mt-2 font-figtree-medium text-[13px]"
+          style={{ color: colors.error }}
+        >
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

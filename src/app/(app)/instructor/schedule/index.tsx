@@ -22,7 +22,7 @@ type ScheduleFilter = "all" | InstructorLessonStatus;
 
 const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "All", value: "all" },
-  { label: "Upcoming", value: "upcoming" },
+  { label: "Upcoming", value: "scheduled" },
   { label: "In progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
 ];

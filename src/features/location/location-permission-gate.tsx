@@ -1,5 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Linking, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
@@ -134,11 +140,15 @@ export function LocationPermissionGate({
                   ? "Use my current location"
                   : "Allow location access"}
           </Text>
-          <MaterialCommunityIcons
-            name={deniedPermanently ? "open-in-new" : "arrow-right"}
-            size={19}
-            color={colors.onPrimary}
-          />
+          {isLocating ? (
+            <ActivityIndicator size="small" color={colors.onPrimary} />
+          ) : (
+            <MaterialCommunityIcons
+              name={deniedPermanently ? "open-in-new" : "arrow-right"}
+              size={19}
+              color={colors.onPrimary}
+            />
+          )}
         </Pressable>
         {error ? (
           <Text

@@ -19,7 +19,7 @@ const statusMeta: Record<
   { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
 > = {
   invited: { label: "Invited", icon: "email-fast-outline" },
-  profile_pending: { label: "Profile pending", icon: "account-clock-outline" },
+  pending: { label: "Profile pending", icon: "account-clock-outline" },
   active: { label: "Active", icon: "check-circle-outline" },
   suspended: { label: "Suspended", icon: "account-cancel-outline" },
 };
@@ -158,10 +158,13 @@ export default function SchoolInstructorsScreen() {
                 <View className="flex-row">
                   {[
                     [
-                      instructor.lessonsThisWeek.toString(),
+                      (instructor.lessonsThisWeek ?? 0).toString(),
                       "Lessons this week",
                     ],
-                    [instructor.allowedTransmissions.join(" / "), "Vehicles"],
+                    [
+                      instructor.allowedTransmissions?.join(" / ") ?? "Not set",
+                      "Vehicles",
+                    ],
                   ].map(([value, label], index) => (
                     <View
                       key={label}

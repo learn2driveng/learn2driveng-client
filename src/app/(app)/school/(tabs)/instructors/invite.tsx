@@ -16,7 +16,7 @@ export default function InviteInstructorScreen() {
   const [contact, setContact] = useState("");
   const [location, setLocation] = useState("Wuse II Training Yard");
   const [transmissions, setTransmissions] = useState<
-    Array<(typeof transmissionOptions)[number]>
+    (typeof transmissionOptions)[number][]
   >(["Automatic"]);
 
   const canSendInvite = useMemo(
@@ -39,7 +39,10 @@ export default function InviteInstructorScreen() {
       <DashboardPageHeader title="Invite instructor" />
       <Text
         className="mt-5 text-[13px] leading-5"
-        style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+        style={{
+          color: colors.textMuted,
+          fontFamily: fontFamily.figtreeMedium,
+        }}
       >
         Invite instructors into your school. They complete their own profile,
         then the school activates them before assignment.
@@ -81,7 +84,9 @@ export default function InviteInstructorScreen() {
             </Text>
             <TextInput
               accessibilityLabel={field.label}
-              autoCapitalize={field.keyboardType === "email-address" ? "none" : "words"}
+              autoCapitalize={
+                field.keyboardType === "email-address" ? "none" : "words"
+              }
               keyboardType={field.keyboardType}
               onChangeText={field.onChangeText}
               placeholder={field.placeholder}
@@ -171,7 +176,9 @@ export default function InviteInstructorScreen() {
         onPress={() => router.replace("/school/instructors")}
         className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{
-          backgroundColor: canSendInvite ? colors.primary : colors.surfaceStrong,
+          backgroundColor: canSendInvite
+            ? colors.primary
+            : colors.surfaceStrong,
         }}
       >
         <Text

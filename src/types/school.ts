@@ -49,6 +49,32 @@ export interface DrivingSchool {
   updatedAt?: string;
 }
 
+export interface AddressSuggestion {
+  id: string;
+  formattedAddress: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+}
+
+export type CreateDrivingSchoolInput = {
+  name: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  country: string;
+  description?: string;
+  latitude: number;
+  longitude: number;
+};
+
 export interface DrivingSchoolVerificationDocument {
   id: string;
   type: DrivingSchoolVerificationDocumentType;

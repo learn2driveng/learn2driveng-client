@@ -36,7 +36,7 @@ export default function StudentSessionsScreen() {
   const hasPackages = activePackages.length > 0;
   const hasCredits = totalRemainingSessions > 0;
   const upcomingBooking = learnerBookings.find(
-    (booking) => booking.status === "upcoming",
+    (booking) => booking.status === "scheduled",
   );
 
   const bookSelectedPackage = () => {
