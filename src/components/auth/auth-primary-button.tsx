@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, Text } from "react-native";
+import { ActivityIndicator, Pressable, Text } from "react-native";
 
 import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -9,6 +9,7 @@ type AuthPrimaryButtonProps = {
   onPress?: () => void;
   showArrow?: boolean;
   disabled?: boolean;
+  loading?: boolean;
 };
 
 export function AuthPrimaryButton({
@@ -16,9 +17,10 @@ export function AuthPrimaryButton({
   onPress,
   showArrow = false,
   disabled = false,
+  loading = false,
 }: AuthPrimaryButtonProps) {
   const { colors } = useAppTheme();
-  const isDisabled = disabled || !onPress;
+  const isDisabled = disabled || loading || !onPress;
 
   return (
     <Pressable
@@ -34,13 +36,17 @@ export function AuthPrimaryButton({
         overflow: "hidden",
       }}
     >
-      <Text
-        className="font-figtree-bold text-[17px]"
-        style={{ color: isDisabled ? colors.textSubtle : colors.onPrimary }}
-      >
-        {label}
-      </Text>
-      {showArrow ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.textSubtle} />
+      ) : (
+        <Text
+          className="font-figtree-bold text-[17px]"
+          style={{ color: isDisabled ? colors.textSubtle : colors.onPrimary }}
+        >
+          {label}
+        </Text>
+      )}
+      {showArrow && !loading ? (
         <MaterialCommunityIcons
           name="arrow-right"
           size={24}

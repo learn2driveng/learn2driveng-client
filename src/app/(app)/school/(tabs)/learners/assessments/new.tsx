@@ -32,9 +32,10 @@ type QuestionDraft = {
   explanation: string;
 };
 
-const areas = Object.entries(assessmentAreaMeta) as Array<
-  [ReadinessArea, (typeof assessmentAreaMeta)[ReadinessArea]]
->;
+const areas = Object.entries(assessmentAreaMeta) as [
+  ReadinessArea,
+  (typeof assessmentAreaMeta)[ReadinessArea],
+][];
 const passMarks = [60, 70, 75, 80];
 const durations = [5, 10, 15, 20];
 const optionIds = ["a", "b", "c", "d"] as const;

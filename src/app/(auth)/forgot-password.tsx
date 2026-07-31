@@ -11,12 +11,47 @@ import {
 } from "@/components/auth";
 import { AppLogo } from "@/components/common/app-logo";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { requestPasswordReset } from "@/lib/api";
+import { isValidEmail } from "@/lib/auth/validation";
+import type { ApiError } from "@/types";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { email: initialEmail } = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(initialEmail ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
+  const sendResetCode = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setError(null);
+    setIsSending(true);
+
+    try {
+      await requestPasswordReset(normalizedEmail);
+      router.push({
+        pathname: "/reset-password",
+        params: { email: normalizedEmail },
+      });
+    } catch (caught) {
+      setError(
+        caught &&
+          typeof caught === "object" &&
+          "message" in caught &&
+          typeof (caught as ApiError).message === "string"
+          ? (caught as ApiError).message
+          : "We could not send the reset code. Please try again.",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <AuthScreen>
@@ -54,7 +89,7 @@ export default function ForgotPasswordScreen() {
         </View>
         <Text
           accessibilityRole="header"
-          className="font-figtree-bold text-[36px] leading-[43px] tracking-[-1px]"
+          className="font-figtree-bold text-[36px] leading-[43px]"
           style={{ color: colors.text }}
         >
           Forgot password?
@@ -78,7 +113,12 @@ export default function ForgotPasswordScreen() {
           placeholder="name@example.com"
           returnKeyType="send"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) => {
+            setEmail(value);
+            setError(null);
+          }}
+          onSubmitEditing={() => void sendResetCode()}
+          error={error}
         />
       </View>
 
@@ -86,12 +126,9 @@ export default function ForgotPasswordScreen() {
         <AuthPrimaryButton
           label="Send OTP"
           showArrow
-          onPress={() =>
-            router.push({
-              pathname: "/reset-password",
-              params: { email },
-            })
-          }
+          disabled={!isValidEmail(email)}
+          loading={isSending}
+          onPress={() => void sendResetCode()}
         />
       </View>
 

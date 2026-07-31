@@ -1,38 +1,95 @@
 import { Redirect, Stack, usePathname } from "expo-router";
+import { useEffect, useState } from "react";
 
+import { ContentEmptyState } from "@/components/common/content-empty-state";
+import { Screen } from "@/components/common/screen";
+import { useRoleRouteAccess } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { useAuthStore } from "@/store/auth.store";
-import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import { fetchMyDrivingSchool } from "@/lib/api";
+import type { ApiError, DrivingSchoolVerificationStatus } from "@/types";
+
+type SchoolAccess =
+  | { status: "checking" }
+  | {
+      status: "ready";
+      verificationStatus: DrivingSchoolVerificationStatus | "draft";
+    }
+  | { status: "error" };
 
 export default function SchoolLayout() {
   const { colors } = useAppTheme();
-  const role = useAuthStore((state) => state.role);
   const pathname = usePathname();
-  const verificationStatus = useSchoolOperationsStore(
-    (state) => state.profile.verificationStatus,
-  );
+  const roleAccess = useRoleRouteAccess("driving_school", "/school");
+  const [reloadToken, setReloadToken] = useState(0);
+  const [access, setAccess] = useState<SchoolAccess>({
+    status: "checking",
+  });
 
-  if (role !== "driving_school") {
-    return (
-      <Redirect
-        href={
-          role === "learner"
-            ? "/student"
-            : role === "instructor"
-              ? "/instructor"
-              : role === "guardian"
-                ? "/guardian"
-                : "/login"
+  useEffect(() => {
+    if (roleAccess.status !== "allowed") return;
+
+    let active = true;
+
+    fetchMyDrivingSchool()
+      .then((school) => {
+        if (active) {
+          setAccess({
+            status: "ready",
+            verificationStatus: school.verificationStatus,
+          });
         }
-      />
+      })
+      .catch((error: ApiError) => {
+        if (!active) return;
+
+        setAccess(
+          error.statusCode === 404
+            ? { status: "ready", verificationStatus: "draft" }
+            : { status: "error" },
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [reloadToken, roleAccess.status]);
+
+  if (roleAccess.status === "checking") return null;
+  if (roleAccess.status === "redirect") {
+    return <Redirect href={roleAccess.href} />;
+  }
+
+  if (access.status === "checking") return null;
+
+  if (access.status === "error") {
+    return (
+      <Screen className="justify-center px-6">
+        <ContentEmptyState
+          icon="cloud-alert-outline"
+          title="School access unavailable"
+          description="We could not confirm your school verification status. Check your connection and try again."
+          actionLabel="Try again"
+          onActionPress={() => {
+            setAccess({ status: "checking" });
+            setReloadToken((current) => current + 1);
+          }}
+        />
+      </Screen>
     );
   }
 
   if (
-    verificationStatus !== "approved" &&
+    access.verificationStatus !== "approved" &&
     !pathname.startsWith("/school/onboarding")
   ) {
     return <Redirect href="/school/onboarding" />;
+  }
+
+  if (
+    access.verificationStatus === "approved" &&
+    pathname.startsWith("/school/onboarding")
+  ) {
+    return <Redirect href="/school" />;
   }
 
   return (

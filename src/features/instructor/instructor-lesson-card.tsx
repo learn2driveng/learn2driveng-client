@@ -20,7 +20,7 @@ export function InstructorLessonCard({
   const surfaces = useSurfaceStyles();
   const lessonStatus = statusOverride ?? lesson.status;
   const status = {
-    upcoming: {
+    scheduled: {
       label: "Upcoming",
       color: colors.verified,
       background: colors.verifiedSoft,
@@ -34,6 +34,11 @@ export function InstructorLessonCard({
       label: "Completed",
       color: colors.success,
       background: colors.successSoft,
+    },
+    cancelled: {
+      label: "Cancelled",
+      color: colors.error,
+      background: colors.surfaceStrong,
     },
   }[lessonStatus];
 

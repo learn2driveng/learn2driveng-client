@@ -5,7 +5,6 @@ export * from "./api";
 export * from "./booking";
 export * from "./payment";
 export * from "./instructor";
-export * from "./guardian";
 export * from "./training-session";
 export * from "./review";
 /** Client-only until a progress API exists on the server. */

@@ -31,7 +31,7 @@ export function LiveLocationMap({
         className="mt-4 font-figtree-bold text-[16px]"
         style={{ color: colors.text }}
       >
-        Location received
+        Live location received
       </Text>
       <Text
         className="mt-2 text-center font-figtree text-[12px]"
@@ -43,7 +43,7 @@ export function LiveLocationMap({
         className="mt-2 text-center font-figtree text-[11px]"
         style={{ color: colors.textSubtle }}
       >
-        Native maps are available on Android and iOS.
+        The full map is displayed on Android and iOS.
       </Text>
     </View>
   );

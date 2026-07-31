@@ -6,14 +6,14 @@ import { AppLogo } from "@/components/common/app-logo";
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
+import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
-  const signOut = useAuthStore((state) => state.signOut);
+  const { logout } = useLogout();
 
   return (
     <DashboardScreen>
@@ -109,16 +109,6 @@ export default function StudentProfileScreen() {
           description="Location access and default area"
           onPress={() => router.push("/student/profile/location")}
         />
-        <View
-          className="mx-4 h-px"
-          style={{ backgroundColor: colors.border }}
-        />
-        <SettingsRow
-          icon="shield-account-outline"
-          title="Safety contacts"
-          description="Manage who can view live lesson location"
-          onPress={() => router.push("/student/profile/guardians")}
-        />
       </View>
 
       <Text
@@ -153,10 +143,7 @@ export default function StudentProfileScreen() {
           icon="logout"
           title="Log out"
           destructive
-          onPress={() => {
-            signOut();
-            router.replace("/welcome");
-          }}
+          onPress={() => void logout()}
         />
       </View>
     </DashboardScreen>

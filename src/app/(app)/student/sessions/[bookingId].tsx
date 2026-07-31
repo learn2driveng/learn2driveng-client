@@ -8,14 +8,14 @@ import { fontFamily } from "@/constants/fonts";
 import { BookingCancellationModal } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getBookingById } from "@/sample_data";
-import type { BookingStatus } from "@/types";
+import type { LearnerLessonCard } from "@/types";
 
 export default function BookingDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const booking = getBookingById(bookingId);
-  const [status, setStatus] = useState<BookingStatus>(
+  const [status, setStatus] = useState<LearnerLessonCard["status"]>(
     booking?.status ?? "cancelled",
   );
   const [showCancellationModal, setShowCancellationModal] = useState(false);
@@ -48,13 +48,13 @@ export default function BookingDetailScreen() {
   }
 
   const statusColor =
-    status === "upcoming"
+    status === "scheduled"
       ? colors.verified
       : status === "completed"
         ? colors.success
         : colors.error;
   const statusBackground =
-    status === "upcoming"
+    status === "scheduled"
       ? colors.verifiedSoft
       : status === "completed"
         ? colors.successSoft
@@ -152,7 +152,7 @@ export default function BookingDetailScreen() {
         ))}
       </View>
 
-      {status === "upcoming" ? (
+      {status === "scheduled" ? (
         <View className="mt-7 gap-3">
           <Pressable
             accessibilityRole="button"

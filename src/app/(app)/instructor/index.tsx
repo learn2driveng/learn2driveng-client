@@ -21,6 +21,7 @@ import {
   instructorTodayLessons,
 } from "@/sample_data/instructor";
 import { useTrainingSessionStore } from "@/store/training-session.store";
+import type { InstructorLessonStatus } from "@/types";
 
 export default function InstructorDashboardScreen() {
   const router = useRouter();
@@ -29,14 +30,15 @@ export default function InstructorDashboardScreen() {
   const sessions = useTrainingSessionStore((state) => state.sessions);
   const getLessonStatus = (
     sessionId: string,
-    fallback: "upcoming" | "in_progress" | "completed",
+    fallback: InstructorLessonStatus,
   ) => toInstructorLessonStatus(sessions[sessionId]?.status, fallback);
   const activeLesson = instructorTodayLessons.find(
     (lesson) =>
       getLessonStatus(lesson.sessionId, lesson.status) === "in_progress",
   );
   const nextLesson = instructorTodayLessons.find(
-    (lesson) => getLessonStatus(lesson.sessionId, lesson.status) === "upcoming",
+    (lesson) =>
+      getLessonStatus(lesson.sessionId, lesson.status) === "scheduled",
   );
   const featuredLesson = activeLesson ?? nextLesson;
   const featuredStatus = featuredLesson

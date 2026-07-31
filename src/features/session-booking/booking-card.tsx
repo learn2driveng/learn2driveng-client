@@ -13,13 +13,13 @@ type BookingCardProps = {
 export function BookingCard({ booking, onPress }: BookingCardProps) {
   const { colors } = useAppTheme();
   const statusColor =
-    booking.status === "upcoming"
+    booking.status === "scheduled"
       ? colors.verified
       : booking.status === "completed"
         ? colors.success
         : colors.error;
   const statusBackground =
-    booking.status === "upcoming"
+    booking.status === "scheduled"
       ? colors.verifiedSoft
       : booking.status === "completed"
         ? colors.successSoft

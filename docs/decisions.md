@@ -16,7 +16,7 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 **Consequences:**
 
 - Shared components in `schools`, `bookings`, `sessions` features
-- Role-specific UI in `learner`, `guardian`, `instructor`, `driving-school`, `admin`
+- Role-specific UI in `learner`, `instructor`, `driving-school`, `admin`
 - Backend must enforce authorization; client RBAC is UX-only
 
 ---
@@ -48,7 +48,7 @@ Learn2Drive mobile — key technical decisions. Update this file when changing p
 **Decision:** Use **Expo Router** file-based routing in `src/app/`. Navigation is defined by the filesystem:
 
 - `_layout.tsx` — stack/tab navigators per route group
-- `(group)/` — route groups (auth, learner, guardian, etc.) without URL segments
+- `(group)/` — route groups (auth, public, learner, instructor, etc.) without URL segments
 - `index.tsx` — default route for a directory (`/`)
 - `[param].tsx` — dynamic routes
 
@@ -98,7 +98,10 @@ Explore tab. This prevents transaction screens from becoming tab-owned routes.
 **Status:** Accepted  
 **Date:** 2025-06-15
 
-**Decision:** `socket.io-client` connects after auth. Rooms keyed by `sessionId`. The learner publishes location only after choosing linked guardians for an active lesson; authorized guardians subscribe.
+**Decision:** `socket.io-client` connects after auth. Rooms are keyed by
+`sessionId`. The learner publishes location only after creating a private share
+for an active lesson. Public viewers read a deliberately limited projection
+through an opaque, expiring token.
 
 **Consequences:**
 
@@ -110,7 +113,7 @@ Explore tab. This prevents transaction screens from becoming tab-owned routes.
 
 ## ADR-008: Learner-Managed Guardian Access
 
-**Status:** Accepted
+**Status:** Superseded by ADR-013
 **Date:** 2026-07-11
 
 **Decision:** Guardian access is represented as learner-managed safety contacts,
@@ -125,6 +128,30 @@ the learner selects that link for an active lesson share.
 - Live location is session-bound and stops when the lesson ends.
 - Backend authorization must validate guardian link status, expiry, selected
   share recipients, and session state for every guardian read.
+
+---
+
+## ADR-013: Public Expiring Live-Location Links
+
+**Status:** Accepted
+**Date:** 2026-07-29
+
+**Decision:** Live lesson tracking does not require a guardian account or a
+permanent learner relationship. The learner creates an opaque, single-purpose
+link for one active lesson and shares it through the device share sheet. The
+public viewer receives only the current location and essential lesson context.
+
+**Consequences:**
+
+- Guardian signup, dashboards, invitations and safety-contact linking are
+  removed from the client.
+- `/track/:shareToken` remains public and must never redirect through login.
+- Links expire on learner revocation, lesson completion, failure or absolute
+  timeout.
+- Production tokens are generated and hashed by the backend; the client token
+  used during the UI phase is not a security boundary.
+- Historical routes, learner contact details and account data are never part of
+  the public response.
 
 ---
 

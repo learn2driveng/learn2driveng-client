@@ -42,28 +42,27 @@ Prioritized feature backlog for Learn2Drive mobile MVP → nationwide scale.
 
 ## Phase 3 — Sessions & Live Tracking (P0)
 
-| ID   | Feature                            | Roles                | Priority |
-| ---- | ---------------------------------- | -------------------- | -------- |
-| F3.1 | Socket.IO client + auth handshake  | Instructor, Guardian | P0       |
-| F3.2 | Instructor: start/end session      | Instructor           | P0       |
-| F3.3 | Instructor: GPS broadcast          | Instructor           | P0       |
-| F3.4 | Guardian: live map tracking        | Guardian             | P0       |
-| F3.5 | Session route visualization        | Guardian, Learner    | P1       |
-| F3.6 | Session detail screen              | All relevant         | P1       |
-| F3.7 | Active session monitoring (school) | School admin         | P1       |
-| F3.8 | Instructor progress report submit  | Instructor           | P1       |
+| ID   | Feature                            | Roles               | Priority |
+| ---- | ---------------------------------- | ------------------- | -------- |
+| F3.1 | Realtime session transport         | Learner, Instructor | P0       |
+| F3.2 | Instructor: start/end session      | Instructor          | P0       |
+| F3.3 | Instructor: GPS broadcast          | Instructor          | P0       |
+| F3.4 | Public expiring live-tracking link | Learner, Public     | P0       |
+| F3.5 | Current-location visualization     | Public, Learner     | P1       |
+| F3.6 | Session detail screen              | All relevant        | P1       |
+| F3.7 | Active session monitoring (school) | School admin        | P1       |
+| F3.8 | Instructor progress report submit  | Instructor          | P1       |
 
 ---
 
-## Phase 4 — Guardian (P1)
+## Phase 4 — Public Safety Sharing (P1)
 
-| ID   | Feature                              | Roles             | Priority |
-| ---- | ------------------------------------ | ----------------- | -------- |
-| F4.1 | Learner-managed safety contact links | Learner, Guardian | P1       |
-| F4.2 | Live session dashboard               | Guardian          | P0       |
-| F4.3 | Session history                      | Guardian          | P1       |
-| F4.4 | Learner progress view                | Guardian          | P1       |
-| F4.5 | Push: session started/ended          | Guardian          | P1       |
+| ID   | Feature                                 | Roles   | Priority |
+| ---- | --------------------------------------- | ------- | -------- |
+| F4.1 | Create and revoke private tracking link | Learner | P0       |
+| F4.2 | Public token-based tracking page        | Public  | P0       |
+| F4.3 | Automatic lesson-end expiry             | System  | P0       |
+| F4.4 | Share-sheet handoff                     | Learner | P1       |
 
 ---
 
@@ -159,7 +158,7 @@ F1 (Foundation)
  └── F1.3 Auth
       └── F2 (Learner discovery & booking)
            └── F3 (Sessions & tracking)
-                ├── F4 (Guardian)
+                ├── F4 (Public safety sharing)
                 └── F5 (Instructor)
                      └── F6 (School admin)
                           └── F7 (Platform admin)

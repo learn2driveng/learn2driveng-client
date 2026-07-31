@@ -60,7 +60,7 @@ export default function SchoolBookingAssignmentsScreen() {
     if (filter === "upcoming") return booking.status !== "cancelled";
     return true;
   });
-  const filterOptions: Array<{ value: BookingFilter; label: string }> = [
+  const filterOptions: { value: BookingFilter; label: string }[] = [
     { value: "needs_action", label: `Needs action (${unassignedCount})` },
     {
       value: "upcoming",

@@ -1,5 +1,6 @@
 export type UserRole =
   | "learner"
+  /** Legacy server role; the client no longer exposes a guardian account flow. */
   | "guardian"
   | "instructor"
   | "driving_school"
@@ -45,11 +46,44 @@ export interface RegisterPayload {
   phone: string;
   dateOfBirth: string;
   acceptTerms: true;
-  role?: Extract<UserRole, "learner" | "guardian" | "driving_school">;
+  role?: Extract<UserRole, "learner" | "driving_school">;
 }
 
 export interface AuthSessionResponse {
   user: AuthUser;
-  accessToken: string | null;
-  refreshToken?: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface GoogleRegistrationProfile {
+  email: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+export type GoogleAuthenticationResult =
+  | ({
+      status: "authenticated";
+    } & AuthSessionResponse)
+  | {
+      status: "registration_required";
+      registrationToken: string;
+      profile: GoogleRegistrationProfile;
+    }
+  | {
+      status: "link_required";
+      linkToken: string;
+      profile: GoogleRegistrationProfile;
+    };
+
+export interface CompleteGoogleSignupPayload {
+  registrationToken: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth: string;
+  role: Extract<UserRole, "learner">;
+  acceptTerms: true;
 }

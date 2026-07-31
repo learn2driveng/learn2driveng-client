@@ -44,12 +44,15 @@ export default function SchoolSessionMonitoringScreen() {
   const locationShares = useTrainingSessionStore(
     (state) => state.locationShares,
   );
+  const participantsBySessionId = useTrainingSessionStore(
+    (state) => state.participantsBySessionId,
+  );
   const sessions = Object.values(sessionsById);
   const schoolSessions = sessions.filter(
     (session) => session.schoolId === schoolId,
   );
   const activeSessions = schoolSessions.filter(
-    (session) => session.status === "active",
+    (session) => session.status === "in_progress",
   );
   const scheduledSessions = schoolSessions.filter(
     (session) => session.status === "scheduled",
@@ -172,7 +175,9 @@ export default function SchoolSessionMonitoringScreen() {
                           fontFamily: fontFamily.figtreeBold,
                         }}
                       >
-                        {context?.lesson.learnerName ?? session.learnerId}
+                        {context?.lesson.learnerName ??
+                          participantsBySessionId[session.id]?.learnerId ??
+                          "Learner"}
                       </Text>
                       <Text
                         className="mt-1 text-[11px]"
@@ -221,7 +226,7 @@ export default function SchoolSessionMonitoringScreen() {
                           fontFamily: fontFamily.figtreeBold,
                         }}
                       >
-                        {elapsedLabel(session.startedAt)}
+                        {elapsedLabel(session.actualStartTime ?? null)}
                       </Text>
                     </View>
                     <View
@@ -270,8 +275,8 @@ export default function SchoolSessionMonitoringScreen() {
           {scheduledSessions
             .sort(
               (left, right) =>
-                new Date(left.scheduledAt).getTime() -
-                new Date(right.scheduledAt).getTime(),
+                new Date(left.scheduledStartTime).getTime() -
+                new Date(right.scheduledStartTime).getTime(),
             )
             .slice(0, 4)
             .map((session) => {
@@ -300,7 +305,9 @@ export default function SchoolSessionMonitoringScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {context?.lesson.learnerName ?? session.learnerId}
+                      {context?.lesson.learnerName ??
+                        participantsBySessionId[session.id]?.learnerId ??
+                        "Learner"}
                     </Text>
                     <Text
                       className="mt-1 text-[11px]"
@@ -309,7 +316,7 @@ export default function SchoolSessionMonitoringScreen() {
                         fontFamily: fontFamily.figtreeMedium,
                       }}
                     >
-                      {scheduleLabel(session.scheduledAt)}
+                      {scheduleLabel(session.scheduledStartTime)}
                     </Text>
                   </View>
                   <Text

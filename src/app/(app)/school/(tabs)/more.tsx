@@ -8,9 +8,9 @@ import { ThemeSelector } from "@/components/common/theme-selector";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import { useAuthStore } from "@/store/auth.store";
 
 type Destination = {
   icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -54,7 +54,7 @@ export default function SchoolMoreScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const profile = useSchoolOperationsStore((state) => state.profile);
-  const signOut = useAuthStore((state) => state.signOut);
+  const { logout } = useLogout();
 
   const renderDestinations = (destinations: Destination[]) =>
     destinations.map((destination) => (
@@ -193,10 +193,7 @@ export default function SchoolMoreScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Log out"
-          onPress={() => {
-            signOut();
-            router.replace("/welcome");
-          }}
+          onPress={() => void logout()}
           className="mt-4 flex-row items-center gap-4 rounded-3xl border p-4 active:opacity-80"
           style={surfaces.card}
         >

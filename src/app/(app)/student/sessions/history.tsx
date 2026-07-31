@@ -8,13 +8,13 @@ import { fontFamily } from "@/constants/fonts";
 import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { learnerBookings } from "@/sample_data";
-import type { BookingStatus } from "@/types";
+import type { LearnerLessonCard } from "@/types";
 
-type HistoryFilter = "all" | BookingStatus;
+type HistoryFilter = "all" | LearnerLessonCard["status"];
 
 const filters: { label: string; value: HistoryFilter }[] = [
   { label: "All", value: "all" },
-  { label: "Upcoming", value: "upcoming" },
+  { label: "Upcoming", value: "scheduled" },
   { label: "Completed", value: "completed" },
   { label: "Cancelled", value: "cancelled" },
 ];

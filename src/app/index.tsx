@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppLogo } from "@/components/common/app-logo";
 import { Screen } from "@/components/common/screen";
 import { splashPalette } from "@/constants/theme";
+import { homeForRole } from "@/features/auth";
+import { useAuthStore } from "@/store/auth.store";
 
 const FRSC_SEAL_URI =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
@@ -73,6 +75,8 @@ export default function SplashScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const progress = useSharedValue(0);
+  const role = useAuthStore((state) => state.role);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     progress.value = withTiming(0.72, {
@@ -83,11 +87,13 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace("/onboarding" as Href);
+      router.replace(
+        isAuthenticated && role ? homeForRole(role) : ("/onboarding" as Href),
+      );
     }, 2800);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [isAuthenticated, role, router]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: progress.value * 240,

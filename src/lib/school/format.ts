@@ -43,7 +43,7 @@ export function vehicleDisplayName(input: {
 }
 
 export function computeStartingPrice(
-  packages: Array<{ price: number; isActive?: boolean }>,
+  packages: { price: number; isActive?: boolean }[],
 ): number {
   const active = packages.filter((pkg) => pkg.isActive !== false);
   if (active.length === 0) {

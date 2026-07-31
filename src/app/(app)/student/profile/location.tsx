@@ -57,7 +57,7 @@ export default function LocationSettingsScreen() {
         <SettingsRow
           icon="shield-account-outline"
           title="Live session sharing"
-          description="Never automatic—choose guardians during each active lesson."
+          description="Never automatic—you create a private link during each active lesson."
           value="Ask every time"
         />
       </View>

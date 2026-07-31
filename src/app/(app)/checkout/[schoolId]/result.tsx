@@ -55,7 +55,7 @@ export default function CheckoutResultScreen() {
       iconBackground: colors.success,
       iconColor: colors.contrastText,
       title: "Package unlocked",
-      description: `Your ${selectedPackage.sessions} sessions with ${school.name} are ready to book.`,
+      description: `Your ${selectedPackage.numberOfLessons} sessions with ${school.name} are ready to book.`,
       statusLabel: "Payment successful",
       statusColor: colors.success,
     },
@@ -196,8 +196,8 @@ export default function CheckoutResultScreen() {
                   fontFamily: fontFamily.figtree,
                 }}
               >
-                {selectedPackage.sessions} session credits ·{" "}
-                {selectedPackage.duration}
+                {selectedPackage.numberOfLessons} session credits ·{" "}
+                {selectedPackage.durationInDays} days
               </Text>
               <View className="mt-3 flex-row items-center gap-2">
                 <View

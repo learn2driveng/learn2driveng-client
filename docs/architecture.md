@@ -9,7 +9,7 @@ Initial architecture documentation for the Learn2Drive React Native application.
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Learn2Drive Mobile App                    │
-│  (Expo / React Native — Learner, Guardian, Instructor,      │
+│  (Expo / React Native — Learner, Instructor, School, Admin) │
 │   School Admin, Platform Admin)                             │
 └───────────────┬─────────────────────────┬───────────────────┘
                 │ HTTPS (REST)            │ WebSocket
@@ -40,7 +40,7 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 ├────────────────────────────────────────────┤
 │  Hooks (src/hooks/)                         │  ← Business logic hooks
 ├────────────────────────────────────────────┤
-│  API (src/api/)                             │  ← TanStack Query
+│  API client (src/lib/api/)                  │  ← HTTP contracts and mappers
 ├────────────────────────────────────────────┤
 │  Store (src/store/)                         │  ← Zustand client state
 ├────────────────────────────────────────────┤
@@ -50,8 +50,20 @@ The mobile client is a **presentation and realtime consumer**. Authorization is 
 
 **Dependency rule:** Routes import from components/hooks/api. API layer must not import from routes.
 
-Feature screens shared by multiple route groups may live under
-`src/features/{domain}/screens`. Expo Router files remain thin entry points.
+Feature screens shared by multiple route groups live under
+`src/features/{domain}/screens`. Expo Router files should remain thin entry
+points.
+
+Domain data has three explicit shapes:
+
+1. canonical server entities in `src/types`;
+2. feature view models for joined or display-only data;
+3. local fixtures in `src/sample_data` that satisfy one of those contracts.
+
+Do not add legacy screen fields to a canonical server entity merely to satisfy
+a component. Compose a view model or join the related entity instead. For
+example, learner and booking IDs belong to `TrainingSessionParticipant`, not
+`TrainingSession`.
 
 ---
 
@@ -90,7 +102,6 @@ flowchart TD
     D -->|Invalid| C
     D -->|Valid| E{user.role}
     E -->|learner| F[LearnerNavigator]
-    E -->|guardian| G[GuardianNavigator]
     E -->|instructor| H[InstructorNavigator]
     E -->|school_admin| I[SchoolNavigator]
     E -->|platform_admin| J[AdminNavigator]
@@ -146,11 +157,11 @@ outside the learner bottom-tab navigator.
 
 ### 4.4 Auth Stack
 
-| Screen | Route name |
-|--------|------------|
-| Splash | `Splash` |
-| Login | `Login` |
-| Register | `Register` |
+| Screen          | Route name       |
+| --------------- | ---------------- |
+| Splash          | `Splash`         |
+| Login           | `Login`          |
+| Register        | `Register`       |
 | Forgot Password | `ForgotPassword` |
 
 ---
@@ -194,12 +205,13 @@ Screen → useSchools() → queryFn → api/schools.getNearby()
 **Query key convention:**
 
 ```typescript
-['schools', 'nearby', { lat, lng, radius }]
-['bookings', 'list', { status, page }]
-['sessions', 'detail', sessionId]
+["schools", "nearby", { lat, lng, radius }][
+  ("bookings", "list", { status, page })
+][("sessions", "detail", sessionId)];
 ```
 
 **Invalidation examples:**
+
 - After booking created → invalidate `['bookings']`
 - After session ended → invalidate `['sessions', sessionId]` and `['bookings']`
 
@@ -207,13 +219,13 @@ Screen → useSchools() → queryFn → api/schools.getNearby()
 
 ## 7. Data Flow — Client State (Zustand)
 
-| Store | State | Consumers |
-|-------|-------|-----------|
-| `useAuthStore` | tokens, isAuthenticated, userId, role | RootNavigator, API client |
-| `useSelectionStore` | selectedSchool, selectedPackage | Booking flow |
-| `useSessionStore` | activeSession, coordinates | Instructor tracking, maps |
-| `useUIStore` | modals, bottom sheets | Global UI |
-| `useSettingsStore` | theme, notifications prefs | Settings screens |
+| Store                      | State                                            | Consumers                                               |
+| -------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| `useAuthStore`             | tokens, isAuthenticated, userId, role            | RootNavigator, API client                               |
+| `useTrainingSessionStore`  | sessions, participants, expiring location shares | Learner, public tracking, instructor, school monitoring |
+| `useSchoolOperationsStore` | school ops fixtures and local mutations          | School admin screens                                    |
+| `useLocationStore`         | location consent and latest location             | Public discovery and profile                            |
+| `useSettingsStore`         | theme, notifications prefs                       | Settings screens                                        |
 
 ---
 
@@ -223,16 +235,18 @@ Screen → useSchools() → queryFn → api/schools.getNearby()
 sequenceDiagram
     participant L as Learner App
     participant S as Socket Server
-    participant G as Guardian App
+    participant V as Public Viewer
 
     L->>S: join session:{id}
     L->>S: location:update { lat, lng }
-    S->>G: location:update (subscribed)
+    V->>S: read current location with opaque share token
+    S-->>V: limited public tracking projection
     L->>S: location:stop or session:end
-    S->>G: session:ended
+    S-->>V: link expired
 ```
 
 **Client modules:**
+
 - `src/services/socket.ts` — connect, disconnect, emit, subscribe
 - `src/features/tracking/hooks/useSessionTracking.ts`
 - `src/services/location.ts` — expo-location updates while an active learner
@@ -244,11 +258,11 @@ sequenceDiagram
 
 `src/components/maps/AppMap.tsx` wraps `react-native-maps`:
 
-| Use case | Markers | Polylines |
-|----------|---------|-----------|
-| School discovery | School pins | — |
-| Active lesson (instructor) | Vehicle position | Route so far |
-| Guardian tracking | Learner vehicle | Live route |
+| Use case                   | Markers          | Polylines     |
+| -------------------------- | ---------------- | ------------- |
+| School discovery           | School pins      | —             |
+| Active lesson (instructor) | Vehicle position | Route so far  |
+| Public link tracking       | Learner position | Current point |
 
 Default region: Nigeria. User location via `expo-location` with permission prompts.
 
@@ -258,12 +272,12 @@ Default region: Nigeria. User location via `expo-location` with permission promp
 
 `expo-notifications` + backend push tokens:
 
-| Event | Recipients |
-|-------|------------|
-| Booking confirmed | Learner |
-| Session started | Guardian, Learner |
-| Session completed | Guardian, Learner |
-| School approved | School admin |
+| Event             | Recipients   |
+| ----------------- | ------------ |
+| Booking confirmed | Learner      |
+| Session started   | Learner      |
+| Session completed | Learner      |
+| School approved   | School admin |
 
 Flow: register token on login → `POST /users/push-token` → handle foreground/background handlers in `src/features/notifications/`.
 
@@ -272,21 +286,11 @@ Flow: register token on login → `POST /users/push-token` → handle foreground
 ## 11. API Module Structure
 
 ```
-src/api/
-├── client.ts           # fetch/axios + interceptors
-├── query-client.ts     # TanStack QueryClient defaults
-├── query-keys.ts
-├── auth.ts
-├── schools.ts
-├── instructors.ts
-├── vehicles.ts
-├── bookings.ts
-├── sessions.ts
-├── reviews.ts
-└── hooks/
-    ├── useLogin.ts
-    ├── useSchools.ts
-    └── ...
+src/lib/api/
+├── client.ts           # fetch client and auth handling
+├── config.ts           # API configuration
+├── discover.ts         # public marketplace requests
+└── index.ts
 ```
 
 ---
@@ -296,25 +300,35 @@ src/api/
 ```
 src/types/
 ├── auth.ts       # User, UserRole, AuthTokens
-├── school.ts     # DrivingSchool, FRSCStatus
+├── school.ts     # School, Package, Vehicle and discovery projections
 ├── booking.ts
-├── session.ts
-├── vehicle.ts
+├── training-session.ts
 ├── instructor.ts
+├── school-operations.ts
 └── api.ts        # ApiError, PaginatedResponse<T>
 ```
+
+Canonical status vocabulary must be used end-to-end:
+
+- training sessions: `scheduled`, `in_progress`, `completed`, `cancelled`;
+- live-location shares: `requesting_permission`, `sharing`, `stopped`, `failed`;
+- packages and vehicles: `isActive`;
+- instructor accounts: `pending`, `active`, `suspended` plus local `invited`.
+
+Presentation copy may say “Upcoming”, “Live”, or “Profile pending”, but those
+labels must map to canonical values rather than becoming new domain statuses.
 
 ---
 
 ## 13. Error Handling
 
-| Layer | Strategy |
-|-------|----------|
-| Render | `ErrorBoundary` in root + optional per-stack |
-| Query | `isError`, `error`, retry button, toast |
-| Forms | Zod → RHF `errors` field messages |
-| Network | NetInfo banner + Query `networkMode` |
-| Socket | Reconnect with exponential backoff |
+| Layer   | Strategy                                     |
+| ------- | -------------------------------------------- |
+| Render  | `ErrorBoundary` in root + optional per-stack |
+| Query   | `isError`, `error`, retry button, toast      |
+| Forms   | Zod → RHF `errors` field messages            |
+| Network | NetInfo banner + Query `networkMode`         |
+| Socket  | Reconnect with exponential backoff           |
 
 ---
 
@@ -324,9 +338,9 @@ src/types/
 - Certificate pinning — evaluate for production (ADR TBD)
 - No PII in logs
 - Location shared only during active sessions
-- Guardian access is learner-managed, revocable, expirable, and scoped to
-  selected active lesson shares
-- Guardian linked to learner via server-verified relationship
+- Public tracking uses opaque, single-purpose, expiring tokens
+- Live tracking exposes only the current location and limited lesson context
+- Revoked, expired, failed, or completed-session links return no location
 
 ---
 
@@ -342,13 +356,13 @@ src/types/
 
 ## 16. File Naming Conventions
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Screen | `{Name}Screen.tsx` | `SchoolListScreen.tsx` |
-| Hook | `use{Name}.ts` | `useNearbySchools.ts` |
-| Store | `{name}.store.ts` | `auth.store.ts` |
-| Component | PascalCase | `SchoolCard.tsx` |
-| API | `{resource}.ts` | `schools.ts` |
+| Type      | Pattern            | Example                |
+| --------- | ------------------ | ---------------------- |
+| Screen    | `{Name}Screen.tsx` | `SchoolListScreen.tsx` |
+| Hook      | `use{Name}.ts`     | `useNearbySchools.ts`  |
+| Store     | `{name}.store.ts`  | `auth.store.ts`        |
+| Component | PascalCase         | `SchoolCard.tsx`       |
+| API       | `{resource}.ts`    | `schools.ts`           |
 
 ---
 

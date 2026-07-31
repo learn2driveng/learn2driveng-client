@@ -36,8 +36,8 @@ export default function PurchaseReviewScreen() {
   const rows = [
     ["Driving school", school.name],
     ["Training package", selectedPackage.name],
-    ["Duration", selectedPackage.duration],
-    ["Sessions", `${selectedPackage.sessions} lessons`],
+    ["Duration", `${selectedPackage.durationInDays} days`],
+    ["Sessions", `${selectedPackage.numberOfLessons} lessons`],
     ["Payment method", methodLabels[method] ?? methodLabels.card],
   ];
 

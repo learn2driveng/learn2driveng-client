@@ -46,13 +46,9 @@ export default function SchoolDashboardScreen() {
   const unassignedBookings = bookings.filter(
     (booking) => booking.status === "unassigned",
   );
-  const activeVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "active",
-  );
-  const maintenanceVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "maintenance",
-  );
-  const activePackages = packages.filter((item) => item.status === "active");
+  const activeVehicles = vehicles.filter((vehicle) => vehicle.isActive);
+  const maintenanceVehicles = vehicles.filter((vehicle) => !vehicle.isActive);
+  const activePackages = packages.filter((item) => item.isActive);
   const upcomingBookings = [...bookings]
     .sort(
       (left, right) =>

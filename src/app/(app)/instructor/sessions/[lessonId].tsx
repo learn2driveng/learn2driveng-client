@@ -66,7 +66,7 @@ export default function InstructorSessionScreen() {
   );
   const lessonStatus = context
     ? toInstructorLessonStatus(session?.status, context.lesson.status)
-    : "upcoming";
+    : "scheduled";
   const stage: SessionStage =
     lessonStatus === "in_progress"
       ? "active"
@@ -84,7 +84,9 @@ export default function InstructorSessionScreen() {
   useEffect(() => {
     if (stage !== "active") return;
 
-    const startedAt = session?.startedAt ? Date.parse(session.startedAt) : null;
+    const startedAt = session?.actualStartTime
+      ? Date.parse(session.actualStartTime)
+      : null;
     const updateElapsed = () => {
       if (startedAt === null) {
         setElapsedSeconds((current) => current + 1);
@@ -99,7 +101,7 @@ export default function InstructorSessionScreen() {
     const timer = setInterval(updateElapsed, 1000);
 
     return () => clearInterval(timer);
-  }, [session?.startedAt, stage]);
+  }, [session?.actualStartTime, stage]);
 
   if (!context) {
     return (
@@ -510,8 +512,8 @@ export default function InstructorSessionScreen() {
                 className="flex-1 font-figtree-medium text-[12px] leading-5"
                 style={{ color: colors.verified }}
               >
-                The learner controls any live-location sharing with an attached
-                guardian during this active session.
+                The learner controls any private live-location link during this
+                active session.
               </Text>
             </View>
 

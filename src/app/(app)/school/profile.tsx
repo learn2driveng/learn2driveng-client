@@ -102,7 +102,7 @@ export default function SchoolProfileScreen() {
       <View className="mt-8">
         <SectionHeader title="Verification" />
         <View
-          className="mt-4 rounded-3xl border p-4"
+          className="mt-4 p-4 border rounded-3xl"
           style={{
             backgroundColor: colors.successSoft,
             borderColor: colors.success,
@@ -162,7 +162,7 @@ export default function SchoolProfileScreen() {
           This content appears on the school page learners browse.
         </Text>
         <View
-          className="mt-4 gap-5 rounded-3xl border p-4"
+          className="gap-5 mt-4 p-4 border rounded-3xl"
           style={surfaces.card}
         >
           {field("Marketplace display name", name, setName)}
@@ -173,7 +173,7 @@ export default function SchoolProfileScreen() {
       <View className="mt-8">
         <SectionHeader title="Contact and location" />
         <View
-          className="mt-4 gap-5 rounded-3xl border p-4"
+          className="gap-5 mt-4 p-4 border rounded-3xl"
           style={surfaces.card}
         >
           {field("Operations email", email, setEmail)}
@@ -194,7 +194,7 @@ export default function SchoolProfileScreen() {
         >
           Add the neighbourhoods and routes where learners can book training.
         </Text>
-        <View className="mt-4 flex-row gap-2">
+        <View className="flex-row gap-2 mt-4">
           <TextInput
             accessibilityLabel="New operating area"
             value={areaDraft}
@@ -203,7 +203,7 @@ export default function SchoolProfileScreen() {
             placeholder="e.g. Asokoro"
             placeholderTextColor={colors.textFaint}
             returnKeyType="done"
-            className="h-12 flex-1 rounded-2xl border px-4 text-[14px]"
+            className="flex-1 px-4 border rounded-2xl h-12 text-[14px]"
             style={{
               backgroundColor: colors.surface,
               borderColor: colors.border,
@@ -217,7 +217,7 @@ export default function SchoolProfileScreen() {
             accessibilityState={{ disabled: !areaDraft.trim() }}
             disabled={!areaDraft.trim()}
             onPress={addOperatingArea}
-            className="h-12 w-12 items-center justify-center rounded-2xl active:opacity-80"
+            className="justify-center items-center active:opacity-80 rounded-2xl w-12 h-12"
             style={{
               backgroundColor: areaDraft.trim()
                 ? colors.primary
@@ -231,14 +231,14 @@ export default function SchoolProfileScreen() {
             />
           </Pressable>
         </View>
-        <View className="mt-4 flex-row flex-wrap gap-2">
+        <View className="flex-row flex-wrap gap-2 mt-4">
           {operatingAreas.map((area) => (
             <Pressable
               key={area}
               accessibilityRole="button"
               accessibilityLabel={`Remove ${area}`}
               onPress={() => removeOperatingArea(area)}
-              className="flex-row items-center gap-1.5 rounded-full border px-3 py-2 active:opacity-70"
+              className="flex-row items-center gap-1.5 active:opacity-70 px-3 py-2 border rounded-full"
               style={{
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
@@ -279,7 +279,7 @@ export default function SchoolProfileScreen() {
           });
           setSaved(true);
         }}
-        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+        className="flex-row justify-center items-center gap-2 active:opacity-80 mt-8 rounded-2xl h-14"
         style={{
           backgroundColor:
             canSave && !saved ? colors.primary : colors.surfaceStrong,

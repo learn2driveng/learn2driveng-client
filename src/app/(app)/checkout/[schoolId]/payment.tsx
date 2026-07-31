@@ -163,7 +163,7 @@ export default function PaymentMethodScreen() {
             className="mt-1 text-[12px]"
             style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
           >
-            {school.name} · {selectedPackage.sessions} sessions
+            {school.name} · {selectedPackage.numberOfLessons} sessions
           </Text>
           <View
             className="mt-4 h-px"

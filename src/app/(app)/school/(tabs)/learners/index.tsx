@@ -15,7 +15,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 import type { SchoolLearnerStatus } from "@/types";
 
-const filters: Array<{ label: string; value: "all" | SchoolLearnerStatus }> = [
+const filters: { label: string; value: "all" | SchoolLearnerStatus }[] = [
   { label: "All", value: "all" },
   { label: "Active", value: "active" },
   { label: "On hold", value: "on_hold" },

@@ -24,8 +24,12 @@ export default function StudentDashboardScreen() {
   const activeSession = useTrainingSessionStore((state) => {
     if (!state.activeSessionId) return undefined;
     const session = state.sessions[state.activeSessionId];
-    return session?.learnerId === studentProfile.id ? session : undefined;
+    const participant = state.participantsBySessionId[state.activeSessionId];
+    return participant?.learnerId === studentProfile.id ? session : undefined;
   });
+  const activeParticipant = useTrainingSessionStore((state) =>
+    activeSession ? state.participantsBySessionId[activeSession.id] : undefined,
+  );
   const activeLocationShare = useTrainingSessionStore((state) =>
     activeSession ? state.locationShares[activeSession.id] : undefined,
   );
@@ -113,7 +117,7 @@ export default function StudentDashboardScreen() {
           onPress={() =>
             router.push({
               pathname: "/student/sessions/[bookingId]/live-location",
-              params: { bookingId: activeSession.bookingId },
+              params: { bookingId: activeParticipant?.bookingId ?? "" },
             })
           }
           className="mt-8 overflow-hidden rounded-[28px] p-5 active:opacity-80"

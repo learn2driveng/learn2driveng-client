@@ -50,8 +50,8 @@ export default function InstructorHelpScreen() {
           style={{ backgroundColor: colors.border }}
         />
         <FaqItem
-          question="Who controls guardian location sharing?"
-          answer="The learner chooses whether to share their live location with an attached guardian."
+          question="Who controls live location sharing?"
+          answer="The learner creates and shares a private tracking link during an active lesson. No guardian account is required."
         />
       </View>
 

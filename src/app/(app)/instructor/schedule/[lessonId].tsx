@@ -41,7 +41,7 @@ export default function InstructorLessonDetailScreen() {
   const { lesson, day } = context;
   const lessonStatus = toInstructorLessonStatus(sessionStatus, lesson.status);
   const statusStyle = {
-    upcoming: {
+    scheduled: {
       label: "Upcoming lesson",
       color: colors.verified,
       background: colors.verifiedSoft,
@@ -55,6 +55,11 @@ export default function InstructorLessonDetailScreen() {
       label: "Lesson completed",
       color: colors.success,
       background: colors.successSoft,
+    },
+    cancelled: {
+      label: "Lesson cancelled",
+      color: colors.error,
+      background: colors.surfaceStrong,
     },
   }[lessonStatus];
   const canOpenSession = lessonStatus !== "completed";
@@ -217,8 +222,8 @@ export default function InstructorLessonDetailScreen() {
           className="flex-1 font-figtree-medium text-[12px] leading-5"
           style={{ color: colors.verified }}
         >
-          Starting the lesson updates its session status. Any guardian
-          live-location sharing remains controlled by the learner.
+          Starting the lesson updates its session status. Any private
+          live-location link remains controlled by the learner.
         </Text>
       </View>
 
