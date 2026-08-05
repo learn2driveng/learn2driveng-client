@@ -1,37 +1,92 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
+import { AuthDateOfBirthField } from "@/components/auth";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createSchoolInstructor } from "@/lib/api";
+import { instructorUserToRosterItem } from "@/lib/school/map-api";
+import { isValidEmail } from "@/lib/auth/validation";
+import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { ApiError } from "@/types";
 
-const transmissionOptions = ["Automatic", "Manual"] as const;
+function splitName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
 
 export default function InviteInstructorScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const upsertInstructor = useSchoolOperationsStore(
+    (state) => state.upsertInstructor,
+  );
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [location, setLocation] = useState("Wuse II Training Yard");
-  const [transmissions, setTransmissions] = useState<
-    (typeof transmissionOptions)[number][]
-  >(["Automatic"]);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [confirmTemporaryPassword, setConfirmTemporaryPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const { firstName, lastName } = splitName(name);
   const canSendInvite = useMemo(
-    () => name.trim().length >= 2 && contact.trim().length >= 5,
-    [contact, name],
+    () =>
+      firstName.length >= 2 &&
+      lastName.length >= 2 &&
+      isValidEmail(email) &&
+      phone.trim().length >= 10 &&
+      Boolean(dateOfBirth) &&
+      temporaryPassword.length >= 8 &&
+      temporaryPassword === confirmTemporaryPassword,
+    [
+      confirmTemporaryPassword,
+      dateOfBirth,
+      email,
+      firstName.length,
+      lastName.length,
+      phone,
+      temporaryPassword,
+    ],
   );
 
-  const toggleTransmission = (
-    transmission: (typeof transmissionOptions)[number],
-  ) => {
-    setTransmissions((current) =>
-      current.includes(transmission)
-        ? current.filter((item) => item !== transmission)
-        : [...current, transmission],
-    );
+  const sendInvite = async () => {
+    if (!canSendInvite || isSubmitting) return;
+
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      const instructor = await createSchoolInstructor({
+        firstName,
+        lastName,
+        email: email.trim(),
+        phone: phone.trim(),
+        dateOfBirth,
+        temporaryPassword,
+        confirmTemporaryPassword,
+      });
+      upsertInstructor(instructorUserToRosterItem(instructor));
+      router.replace("/school/instructors");
+    } catch (caught) {
+      const error = caught as ApiError;
+      setSubmitError(error.message || "We could not invite this instructor.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -44,32 +99,32 @@ export default function InviteInstructorScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Invite instructors into your school. They complete their own profile,
-        then the school activates them before assignment.
+        Create an instructor account for your school. They receive a verification
+        email and can sign in with the temporary password you set here.
       </Text>
 
       <View className="mt-7 gap-5">
         {[
           {
-            label: "Instructor name",
+            label: "Full name",
             value: name,
             onChangeText: setName,
             placeholder: "e.g. Tunde Balogun",
             keyboardType: "default" as const,
           },
           {
-            label: "Phone or email",
-            value: contact,
-            onChangeText: setContact,
-            placeholder: "+234 800 000 0000 or name@email.com",
+            label: "Email",
+            value: email,
+            onChangeText: setEmail,
+            placeholder: "instructor@school.com",
             keyboardType: "email-address" as const,
           },
           {
-            label: "Assigned location",
-            value: location,
-            onChangeText: setLocation,
-            placeholder: "Training yard or route",
-            keyboardType: "default" as const,
+            label: "Phone",
+            value: phone,
+            onChangeText: setPhone,
+            placeholder: "+2348012345678",
+            keyboardType: "phone-pad" as const,
           },
         ].map((field) => (
           <View key={field.label}>
@@ -102,52 +157,47 @@ export default function InviteInstructorScreen() {
             />
           </View>
         ))}
-      </View>
 
-      <View className="mt-7">
-        <Text
-          className="mb-3 text-[11px] uppercase tracking-[1.4px]"
-          style={{
-            color: colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          Allowed vehicle types
-        </Text>
-        <View className="flex-row gap-3">
-          {transmissionOptions.map((item) => {
-            const selected = transmissions.includes(item);
+        <AuthDateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} />
 
-            return (
-              <Pressable
-                key={item}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                onPress={() => toggleTransmission(item)}
-                className="flex-1 rounded-2xl border p-4 active:opacity-75"
-                style={{
-                  backgroundColor: selected ? colors.primary : colors.surface,
-                  borderColor: selected ? colors.primary : colors.border,
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={selected ? "check-circle" : "circle-outline"}
-                  size={20}
-                  color={selected ? colors.onPrimary : colors.textSubtle}
-                />
-                <Text
-                  className="mt-3 text-[13px]"
-                  style={{
-                    color: selected ? colors.onPrimary : colors.text,
-                    fontFamily: fontFamily.figtreeBold,
-                  }}
-                >
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {[
+          {
+            label: "Temporary password",
+            value: temporaryPassword,
+            onChangeText: setTemporaryPassword,
+          },
+          {
+            label: "Confirm temporary password",
+            value: confirmTemporaryPassword,
+            onChangeText: setConfirmTemporaryPassword,
+          },
+        ].map((field) => (
+          <View key={field.label}>
+            <Text
+              className="mb-2 text-[11px] uppercase tracking-[1.4px]"
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {field.label}
+            </Text>
+            <TextInput
+              accessibilityLabel={field.label}
+              secureTextEntry
+              autoCapitalize="none"
+              onChangeText={field.onChangeText}
+              value={field.value}
+              className="h-14 rounded-2xl border px-4 text-[15px]"
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            />
+          </View>
+        ))}
       </View>
 
       <View
@@ -164,38 +214,53 @@ export default function InviteInstructorScreen() {
           className="mt-2 text-[12px] leading-5"
           style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
         >
-          This invite does not make the instructor bookable immediately. They
-          must accept, complete profile details, and be activated by the school.
+          The instructor must verify their email before they can be assigned to
+          learner bookings.
         </Text>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSendInvite }}
-        disabled={!canSendInvite}
-        onPress={() => router.replace("/school/instructors")}
+        accessibilityState={{ disabled: !canSendInvite || isSubmitting }}
+        disabled={!canSendInvite || isSubmitting}
+        onPress={sendInvite}
         className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{
-          backgroundColor: canSendInvite
-            ? colors.primary
-            : colors.surfaceStrong,
+          backgroundColor:
+            canSendInvite && !isSubmitting
+              ? colors.primary
+              : colors.surfaceStrong,
         }}
       >
-        <Text
-          className="text-[15px]"
-          style={{
-            color: canSendInvite ? colors.onPrimary : colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          Send instructor invite
-        </Text>
-        <MaterialCommunityIcons
-          name="send-outline"
-          size={20}
-          color={canSendInvite ? colors.onPrimary : colors.textSubtle}
-        />
+        {isSubmitting ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <>
+            <Text
+              className="text-[15px]"
+              style={{
+                color: canSendInvite ? colors.onPrimary : colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Send instructor invite
+            </Text>
+            <MaterialCommunityIcons
+              name="send-outline"
+              size={20}
+              color={canSendInvite ? colors.onPrimary : colors.textSubtle}
+            />
+          </>
+        )}
       </Pressable>
+      {submitError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {submitError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

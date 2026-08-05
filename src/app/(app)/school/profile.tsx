@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -10,7 +10,11 @@ import {
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { updateMyDrivingSchool } from "@/lib/api";
+import { hydrateSchoolFromRecord } from "@/lib/school/hydrate-school-operations";
+import { useAuthStore } from "@/store/auth.store";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { ApiError } from "@/types";
 
 export default function SchoolProfileScreen() {
   const { colors } = useAppTheme();
@@ -19,6 +23,7 @@ export default function SchoolProfileScreen() {
   const updateProfile = useSchoolOperationsStore(
     (state) => state.updateProfile,
   );
+  const user = useAuthStore((state) => state.user);
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone);
@@ -30,10 +35,24 @@ export default function SchoolProfileScreen() {
   const [operatingAreas, setOperatingAreas] = useState(profile.operatingAreas);
   const [areaDraft, setAreaDraft] = useState("");
   const [saved, setSaved] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const canSave =
     [name, email, phone, primaryLocation, address, description].every(
       (value) => value.trim().length > 0,
     ) && operatingAreas.length > 0;
+
+  useEffect(() => {
+    if (!profile.id) return;
+    setName(profile.name);
+    setEmail(profile.email);
+    setPhone(profile.phone);
+    setPrimaryLocation(profile.primaryLocation);
+    setAddress(profile.address);
+    setDescription(profile.description);
+    setOperatingAreas(profile.operatingAreas);
+    setSaved(true);
+  }, [profile.id]);
 
   const addOperatingArea = () => {
     const area = areaDraft.trim();
@@ -265,41 +284,81 @@ export default function SchoolProfileScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSave || saved }}
-        disabled={!canSave || saved}
-        onPress={() => {
-          updateProfile({
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            primaryLocation: primaryLocation.trim(),
-            address: address.trim(),
-            description: description.trim(),
-            operatingAreas,
-          });
-          setSaved(true);
+        accessibilityState={{ disabled: !canSave || saved || isSaving }}
+        disabled={!canSave || saved || isSaving}
+        onPress={async () => {
+          if (!canSave || saved || isSaving) return;
+
+          setSaveError(null);
+          setIsSaving(true);
+
+          try {
+            const school = await updateMyDrivingSchool({
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              description: description.trim(),
+              addressLine1: address.trim(),
+              city: primaryLocation.trim(),
+            });
+            const adminName = user
+              ? `${user.firstName} ${user.lastName}`.trim()
+              : profile.adminName;
+            hydrateSchoolFromRecord(school, adminName);
+            updateProfile({
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              primaryLocation: primaryLocation.trim(),
+              address: address.trim(),
+              description: description.trim(),
+              operatingAreas,
+            });
+            setSaved(true);
+          } catch (caught) {
+            const error = caught as ApiError;
+            setSaveError(error.message || "We could not save your profile.");
+          } finally {
+            setIsSaving(false);
+          }
         }}
         className="flex-row justify-center items-center gap-2 active:opacity-80 mt-8 rounded-2xl h-14"
         style={{
           backgroundColor:
-            canSave && !saved ? colors.primary : colors.surfaceStrong,
+            canSave && !saved && !isSaving
+              ? colors.primary
+              : colors.surfaceStrong,
         }}
       >
-        <MaterialCommunityIcons
-          name={saved ? "check" : "content-save-outline"}
-          size={20}
-          color={canSave && !saved ? colors.onPrimary : colors.textSubtle}
-        />
-        <Text
-          className="text-[15px]"
-          style={{
-            color: canSave && !saved ? colors.onPrimary : colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          {saved ? "Profile up to date" : "Save profile"}
-        </Text>
+        {isSaving ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <>
+            <MaterialCommunityIcons
+              name={saved ? "check" : "content-save-outline"}
+              size={20}
+              color={canSave && !saved ? colors.onPrimary : colors.textSubtle}
+            />
+            <Text
+              className="text-[15px]"
+              style={{
+                color: canSave && !saved ? colors.onPrimary : colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {saved ? "Profile up to date" : "Save profile"}
+            </Text>
+          </>
+        )}
       </Pressable>
+      {saveError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {saveError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

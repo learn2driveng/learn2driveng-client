@@ -1,0 +1,61 @@
+import type { SchoolVerificationDocument } from "@/types";
+
+export function createEmptyVerificationDocuments(): SchoolVerificationDocument[] {
+  return [
+    {
+      type: "frsc_certificate",
+      label: "FRSC driving school licence",
+      description: "Current approval to operate as a driving school",
+      required: true,
+      fileName: null,
+      uri: null,
+      mimeType: null,
+      size: null,
+      uploadedAt: null,
+    },
+    {
+      type: "business_registration",
+      label: "CAC registration certificate",
+      description: "Registered business identity and legal name",
+      required: true,
+      fileName: null,
+      uri: null,
+      mimeType: null,
+      size: null,
+      uploadedAt: null,
+    },
+    {
+      type: "tax_document",
+      label: "Proof of operating address",
+      description: "Recent utility bill or tenancy document",
+      required: true,
+      fileName: null,
+      uri: null,
+      mimeType: null,
+      size: null,
+      uploadedAt: null,
+    },
+    {
+      type: "other",
+      label: "Administrator identity",
+      description: "Government-issued ID for the accountable school admin",
+      required: true,
+      fileName: null,
+      uri: null,
+      mimeType: null,
+      size: null,
+      uploadedAt: null,
+    },
+    {
+      type: "insurance",
+      label: "Vehicle insurance",
+      description: "Optional fleet insurance evidence",
+      required: false,
+      fileName: null,
+      uri: null,
+      mimeType: null,
+      size: null,
+      uploadedAt: null,
+    },
+  ];
+}

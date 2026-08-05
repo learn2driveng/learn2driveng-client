@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -11,15 +11,17 @@ import {
 import { fontFamily } from "@/constants/fonts";
 import { formatTransmissionLabel } from "@/lib/school/format";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createSchoolPackage } from "@/lib/api";
+import { packageToSchoolPackage } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { VehicleTransmissionType } from "@/types";
+import type { ApiError, VehicleTransmissionType } from "@/types";
 
 const transmissionOptions: VehicleTransmissionType[] = ["automatic", "manual"];
 
 export default function NewSchoolPackageScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const addPackage = useSchoolOperationsStore((state) => state.addPackage);
+  const upsertPackage = useSchoolOperationsStore((state) => state.upsertPackage);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -28,6 +30,8 @@ export default function NewSchoolPackageScreen() {
   const [eligibleTransmissions, setEligibleTransmissions] = useState<
     VehicleTransmissionType[]
   >(["automatic", "manual"]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const canSavePackage = useMemo(() => {
     const parsedPrice = Number(price);
@@ -62,18 +66,32 @@ export default function NewSchoolPackageScreen() {
     );
   };
 
-  const savePackage = () => {
-    if (!canSavePackage) return;
+  const savePackage = async () => {
+    if (!canSavePackage || isSubmitting) return;
 
-    addPackage({
-      name,
-      description,
-      price: Number(price),
-      numberOfLessons: Number(numberOfLessons),
-      durationInDays: Number(durationInDays),
-      eligibleTransmissions,
-    });
-    router.replace("/school/operations/packages");
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      const created = await createSchoolPackage({
+        name: name.trim(),
+        description: description.trim(),
+        price: Number(price),
+        numberOfLessons: Number(numberOfLessons),
+        durationInDays: Number(durationInDays),
+        isActive: false,
+      });
+      upsertPackage({
+        ...packageToSchoolPackage(created),
+        eligibleTransmissions,
+      });
+      router.replace("/school/operations/packages");
+    } catch (caught) {
+      const error = caught as ApiError;
+      setSubmitError(error.message || "We could not create this package.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fields = [
@@ -219,29 +237,46 @@ export default function NewSchoolPackageScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSavePackage }}
-        disabled={!canSavePackage}
+        accessibilityState={{ disabled: !canSavePackage || isSubmitting }}
+        disabled={!canSavePackage || isSubmitting}
         onPress={savePackage}
         className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
         style={{
-          backgroundColor: canSavePackage ? colors.primary : colors.surfaceStrong,
+          backgroundColor:
+            canSavePackage && !isSubmitting
+              ? colors.primary
+              : colors.surfaceStrong,
         }}
       >
-        <Text
-          className="text-[15px]"
-          style={{
-            color: canSavePackage ? colors.onPrimary : colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          Save package
-        </Text>
-        <MaterialCommunityIcons
-          name="check"
-          size={20}
-          color={canSavePackage ? colors.onPrimary : colors.textSubtle}
-        />
+        {isSubmitting ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <>
+            <Text
+              className="text-[15px]"
+              style={{
+                color: canSavePackage ? colors.onPrimary : colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Save package
+            </Text>
+            <MaterialCommunityIcons
+              name="check"
+              size={20}
+              color={canSavePackage ? colors.onPrimary : colors.textSubtle}
+            />
+          </>
+        )}
       </Pressable>
+      {submitError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {submitError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

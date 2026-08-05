@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -10,8 +11,11 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { updateSchoolVehicle } from "@/lib/api";
 import { formatTransmissionLabel } from "@/lib/school/format";
+import { vehicleToSchoolVehicle } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { ApiError } from "@/types";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-NG", {
@@ -27,9 +31,31 @@ export default function SchoolVehicleDetailScreen() {
   const vehicle = useSchoolOperationsStore((state) =>
     state.vehicles.find((item) => item.id === vehicleId),
   );
-  const setVehicleActive = useSchoolOperationsStore(
-    (state) => state.setVehicleActive,
-  );
+  const upsertVehicle = useSchoolOperationsStore((state) => state.upsertVehicle);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const setActiveState = async (isActive: boolean) => {
+    if (!vehicle || isUpdating) return;
+
+    setUpdateError(null);
+    setIsUpdating(true);
+
+    try {
+      const updated = await updateSchoolVehicle(vehicle.id, { isActive });
+      upsertVehicle({
+        ...vehicleToSchoolVehicle(updated),
+        assignedLocation: vehicle.assignedLocation,
+        lastInspectionAt: vehicle.lastInspectionAt,
+        lessonsThisWeek: vehicle.lessonsThisWeek,
+      });
+    } catch (caught) {
+      const error = caught as ApiError;
+      setUpdateError(error.message || "We could not update this vehicle.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (!vehicle) {
     return (
@@ -153,7 +179,8 @@ export default function SchoolVehicleDetailScreen() {
         {!vehicle.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setVehicleActive(vehicle.id, true)}
+            disabled={isUpdating}
+            onPress={() => setActiveState(true)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -177,7 +204,8 @@ export default function SchoolVehicleDetailScreen() {
         {vehicle.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setVehicleActive(vehicle.id, false)}
+            disabled={isUpdating}
+            onPress={() => setActiveState(false)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{ backgroundColor: colors.surface, borderColor: colors.error }}
           >
@@ -195,6 +223,17 @@ export default function SchoolVehicleDetailScreen() {
           </Pressable>
         ) : null}
       </View>
+      {isUpdating ? (
+        <ActivityIndicator className="mt-4" color={colors.primary} />
+      ) : null}
+      {updateError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {updateError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

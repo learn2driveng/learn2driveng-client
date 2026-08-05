@@ -2,13 +2,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { mergeVerificationDocuments } from "@/lib/school/map-api";
+import { uploadSchoolVerificationDocument } from "@/lib/school/upload-verification-document";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { SchoolVerificationDocumentType } from "@/types";
+import type { ApiError, SchoolVerificationDocumentType } from "@/types";
 
 function fileSize(value: number | null) {
   if (!value) return "Size unavailable";
@@ -23,13 +25,12 @@ export default function SchoolOnboardingDocumentsScreen() {
   const documents = useSchoolOperationsStore(
     (state) => state.verificationDocuments,
   );
-  const setDocument = useSchoolOperationsStore(
-    (state) => state.setVerificationDocument,
-  );
-  const removeDocument = useSchoolOperationsStore(
-    (state) => state.removeVerificationDocument,
+  const hydrateFromApi = useSchoolOperationsStore(
+    (state) => state.hydrateFromApi,
   );
   const [error, setError] = useState<string | null>(null);
+  const [uploadingType, setUploadingType] =
+    useState<SchoolVerificationDocumentType | null>(null);
   const requiredComplete = documents
     .filter((document) => document.required)
     .every((document) => document.uri);
@@ -47,12 +48,33 @@ export default function SchoolOnboardingDocumentsScreen() {
       setError("Each document must be 10 MB or smaller.");
       return;
     }
-    setDocument(type, {
-      fileName: asset.name,
-      uri: asset.uri,
-      mimeType: asset.mimeType ?? null,
-      size: asset.size ?? null,
-    });
+
+    const template = documents.find((document) => document.type === type);
+    setUploadingType(type);
+
+    try {
+      const uploaded = await uploadSchoolVerificationDocument({
+        type,
+        uri: asset.uri,
+        fileName: asset.name,
+        mimeType: asset.mimeType ?? "application/octet-stream",
+        size: asset.size ?? null,
+        label: template?.label,
+      });
+      hydrateFromApi({
+        verificationDocuments: mergeVerificationDocuments(uploaded),
+      });
+    } catch (caught) {
+      const apiError = caught as ApiError;
+      setError(
+        apiError.message ||
+          (caught instanceof Error
+            ? caught.message
+            : "We could not upload this document."),
+      );
+    } finally {
+      setUploadingType(null);
+    }
   };
 
   return (
@@ -168,38 +190,25 @@ export default function SchoolOnboardingDocumentsScreen() {
             <View className="mt-4 flex-row gap-3">
               <Pressable
                 accessibilityRole="button"
+                disabled={uploadingType === document.type}
                 onPress={() => void chooseDocument(document.type)}
                 className="h-11 flex-1 items-center justify-center rounded-full"
                 style={{ backgroundColor: colors.primary }}
               >
-                <Text
-                  className="text-[12px]"
-                  style={{
-                    color: colors.onPrimary,
-                    fontFamily: fontFamily.figtreeBold,
-                  }}
-                >
-                  {document.uri ? "Replace" : "Choose file"}
-                </Text>
-              </Pressable>
-              {document.uri ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => removeDocument(document.type)}
-                  className="h-11 items-center justify-center rounded-full border px-4"
-                  style={{ borderColor: colors.border }}
-                >
+                {uploadingType === document.type ? (
+                  <ActivityIndicator color={colors.onPrimary} />
+                ) : (
                   <Text
                     className="text-[12px]"
                     style={{
-                      color: colors.error,
+                      color: colors.onPrimary,
                       fontFamily: fontFamily.figtreeBold,
                     }}
                   >
-                    Remove
+                    {document.uri ? "Replace" : "Choose file"}
                   </Text>
-                </Pressable>
-              ) : null}
+                )}
+              </Pressable>
             </View>
           </View>
         ))}

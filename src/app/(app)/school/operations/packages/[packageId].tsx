@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -12,7 +13,10 @@ import { fontFamily } from "@/constants/fonts";
 import { formatTransmissionLabel } from "@/lib/school/format";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { updateSchoolPackage } from "@/lib/api";
+import { packageToSchoolPackage } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { ApiError } from "@/types";
 
 function formatPrice(price: number) {
   return `₦${price.toLocaleString("en-NG")}`;
@@ -24,9 +28,32 @@ export default function SchoolPackageDetailScreen() {
   const packageDefinition = useSchoolOperationsStore((state) =>
     state.packages.find((item) => item.id === packageId),
   );
-  const setPackageActive = useSchoolOperationsStore(
-    (state) => state.setPackageActive,
-  );
+  const upsertPackage = useSchoolOperationsStore((state) => state.upsertPackage);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const setActiveState = async (isActive: boolean) => {
+    if (!packageDefinition || isUpdating) return;
+
+    setUpdateError(null);
+    setIsUpdating(true);
+
+    try {
+      const updated = await updateSchoolPackage(packageDefinition.id, {
+        isActive,
+      });
+      upsertPackage({
+        ...packageToSchoolPackage(updated),
+        eligibleTransmissions: packageDefinition.eligibleTransmissions,
+        purchasesThisMonth: packageDefinition.purchasesThisMonth,
+      });
+    } catch (caught) {
+      const error = caught as ApiError;
+      setUpdateError(error.message || "We could not update this package.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (!packageDefinition) {
     return (
@@ -155,7 +182,7 @@ export default function SchoolPackageDetailScreen() {
         {!packageDefinition.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setPackageActive(packageDefinition.id, true)}
+            onPress={() => setActiveState(true)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -179,7 +206,7 @@ export default function SchoolPackageDetailScreen() {
         {packageDefinition.isActive ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setPackageActive(packageDefinition.id, false)}
+            onPress={() => setActiveState(false)}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{
               backgroundColor: colors.surface,
@@ -200,6 +227,17 @@ export default function SchoolPackageDetailScreen() {
           </Pressable>
         ) : null}
       </View>
+      {isUpdating ? (
+        <ActivityIndicator className="mt-4" color={colors.primary} />
+      ) : null}
+      {updateError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {updateError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

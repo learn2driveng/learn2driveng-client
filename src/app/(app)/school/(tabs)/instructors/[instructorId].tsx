@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -10,8 +11,10 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { updateSchoolInstructor } from "@/lib/api";
+import { instructorUserToRosterItem } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { SchoolInstructorStatus } from "@/types";
+import type { ApiError, SchoolInstructorStatus } from "@/types";
 
 const statusMeta: Record<
   SchoolInstructorStatus,
@@ -39,15 +42,28 @@ export default function SchoolInstructorDetailScreen() {
   const instructor = useSchoolOperationsStore((state) =>
     state.instructors.find((item) => item.id === instructorId),
   );
-  const activateInstructor = useSchoolOperationsStore(
-    (state) => state.activateInstructor,
+  const upsertInstructor = useSchoolOperationsStore(
+    (state) => state.upsertInstructor,
   );
-  const suspendInstructor = useSchoolOperationsStore(
-    (state) => state.suspendInstructor,
-  );
-  const resendInstructorInvite = useSchoolOperationsStore(
-    (state) => state.resendInstructorInvite,
-  );
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const updateStatus = async (status: "active" | "suspended") => {
+    if (!instructor || isUpdating) return;
+
+    setUpdateError(null);
+    setIsUpdating(true);
+
+    try {
+      const updated = await updateSchoolInstructor(instructor.id, { status });
+      upsertInstructor(instructorUserToRosterItem(updated));
+    } catch (caught) {
+      const error = caught as ApiError;
+      setUpdateError(error.message || "We could not update this instructor.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (!instructor) {
     return (
@@ -235,7 +251,8 @@ export default function SchoolInstructorDetailScreen() {
         {canActivate ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => activateInstructor(instructor.id)}
+            disabled={isUpdating}
+            onPress={() => updateStatus("active")}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -259,7 +276,8 @@ export default function SchoolInstructorDetailScreen() {
         {canResend ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => resendInstructorInvite(instructor.id)}
+            disabled={isUpdating}
+            onPress={() => updateStatus("active")}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -283,7 +301,8 @@ export default function SchoolInstructorDetailScreen() {
         {canSuspend ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => suspendInstructor(instructor.id)}
+            disabled={isUpdating}
+            onPress={() => updateStatus("suspended")}
             className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-75"
             style={{
               backgroundColor: colors.surface,
@@ -307,6 +326,17 @@ export default function SchoolInstructorDetailScreen() {
           </Pressable>
         ) : null}
       </View>
+      {isUpdating ? (
+        <ActivityIndicator className="mt-4" color={colors.primary} />
+      ) : null}
+      {updateError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {updateError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }
