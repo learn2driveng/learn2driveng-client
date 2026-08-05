@@ -12,6 +12,7 @@
       "bundleIdentifier": "com.learn2drive.ng"
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +45,12 @@
           }
         }
       ],
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.184228687578-0396525e7llg78ebhkv665996cfk6ib8"
+        }
+      ],
       "expo-web-browser",
       "expo-secure-store"
     ],

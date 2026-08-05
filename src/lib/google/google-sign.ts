@@ -1,15 +1,35 @@
-import {
-  GoogleSignin,
-  isSuccessResponse,
-} from "@react-native-google-signin/google-signin";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 
 const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
+const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
+let googleSigninModule:
+  | typeof import("@react-native-google-signin/google-signin")
+  | undefined;
 
-if (Platform.OS !== "web") {
-  GoogleSignin.configure({
-    webClientId,
-  });
+async function loadGoogleSignin() {
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    throw new Error(
+      "Google sign-in requires the Learn2Drive development build and is not available in Expo Go.",
+    );
+  }
+
+  if (!googleSigninModule) {
+    try {
+      googleSigninModule =
+        await import("@react-native-google-signin/google-signin");
+      googleSigninModule.GoogleSignin.configure({
+        webClientId,
+        iosClientId,
+      });
+    } catch {
+      throw new Error(
+        "Google sign-in is unavailable in this app build. Install the Learn2Drive development build and try again.",
+      );
+    }
+  }
+
+  return googleSigninModule;
 }
 
 export async function signInWithGoogle() {
@@ -17,9 +37,11 @@ export async function signInWithGoogle() {
     throw new Error("Google sign-in is available in the mobile app.");
   }
 
-  if (!webClientId) {
+  if (!webClientId || (Platform.OS === "ios" && !iosClientId)) {
     throw new Error("Google sign-in is not configured for this build.");
   }
+
+  const { GoogleSignin, isSuccessResponse } = await loadGoogleSignin();
 
   await GoogleSignin.hasPlayServices();
   await GoogleSignin.signOut();
