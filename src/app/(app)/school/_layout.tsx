@@ -6,6 +6,8 @@ import { Screen } from "@/components/common/screen";
 import { useRoleRouteAccess } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchMyDrivingSchool } from "@/lib/api";
+import { hydrateSchoolFromRecord } from "@/lib/school/hydrate-school-operations";
+import { useAuthStore } from "@/store/auth.store";
 import type { ApiError, DrivingSchoolVerificationStatus } from "@/types";
 
 type SchoolAccess =
@@ -20,6 +22,7 @@ export default function SchoolLayout() {
   const { colors } = useAppTheme();
   const pathname = usePathname();
   const roleAccess = useRoleRouteAccess("driving_school", "/school");
+  const user = useAuthStore((state) => state.user);
   const [reloadToken, setReloadToken] = useState(0);
   const [access, setAccess] = useState<SchoolAccess>({
     status: "checking",
@@ -29,15 +32,18 @@ export default function SchoolLayout() {
     if (roleAccess.status !== "allowed") return;
 
     let active = true;
+    const adminName = user
+      ? `${user.firstName} ${user.lastName}`.trim()
+      : "School admin";
 
     fetchMyDrivingSchool()
       .then((school) => {
-        if (active) {
-          setAccess({
-            status: "ready",
-            verificationStatus: school.verificationStatus,
-          });
-        }
+        if (!active) return;
+        hydrateSchoolFromRecord(school, adminName);
+        setAccess({
+          status: "ready",
+          verificationStatus: school.verificationStatus,
+        });
       })
       .catch((error: ApiError) => {
         if (!active) return;
@@ -52,7 +58,7 @@ export default function SchoolLayout() {
     return () => {
       active = false;
     };
-  }, [reloadToken, roleAccess.status]);
+  }, [reloadToken, roleAccess.status, user]);
 
   if (roleAccess.status === "checking") return null;
   if (roleAccess.status === "redirect") {

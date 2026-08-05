@@ -3,3 +3,7 @@ export * from "./config";
 export * from "./discover";
 export * from "./driving-schools";
 export * from "./auth";
+export * from "./vehicles";
+export * from "./packages";
+export * from "./instructors";
+export * from "./bookings";

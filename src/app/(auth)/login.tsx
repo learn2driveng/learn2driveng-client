@@ -16,6 +16,7 @@ import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole, useGoogleAuth } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { linkGoogleAccount, signInWithPassword } from "@/lib/api";
+import { hydrateSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { isValidEmail } from "@/lib/auth/validation";
 import { useAuthStore } from "@/store/auth.store";
 import { useGoogleAuthStore } from "@/store/google-auth.store";
@@ -69,6 +70,11 @@ export default function LoginScreen() {
         : passwordSession;
 
       await authenticate(session);
+      if (session.user.role === "driving_school") {
+        await hydrateSchoolOperations(
+          `${session.user.firstName} ${session.user.lastName}`.trim(),
+        );
+      }
       clearGoogleLink();
       router.replace(
         destinationForRole(

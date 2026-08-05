@@ -1,13 +1,7 @@
 import { create } from "zustand";
 
-import {
-  schoolBookingAssignments,
-  schoolInstructorRoster,
-  schoolPackageDefinitions,
-  schoolOperationsProfile,
-  schoolVehicles,
-  schoolVerificationDocuments,
-} from "@/sample_data";
+import { parseVehicleDisplayName, vehicleNameFromParts } from "@/lib/school/vehicle-input";
+import { createEmptyVerificationDocuments } from "@/lib/school/verification-documents";
 import type {
   SchoolBookingAssignment,
   SchoolInstructorRosterItem,
@@ -19,7 +13,34 @@ import type {
 } from "@/types";
 
 import type { VehicleTransmissionType } from "@/types/school";
-import { parseVehicleDisplayName, vehicleNameFromParts } from "@/lib/school/vehicle-input";
+
+const emptyProfile: SchoolOperationsProfile = {
+  id: "",
+  name: "",
+  initials: "",
+  adminName: "",
+  verificationStatus: "draft",
+  frscRegistrationNumber: "",
+  primaryLocation: "",
+  email: "",
+  phone: "",
+  addressLine1: "",
+  addressLine2: null,
+  city: "",
+  state: "",
+  country: "Nigeria",
+  address: "",
+  description: "",
+  latitude: null,
+  longitude: null,
+  operatingAreas: [],
+  assignmentPolicy: "learner_preference",
+  activeInstructors: 0,
+  pendingInvites: 0,
+  activeBookings: 0,
+  vehicles: 0,
+  packages: 0,
+};
 
 type VehicleInput = {
   name: string;
@@ -37,6 +58,16 @@ type PackageInput = {
   eligibleTransmissions: SchoolPackageDefinition["eligibleTransmissions"];
 };
 
+type SchoolOperationsHydration = {
+  profile?: SchoolOperationsProfile;
+  bookings?: SchoolBookingAssignment[];
+  instructors?: SchoolInstructorRosterItem[];
+  vehicles?: SchoolVehicle[];
+  packages?: SchoolPackageDefinition[];
+  verificationDocuments?: SchoolVerificationDocument[];
+  onboardingSubmitted?: boolean;
+};
+
 type SchoolOperationsState = {
   profile: SchoolOperationsProfile;
   bookings: SchoolBookingAssignment[];
@@ -45,12 +76,17 @@ type SchoolOperationsState = {
   packages: SchoolPackageDefinition[];
   verificationDocuments: SchoolVerificationDocument[];
   onboardingSubmitted: boolean;
+  hydrateFromApi: (input: SchoolOperationsHydration) => void;
+  resetSchoolOperations: () => void;
   activateInstructor: (instructorId: string) => void;
   suspendInstructor: (instructorId: string) => void;
   resendInstructorInvite: (instructorId: string) => void;
+  upsertInstructor: (instructor: SchoolInstructorRosterItem) => void;
   addVehicle: (input: VehicleInput) => SchoolVehicle;
+  upsertVehicle: (vehicle: SchoolVehicle) => void;
   setVehicleActive: (vehicleId: string, isActive: boolean) => void;
   addPackage: (input: PackageInput) => SchoolPackageDefinition;
+  upsertPackage: (packageDefinition: SchoolPackageDefinition) => void;
   setPackageActive: (packageId: string, isActive: boolean) => void;
   assignBooking: (
     bookingId: string,
@@ -96,15 +132,25 @@ type SchoolOperationsState = {
   }) => void;
 };
 
+const initialState = {
+  profile: emptyProfile,
+  bookings: [] as SchoolBookingAssignment[],
+  instructors: [] as SchoolInstructorRosterItem[],
+  vehicles: [] as SchoolVehicle[],
+  packages: [] as SchoolPackageDefinition[],
+  verificationDocuments: createEmptyVerificationDocuments(),
+  onboardingSubmitted: false,
+};
+
 export const useSchoolOperationsStore = create<SchoolOperationsState>(
   (set) => ({
-    profile: schoolOperationsProfile,
-    bookings: schoolBookingAssignments,
-    instructors: schoolInstructorRoster,
-    vehicles: schoolVehicles,
-    packages: schoolPackageDefinitions,
-    verificationDocuments: schoolVerificationDocuments,
-    onboardingSubmitted: true,
+    ...initialState,
+    hydrateFromApi: (input) =>
+      set((state) => ({
+        ...state,
+        ...input,
+      })),
+    resetSchoolOperations: () => set(initialState),
     activateInstructor: (instructorId) =>
       set((state) => ({
         instructors: state.instructors.map((instructor) =>
@@ -139,11 +185,22 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
             : instructor,
         ),
       })),
+    upsertInstructor: (instructor) =>
+      set((state) => {
+        const exists = state.instructors.some((item) => item.id === instructor.id);
+        return {
+          instructors: exists
+            ? state.instructors.map((item) =>
+                item.id === instructor.id ? instructor : item,
+              )
+            : [instructor, ...state.instructors],
+        };
+      }),
     addVehicle: (input) => {
       const { make, model, year } = parseVehicleDisplayName(input.name);
       const vehicle: SchoolVehicle = {
         id: `vehicle-${Date.now().toString(36)}`,
-        schoolId: schoolOperationsProfile.id,
+        schoolId: useSchoolOperationsStore.getState().profile.id,
         make,
         model,
         year,
@@ -163,6 +220,19 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
 
       return vehicle;
     },
+    upsertVehicle: (vehicle) =>
+      set((state) => {
+        const exists = state.vehicles.some((item) => item.id === vehicle.id);
+        return {
+          vehicles: exists
+            ? state.vehicles.map((item) => (item.id === vehicle.id ? vehicle : item))
+            : [vehicle, ...state.vehicles],
+          profile: {
+            ...state.profile,
+            vehicles: exists ? state.vehicles.length : state.vehicles.length + 1,
+          },
+        };
+      }),
     setVehicleActive: (vehicleId, isActive) =>
       set((state) => ({
         vehicles: state.vehicles.map((vehicle) =>
@@ -172,7 +242,7 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
     addPackage: (input) => {
       const packageDefinition: SchoolPackageDefinition = {
         id: `package-${Date.now().toString(36)}`,
-        schoolId: schoolOperationsProfile.id,
+        schoolId: useSchoolOperationsStore.getState().profile.id,
         name: input.name.trim(),
         description: input.description.trim(),
         price: input.price,
@@ -190,6 +260,23 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
 
       return packageDefinition;
     },
+    upsertPackage: (packageDefinition) =>
+      set((state) => {
+        const exists = state.packages.some(
+          (item) => item.id === packageDefinition.id,
+        );
+        return {
+          packages: exists
+            ? state.packages.map((item) =>
+                item.id === packageDefinition.id ? packageDefinition : item,
+              )
+            : [packageDefinition, ...state.packages],
+          profile: {
+            ...state.profile,
+            packages: exists ? state.packages.length : state.packages.length + 1,
+          },
+        };
+      }),
     setPackageActive: (packageId, isActive) =>
       set((state) => ({
         packages: state.packages.map((packageDefinition) =>
@@ -302,10 +389,11 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
       return submitted;
     },
     beginSchoolOnboarding: (input) =>
-      set((state) => ({
+      set({
+        ...initialState,
         onboardingSubmitted: false,
         profile: {
-          ...state.profile,
+          ...emptyProfile,
           name: input.schoolName.trim(),
           initials: input.schoolName
             .split(/\s+/)
@@ -316,27 +404,8 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
           adminName: input.adminName.trim(),
           email: input.email.trim(),
           phone: input.phone.trim(),
-          frscRegistrationNumber: "",
-          primaryLocation: "",
-          addressLine1: "",
-          addressLine2: null,
-          city: "",
-          state: "",
-          country: "Nigeria",
-          address: "",
-          description: "",
-          latitude: null,
-          longitude: null,
           verificationStatus: "draft",
         },
-        verificationDocuments: state.verificationDocuments.map((document) => ({
-          ...document,
-          fileName: null,
-          uri: null,
-          mimeType: null,
-          size: null,
-          uploadedAt: null,
-        })),
-      })),
+      }),
   }),
 );

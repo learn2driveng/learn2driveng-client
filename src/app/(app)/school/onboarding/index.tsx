@@ -15,7 +15,9 @@ import { AddressAutocompleteField } from "@/components/school/address-autocomple
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { createDrivingSchool } from "@/lib/api";
+import { hydrateSchoolFromRecord } from "@/lib/school/hydrate-school-operations";
 import { isValidEmail } from "@/lib/auth/validation";
+import { useAuthStore } from "@/store/auth.store";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { AddressSuggestion, ApiError } from "@/types";
 
@@ -26,6 +28,7 @@ export default function SchoolOnboardingIdentityScreen() {
   const updateProfile = useSchoolOperationsStore(
     (state) => state.updateProfile,
   );
+  const user = useAuthStore((state) => state.user);
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone);
@@ -96,7 +99,7 @@ export default function SchoolOnboardingIdentityScreen() {
     setIsSubmitting(true);
 
     try {
-      await createDrivingSchool({
+      const school = await createDrivingSchool({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -109,6 +112,11 @@ export default function SchoolOnboardingIdentityScreen() {
         latitude: selectedAddress.latitude,
         longitude: selectedAddress.longitude,
       });
+
+      const adminName = user
+        ? `${user.firstName} ${user.lastName}`.trim()
+        : profile.adminName;
+      hydrateSchoolFromRecord(school, adminName);
 
       const primaryLocation = [selectedAddress.city, selectedAddress.state]
         .filter((part, index, parts) => part && parts.indexOf(part) === index)

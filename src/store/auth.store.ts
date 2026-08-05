@@ -5,6 +5,7 @@ import {
   readSessionTokens,
   writeSessionTokens,
 } from "@/lib/auth/session-storage";
+import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type {
   AuthSessionResponse,
   AuthTokens,
@@ -75,6 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await clearSessionTokens();
     } finally {
+      useSchoolOperationsStore.getState().resetSchoolOperations();
       set({
         status: "unauthenticated",
         isAuthenticated: false,

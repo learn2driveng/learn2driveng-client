@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -10,23 +10,29 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { createSchoolVehicle } from "@/lib/api";
 import { formatTransmissionLabel } from "@/lib/school/format";
+import { vehicleToSchoolVehicle } from "@/lib/school/map-api";
+import { parseVehicleDisplayName } from "@/lib/school/vehicle-input";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import type { VehicleTransmissionType } from "@/types";
+import type { ApiError, VehicleTransmissionType } from "@/types";
 
 const transmissionOptions: VehicleTransmissionType[] = ["automatic", "manual"];
 
 export default function NewSchoolVehicleScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const addVehicle = useSchoolOperationsStore((state) => state.addVehicle);
+  const upsertVehicle = useSchoolOperationsStore((state) => state.upsertVehicle);
+  const profile = useSchoolOperationsStore((state) => state.profile);
   const [name, setName] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
   const [assignedLocation, setAssignedLocation] = useState(
-    "Wuse II Training Yard",
+    profile.primaryLocation || profile.city || "",
   );
   const [transmissionType, setTransmissionType] =
     useState<VehicleTransmissionType>("automatic");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const canAddVehicle = useMemo(
     () =>
@@ -36,16 +42,33 @@ export default function NewSchoolVehicleScreen() {
     [assignedLocation, name, plateNumber],
   );
 
-  const saveVehicle = () => {
-    if (!canAddVehicle) return;
+  const saveVehicle = async () => {
+    if (!canAddVehicle || isSubmitting) return;
 
-    addVehicle({
-      name,
-      plateNumber,
-      assignedLocation,
-      transmissionType,
-    });
-    router.replace("/school/operations/vehicles");
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      const { make, model, year } = parseVehicleDisplayName(name);
+      const vehicle = await createSchoolVehicle({
+        make,
+        model,
+        year,
+        plateNumber: plateNumber.trim().toUpperCase(),
+        transmissionType,
+        isActive: true,
+      });
+      upsertVehicle({
+        ...vehicleToSchoolVehicle(vehicle),
+        assignedLocation: assignedLocation.trim(),
+      });
+      router.replace("/school/operations/vehicles");
+    } catch (caught) {
+      const error = caught as ApiError;
+      setSubmitError(error.message || "We could not add this vehicle.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -167,31 +190,46 @@ export default function NewSchoolVehicleScreen() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canAddVehicle }}
-        disabled={!canAddVehicle}
+        accessibilityState={{ disabled: !canAddVehicle || isSubmitting }}
+        disabled={!canAddVehicle || isSubmitting}
         onPress={saveVehicle}
         className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
         style={{
-          backgroundColor: canAddVehicle
-            ? colors.primary
-            : colors.surfaceStrong,
+          backgroundColor:
+            canAddVehicle && !isSubmitting
+              ? colors.primary
+              : colors.surfaceStrong,
         }}
       >
-        <Text
-          className="text-[15px]"
-          style={{
-            color: canAddVehicle ? colors.onPrimary : colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          Add vehicle to fleet
-        </Text>
-        <MaterialCommunityIcons
-          name="check"
-          size={20}
-          color={canAddVehicle ? colors.onPrimary : colors.textSubtle}
-        />
+        {isSubmitting ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <>
+            <Text
+              className="text-[15px]"
+              style={{
+                color: canAddVehicle ? colors.onPrimary : colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Add vehicle to fleet
+            </Text>
+            <MaterialCommunityIcons
+              name="check"
+              size={20}
+              color={canAddVehicle ? colors.onPrimary : colors.textSubtle}
+            />
+          </>
+        )}
       </Pressable>
+      {submitError ? (
+        <Text
+          className="mt-3 text-center text-[12px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {submitError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }
