@@ -70,7 +70,6 @@ export function ExploreScreen({
         ...base,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
-        radiusKm: distanceFilter ? 5 : 50,
         sort: "distance" as const,
       };
     }
@@ -79,17 +78,26 @@ export function ExploreScreen({
       ...base,
       sort: "rating" as const,
     };
-  }, [coordinates, distanceFilter, query, ratingFilter]);
+  }, [coordinates, query, ratingFilter]);
 
-  const { schools, loading, error, refetch } =
+  const { schools, loading, error, refetch, usedLocationFallback } =
     useDiscoverSchools(discoverQuery);
 
   const filteredSchools = useMemo(() => {
-    if (!priceFilter) {
-      return schools;
+    let result = schools;
+
+    if (distanceFilter && coordinates) {
+      result = result.filter(
+        (school) => school.distanceKm > 0 && school.distanceKm <= 5,
+      );
     }
-    return schools.filter((school) => school.startingPrice < 50000);
-  }, [priceFilter, schools]);
+
+    if (priceFilter) {
+      result = result.filter((school) => school.startingPrice < 50000);
+    }
+
+    return result;
+  }, [coordinates, distanceFilter, priceFilter, schools]);
 
   const resetFilters = () => {
     setQuery("");
@@ -193,6 +201,19 @@ export function ExploreScreen({
               color={colors.textSubtle}
             />
           </Pressable>
+        ) : null}
+
+        {usedLocationFallback ? (
+          <Text
+            className="mb-4 text-[11px] leading-4"
+            style={{
+              color: colors.textMuted,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
+          >
+            Showing all verified schools. Enable accurate location to sort by
+            distance from you.
+          </Text>
         ) : null}
 
         <View

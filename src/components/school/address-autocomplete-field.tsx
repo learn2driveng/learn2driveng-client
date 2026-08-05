@@ -34,21 +34,19 @@ export function AddressAutocompleteField({
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const query = value.trim();
   const hasCurrentSelection =
     selectedAddress?.formattedAddress === value.trim();
 
   useEffect(() => {
     if (query.length < 3 || hasCurrentSelection) {
-      setSuggestions([]);
-      setHasSearched(false);
-      setSearchError(null);
-      setIsSearching(false);
       return;
     }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => {
+      setSearchQuery(query);
       setIsSearching(true);
       setHasSearched(false);
       setSearchError(null);
@@ -78,10 +76,17 @@ export function AddressAutocompleteField({
     };
   }, [hasCurrentSelection, query]);
 
+  const isCurrentSearch = searchQuery === query;
+  const currentSuggestions = isCurrentSearch ? suggestions : [];
+  const currentIsSearching = isCurrentSearch && isSearching;
+  const currentHasSearched = isCurrentSearch && hasSearched;
+  const currentSearchError = isCurrentSearch ? searchError : null;
   const showResults =
     !hasCurrentSelection &&
     query.length >= 3 &&
-    (isSearching || hasSearched || Boolean(searchError));
+    (currentIsSearching ||
+      currentHasSearched ||
+      Boolean(currentSearchError));
 
   return (
     <View>
@@ -115,7 +120,7 @@ export function AddressAutocompleteField({
           className="ml-3 flex-1 text-[14px]"
           style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium }}
         />
-        {isSearching ? (
+        {currentIsSearching ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : hasCurrentSelection ? (
           <MaterialCommunityIcons
@@ -131,10 +136,10 @@ export function AddressAutocompleteField({
           className="mt-2 overflow-hidden rounded-lg border"
           style={{
             backgroundColor: colors.surface,
-            borderColor: searchError ? colors.error : colors.border,
+            borderColor: currentSearchError ? colors.error : colors.border,
           }}
         >
-          {isSearching ? (
+          {currentIsSearching ? (
             <View className="flex-row items-center gap-3 px-4 py-4">
               <ActivityIndicator size="small" color={colors.primary} />
               <Text
@@ -147,15 +152,15 @@ export function AddressAutocompleteField({
                 Searching addresses...
               </Text>
             </View>
-          ) : searchError ? (
+          ) : currentSearchError ? (
             <Text
               accessibilityRole="alert"
               className="px-4 py-3 text-[12px] leading-5"
               style={{ color: colors.error, fontFamily: fontFamily.figtreeBold }}
             >
-              {searchError}
+              {currentSearchError}
             </Text>
-          ) : suggestions.length === 0 ? (
+          ) : currentSuggestions.length === 0 ? (
             <Text
               className="px-4 py-3 text-[12px]"
               style={{
@@ -166,7 +171,7 @@ export function AddressAutocompleteField({
               No matching Nigerian address found.
             </Text>
           ) : (
-            suggestions.map((suggestion, index) => (
+            currentSuggestions.map((suggestion, index) => (
               <Pressable
                 key={suggestion.id}
                 accessibilityRole="button"
@@ -215,7 +220,7 @@ export function AddressAutocompleteField({
             className="px-4 pb-2 pt-1 text-right text-[9px]"
             style={{ color: colors.textFaint, fontFamily: fontFamily.figtree }}
           >
-            Powered by Geoapify
+            Powered by Google
           </Text>
         </View>
       ) : null}

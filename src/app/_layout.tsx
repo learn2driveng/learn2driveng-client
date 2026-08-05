@@ -1,6 +1,5 @@
 import "../../global.css";
 import "@/lib/nativewind";
-import "@/lib/google/google-sign";
 
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";

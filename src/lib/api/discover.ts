@@ -46,8 +46,14 @@ export async function fetchDiscoverSchools(query: DiscoverSchoolsQuery) {
   );
 
   return {
-    items: data.data,
-    pagination: data.pagination,
+    items: Array.isArray(data?.data) ? data.data : [],
+    pagination:
+      data?.pagination ?? {
+        page: query.page ?? 1,
+        limit: query.limit ?? 20,
+        total: 0,
+        totalPages: 0,
+      },
   };
 }
 
