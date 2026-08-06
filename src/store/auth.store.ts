@@ -6,6 +6,7 @@ import {
   writeSessionTokens,
 } from "@/lib/auth/session-storage";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 import type {
   AuthSessionResponse,
   AuthTokens,
@@ -26,6 +27,7 @@ interface AuthState {
   completeHydration: (user: AuthUser) => void;
   authenticate: (session: AuthSessionResponse) => Promise<void>;
   updateTokens: (tokens: AuthTokens) => Promise<void>;
+  updateUser: (user: AuthUser) => void;
   signOut: () => Promise<void>;
 }
 
@@ -72,11 +74,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     await writeSessionTokens({ accessToken, refreshToken });
     set({ accessToken, refreshToken });
   },
+  updateUser: (user) =>
+    set({
+      user,
+      role: user.role,
+    }),
   signOut: async () => {
     try {
       await clearSessionTokens();
     } finally {
+      const [{ useLearnerOperationsStore }, { useLearnerSessionsStore }] =
+        await Promise.all([
+          import("@/store/learner-operations.store"),
+          import("@/store/learner-sessions.store"),
+        ]);
       useSchoolOperationsStore.getState().resetSchoolOperations();
+      useReadinessAssessmentStore.getState().resetLearners();
+      useLearnerOperationsStore.getState().resetLearnerOperations();
+      useLearnerSessionsStore.getState().resetLearnerSessions();
       set({
         status: "unauthenticated",
         isAuthenticated: false,

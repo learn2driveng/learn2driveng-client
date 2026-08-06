@@ -6,6 +6,7 @@ import { useLocationStore } from "@/store/location.store";
 
 const QUICK_LOCATION_TIMEOUT_MS = 20_000;
 const LOCATION_REFRESH_TIMEOUT_MS = 30_000;
+const LAST_KNOWN_MAX_AGE_MS = 2 * 60 * 1000;
 const LOCATION_TIMEOUT_ERROR = "Location request timed out.";
 let activePositionRequest: Promise<Location.LocationObject> | null = null;
 let activePlaceNameRequest: {
@@ -107,16 +108,6 @@ export function useUserLocation() {
   const setPlaceName = useLocationStore((state) => state.setPlaceName);
   const requestGeneration = useRef(0);
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "active") {
-        void refreshPermission();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [refreshPermission]);
-
   const clearLocation = useCallback(() => {
     requestGeneration.current += 1;
     setCoordinates(null);
@@ -182,7 +173,9 @@ export function useUserLocation() {
         return null;
       }
 
-      const lastKnownLocation = await Location.getLastKnownPositionAsync();
+      const lastKnownLocation = await Location.getLastKnownPositionAsync({
+        maxAge: LAST_KNOWN_MAX_AGE_MS,
+      });
 
       if (lastKnownLocation) {
         const nextCoordinates = toCoordinates(lastKnownLocation);
@@ -244,6 +237,22 @@ export function useUserLocation() {
       setIsLocating(false);
     }
   }, [permission, requestLocationPermission, resolvePlaceName, setCoordinates]);
+
+  const requestLocationRef = useRef(requestLocation);
+  requestLocationRef.current = requestLocation;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void refreshPermission();
+        if (permission?.granted) {
+          void requestLocationRef.current();
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [permission?.granted, refreshPermission]);
 
   return {
     permission,

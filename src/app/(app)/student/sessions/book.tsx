@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import {
   DashboardEmptyState,
@@ -12,58 +12,176 @@ import {
   BookingOptionCard,
   BookingStepIndicator,
 } from "@/features/session-booking";
+import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { bookingAvailability } from "@/sample_data/session-availability";
+import {
+  fetchAvailableTrainingSessions,
+  joinTrainingSession,
+} from "@/lib/api";
+import {
+  availableSessionInstructorLabel,
+  availableSessionTimeLabel,
+  groupAvailableSessionsByDate,
+} from "@/lib/learner/map-sessions";
+import {
+  refreshLearnerBookings,
+} from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import {
+  selectActiveLearnerPackages,
+  useLearnerOperationsStore,
+} from "@/store/learner-operations.store";
+import type { ApiError } from "@/types";
+import type { AvailableTrainingSession } from "@/types/training-session";
 
-const steps = ["Schedule", "Instructor", "Review"] as const;
-const initialDate =
-  bookingAvailability.find((date) => date.times.length > 0) ??
-  bookingAvailability[0];
+const steps = ["Schedule", "Review"] as const;
 
 export default function BookSessionScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const { packageName, schoolName } = useLocalSearchParams<{
+  const { packageName, schoolName, bookingId } = useLocalSearchParams<{
     packageName?: string;
     schoolName?: string;
+    bookingId?: string;
   }>();
+  const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
+  const selectedPackage = activePackages.find(
+    (item) => item.bookingId === bookingId,
+  );
   const [step, setStep] = useState(0);
-  const selectedPackage = packageName ?? "Selected package";
-  const [selectedDateId, setSelectedDateId] = useState<string | null>(
-    initialDate?.id ?? null,
-  );
-  const selectedDate = bookingAvailability.find(
-    (date) => date.id === selectedDateId,
-  );
-  const [selectedTime, setSelectedTime] = useState<string | null>(
-    initialDate?.times[0] ?? null,
-  );
-  const [selectedLocation, setSelectedLocation] = useState(
-    "Lekki Training Centre",
-  );
-  const [selectedInstructor, setSelectedInstructor] = useState(
-    "Best available instructor",
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<
+    AvailableTrainingSession[]
+  >([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null,
   );
 
-  const canGoBack = step > 0;
+  useEffect(() => {
+    if (!bookingId) {
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    fetchAvailableTrainingSessions(bookingId, { limit: 50 })
+      .then((result) => {
+        if (!active) return;
+        setAvailableSessions(result.items);
+        setSelectedSessionId(result.items[0]?.id ?? null);
+      })
+      .catch((caught: ApiError) => {
+        if (!active) return;
+        setError(
+          caught?.message ??
+            "We could not load available sessions. Please try again.",
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [bookingId]);
+
+  const groupedDates = useMemo(
+    () => groupAvailableSessionsByDate(availableSessions),
+    [availableSessions],
+  );
+  const selectedSession = availableSessions.find(
+    (item) => item.id === selectedSessionId,
+  );
+  const selectedDateGroup = groupedDates.find((group) =>
+    group.sessions.some((item) => item.id === selectedSessionId),
+  );
+  const selectedPackageName =
+    packageName ?? selectedPackage?.name ?? "Selected package";
+  const selectedSchoolName =
+    schoolName ?? selectedPackage?.schoolName ?? "Driving school";
+  const remainingCredits = selectedPackage?.remainingSessions ?? 0;
   const isReview = step === steps.length - 1;
-  const hasDates = bookingAvailability.length > 0;
-  const hasTimes = Boolean(selectedDate?.times.length);
-  const canContinue =
-    step !== 0 ||
-    Boolean(selectedDate && selectedTime && selectedLocation && hasTimes);
+  const canContinue = Boolean(selectedSession && bookingId);
 
-  const selectDate = (dateId: string) => {
-    const date = bookingAvailability.find((item) => item.id === dateId);
-    setSelectedDateId(dateId);
-    setSelectedTime(date?.times[0] ?? null);
+  const handleConfirm = async () => {
+    if (!selectedSession || !bookingId || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const participant = await joinTrainingSession(
+        selectedSession.id,
+        bookingId,
+      );
+      await Promise.all([
+        refreshLearnerBookings().catch(() => undefined),
+        refreshLearnerSessions().catch(() => undefined),
+      ]);
+
+      router.replace({
+        pathname: "/student/sessions/confirmation",
+        params: {
+          participantId: participant.id,
+          packageName: selectedPackageName,
+          schoolName: selectedSchoolName,
+          date: selectedDateGroup?.label ?? "",
+          time: availableSessionTimeLabel(selectedSession),
+          instructor: availableSessionInstructorLabel(selectedSession),
+          sessionTitle: selectedSession.title,
+        },
+      });
+    } catch (caught) {
+      setError(
+        caught &&
+          typeof caught === "object" &&
+          "message" in caught &&
+          typeof (caught as ApiError).message === "string"
+          ? (caught as ApiError).message
+          : "We could not book this session. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!bookingId) {
+    return (
+      <DashboardScreen>
+        <DashboardPageHeader title="Book a session" />
+        <View className="mt-8">
+          <DashboardEmptyState
+            icon="package-variant-remove"
+            title="No package selected"
+            description="Choose a training package from your sessions tab before booking a lesson."
+            actionLabel="Back to sessions"
+            onActionPress={() => router.replace("/student/sessions")}
+          />
+        </View>
+      </DashboardScreen>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardScreen>
+        <DashboardPageHeader title="Book a session" />
+        <View className="mt-16 items-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </DashboardScreen>
+    );
+  }
 
   return (
     <DashboardScreen>
       <DashboardPageHeader title="Book a session" />
       <View className="mt-8">
-        <BookingStepIndicator steps={steps} currentStep={step} />
+        <BookingStepIndicator steps={[...steps]} currentStep={step} />
       </View>
 
       <View
@@ -91,212 +209,82 @@ export default function BookSessionScreen() {
             className="mt-1 font-figtree-semibold text-[14px]"
             style={{ color: colors.text }}
           >
-            {selectedPackage}
+            {selectedPackageName}
+          </Text>
+          <Text
+            className="mt-1 font-figtree text-[12px]"
+            style={{ color: colors.textMuted }}
+          >
+            {selectedSchoolName} · {remainingCredits} credits left
           </Text>
         </View>
       </View>
 
+      {error ? (
+        <Text
+          className="mt-4 font-figtree-medium text-[13px]"
+          style={{ color: colors.error }}
+        >
+          {error}
+        </Text>
+      ) : null}
+
       <View className="mt-8">
         {step === 0 ? (
-          <View>
-            <Text
-              accessibilityRole="header"
-              className="font-figtree-bold text-[24px]"
-              style={{ color: colors.text }}
-            >
-              Choose a schedule
-            </Text>
-            <Text
-              className="mt-2 font-figtree text-[14px]"
-              style={{ color: colors.textMuted }}
-            >
-              Available times are based on your package and school.
-            </Text>
+          groupedDates.length === 0 ? (
+            <DashboardEmptyState
+              icon="calendar-remove-outline"
+              title="No sessions available"
+              description="This school has not published any open lesson slots for your package yet. Check back later or contact the school."
+              actionLabel="Back to sessions"
+              onActionPress={() => router.replace("/student/sessions")}
+            />
+          ) : (
+            <View>
+              <Text
+                accessibilityRole="header"
+                className="font-figtree-bold text-[24px]"
+                style={{ color: colors.text }}
+              >
+                Choose a session
+              </Text>
+              <Text
+                className="mt-2 font-figtree text-[14px]"
+                style={{ color: colors.textMuted }}
+              >
+                Pick from the lesson slots published by your driving school.
+              </Text>
 
-            {!hasDates ? (
-              <View className="mt-7">
-                <DashboardEmptyState
-                  icon="calendar-remove-outline"
-                  title="No dates available"
-                  description="This school has no open lesson dates for this package right now."
-                  actionLabel="Back to sessions"
-                  onActionPress={() => router.replace("/student/sessions")}
-                />
-              </View>
-            ) : (
-              <>
-                <Text
-                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-                  style={{ color: colors.textSubtle }}
-                >
-                  DATE
-                </Text>
-                <View className="flex-row gap-3">
-                  {bookingAvailability.map((date) => {
-                    const selected = selectedDateId === date.id;
-                    const availabilityLabel = date.times.length
-                      ? `${date.times.length} times available`
-                      : "No times available";
-
-                    return (
-                      <Pressable
-                        key={date.id}
-                        accessibilityRole="radio"
-                        accessibilityLabel={`${date.label}. ${availabilityLabel}`}
-                        accessibilityState={{ selected }}
-                        onPress={() => selectDate(date.id)}
-                        className="h-14 flex-1 items-center justify-center rounded-2xl border-2 active:opacity-70"
-                        style={{
-                          borderColor: selected
-                            ? colors.primary
-                            : colors.border,
-                          backgroundColor: colors.surface,
-                        }}
-                      >
-                        <Text
-                          className="font-figtree-semibold text-[13px]"
-                          style={{
-                            color: date.times.length
-                              ? colors.text
-                              : colors.textSubtle,
-                          }}
-                        >
-                          {date.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
-                <Text
-                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-                  style={{ color: colors.textSubtle }}
-                >
-                  TIME
-                </Text>
-                {hasTimes ? (
-                  <View className="flex-row flex-wrap gap-3">
-                    {selectedDate?.times.map((time) => (
-                      <Pressable
-                        key={time}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: selectedTime === time }}
-                        onPress={() => setSelectedTime(time)}
-                        className="h-12 w-[47%] items-center justify-center rounded-2xl border-2 active:opacity-70"
-                        style={{
-                          borderColor:
-                            selectedTime === time
-                              ? colors.primary
-                              : colors.border,
-                          backgroundColor: colors.surface,
-                        }}
-                      >
-                        <Text
-                          className="font-figtree-semibold text-[13px]"
-                          style={{ color: colors.text }}
-                        >
-                          {time}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : (
-                  <View
-                    accessibilityLiveRegion="polite"
-                    className="flex-row items-start gap-3 rounded-2xl border p-4"
-                    style={{
-                      borderColor: colors.border,
-                      backgroundColor: colors.surface,
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="clock-alert-outline"
-                      size={22}
-                      color={colors.textSubtle}
-                    />
-                    <View className="flex-1">
-                      <Text
-                        className="font-figtree-bold text-[14px]"
-                        style={{ color: colors.text }}
-                      >
-                        No times available
-                      </Text>
-                      <Text
-                        className="mt-1 font-figtree text-[13px] leading-5"
-                        style={{ color: colors.textMuted }}
-                      >
-                        Choose another date to see its available lesson times.
-                      </Text>
+              <View className="mt-7 gap-6">
+                {groupedDates.map((group) => (
+                  <View key={group.id}>
+                    <Text
+                      className="mb-3 font-figtree-bold text-[12px] tracking-[1.2px]"
+                      style={{ color: colors.textSubtle }}
+                    >
+                      {group.label.toUpperCase()}
+                    </Text>
+                    <View className="gap-3">
+                      {group.sessions.map((session) => (
+                        <BookingOptionCard
+                          key={session.id}
+                          icon="calendar-clock"
+                          title={session.title}
+                          description={`${availableSessionTimeLabel(session)} · ${availableSessionInstructorLabel(session)}`}
+                          meta={`${session.participantCount}/${session.capacity} booked`}
+                          selected={selectedSessionId === session.id}
+                          onPress={() => setSelectedSessionId(session.id)}
+                        />
+                      ))}
                     </View>
                   </View>
-                )}
-
-                <Text
-                  className="mb-3 mt-7 font-figtree-bold text-[12px] tracking-[1.2px]"
-                  style={{ color: colors.textSubtle }}
-                >
-                  LOCATION
-                </Text>
-                <BookingOptionCard
-                  icon="map-marker-outline"
-                  title="Lekki Training Centre"
-                  description="12 Admiralty Way, Lekki Phase 1"
-                  selected={selectedLocation === "Lekki Training Centre"}
-                  onPress={() => setSelectedLocation("Lekki Training Centre")}
-                />
-              </>
-            )}
-          </View>
-        ) : null}
-
-        {step === 1 ? (
-          <View>
-            <Text
-              accessibilityRole="header"
-              className="font-figtree-bold text-[24px]"
-              style={{ color: colors.text }}
-            >
-              Choose an instructor
-            </Text>
-            <Text
-              className="mt-2 font-figtree text-[14px]"
-              style={{ color: colors.textMuted }}
-            >
-              Select an instructor or let the school assign the best available
-              match.
-            </Text>
-            <View className="mt-6 gap-3">
-              <BookingOptionCard
-                icon="account-star-outline"
-                title="Best available instructor"
-                description="The school will assign a qualified instructor"
-                meta="Recommended"
-                selected={selectedInstructor === "Best available instructor"}
-                onPress={() =>
-                  setSelectedInstructor("Best available instructor")
-                }
-              />
-              <BookingOptionCard
-                icon="account-outline"
-                title="John Adeyemi"
-                description="4.9 rating · 8 years experience"
-                meta="Available at 11:30 AM"
-                selected={selectedInstructor === "John Adeyemi"}
-                onPress={() => setSelectedInstructor("John Adeyemi")}
-              />
-              <BookingOptionCard
-                icon="account-outline"
-                title="Grace Okafor"
-                description="4.8 rating · 6 years experience"
-                meta="Available at 11:30 AM"
-                selected={selectedInstructor === "Grace Okafor"}
-                onPress={() => setSelectedInstructor("Grace Okafor")}
-              />
+                ))}
+              </View>
             </View>
-          </View>
+          )
         ) : null}
 
-        {step === 2 ? (
+        {step === 1 && selectedSession ? (
           <View>
             <Text
               accessibilityRole="header"
@@ -319,13 +307,16 @@ export default function BookSessionScreen() {
               }}
             >
               {[
-                ["School", schoolName ?? "Elite Safety Driving Academy"],
-                ["Package", selectedPackage],
-                ["Date", selectedDate?.label ?? "Not selected"],
-                ["Time", selectedTime ?? "Not selected"],
-                ["Location", selectedLocation],
-                ["Instructor", selectedInstructor],
-                ["Credit balance", "10 → 9 sessions"],
+                ["School", selectedSchoolName],
+                ["Package", selectedPackageName],
+                ["Session", selectedSession.title],
+                ["Date", selectedDateGroup?.label ?? "Selected date"],
+                ["Time", availableSessionTimeLabel(selectedSession)],
+                ["Instructor", availableSessionInstructorLabel(selectedSession)],
+                [
+                  "Credit balance",
+                  `${remainingCredits} → ${Math.max(remainingCredits - 1, 0)} sessions`,
+                ],
               ].map(([label, value], index, values) => (
                 <View key={label}>
                   <View className="flex-row items-start justify-between gap-5 py-3">
@@ -355,68 +346,67 @@ export default function BookSessionScreen() {
         ) : null}
       </View>
 
-      <View className="mt-10 flex-row gap-3">
-        {canGoBack ? (
+      {groupedDates.length > 0 ? (
+        <View className="mt-10 flex-row gap-3">
+          {step > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setStep((current) => current - 1)}
+              className="h-14 flex-1 items-center justify-center rounded-2xl border active:opacity-70"
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              }}
+            >
+              <Text
+                className="font-figtree-bold text-[15px]"
+                style={{ color: colors.text }}
+              >
+                Back
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
-            onPress={() => setStep((current) => current - 1)}
-            className="h-14 flex-1 items-center justify-center rounded-2xl border active:opacity-70"
+            accessibilityState={{ disabled: !canContinue || submitting }}
+            disabled={!canContinue || submitting}
+            onPress={() => {
+              if (!isReview) {
+                setStep(1);
+                return;
+              }
+              void handleConfirm();
+            }}
+            className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
             style={{
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
+              backgroundColor: canContinue
+                ? colors.primary
+                : colors.surfaceStrong,
+              opacity: submitting ? 0.8 : 1,
             }}
           >
-            <Text
-              className="font-figtree-bold text-[15px]"
-              style={{ color: colors.text }}
-            >
-              Back
-            </Text>
+            {submitting ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <>
+                <Text
+                  className="font-figtree-bold text-[15px]"
+                  style={{
+                    color: canContinue ? colors.onPrimary : colors.textSubtle,
+                  }}
+                >
+                  {isReview ? "Confirm booking" : "Continue"}
+                </Text>
+                <MaterialCommunityIcons
+                  name={isReview ? "check" : "arrow-right"}
+                  size={20}
+                  color={canContinue ? colors.onPrimary : colors.textSubtle}
+                />
+              </>
+            )}
           </Pressable>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          disabled={!canContinue}
-          onPress={() => {
-            if (!isReview) {
-              setStep((current) => current + 1);
-              return;
-            }
-
-            router.replace({
-              pathname: "/student/sessions/confirmation",
-              params: {
-                packageName: selectedPackage,
-                schoolName: schoolName ?? "Elite Safety Driving Academy",
-                date: selectedDate?.label ?? "",
-                time: selectedTime ?? "",
-                instructor: selectedInstructor,
-              },
-            });
-          }}
-          className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
-          style={{
-            backgroundColor: canContinue
-              ? colors.primary
-              : colors.surfaceStrong,
-          }}
-        >
-          <Text
-            className="font-figtree-bold text-[15px]"
-            style={{
-              color: canContinue ? colors.onPrimary : colors.textSubtle,
-            }}
-          >
-            {isReview ? "Confirm booking" : "Continue"}
-          </Text>
-          <MaterialCommunityIcons
-            name={isReview ? "check" : "arrow-right"}
-            size={20}
-            color={canContinue ? colors.onPrimary : colors.textSubtle}
-          />
-        </Pressable>
-      </View>
+        </View>
+      ) : null}
     </DashboardScreen>
   );
 }

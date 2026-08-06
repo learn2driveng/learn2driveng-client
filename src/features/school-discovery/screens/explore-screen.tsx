@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -35,27 +35,23 @@ export function ExploreScreen({
     isGranted: isLocationGranted,
     isLocating,
     error: locationError,
+    placeName,
     requestLocation,
   } = useUserLocation();
-  const autoLocationAttempted = useRef(false);
   const [query, setQuery] = useState("");
   const [ratingFilter, setRatingFilter] = useState(false);
   const [priceFilter, setPriceFilter] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(false);
 
-  useEffect(() => {
-    if (
-      isCheckingLocation ||
-      !isLocationGranted ||
-      coordinates ||
-      autoLocationAttempted.current
-    ) {
-      return;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (isCheckingLocation || !isLocationGranted) {
+        return;
+      }
 
-    autoLocationAttempted.current = true;
-    void requestLocation();
-  }, [coordinates, isCheckingLocation, isLocationGranted, requestLocation]);
+      void requestLocation();
+    }, [isCheckingLocation, isLocationGranted, requestLocation]),
+  );
 
   const discoverQuery = useMemo(() => {
     const base = {
@@ -70,6 +66,7 @@ export function ExploreScreen({
         ...base,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
+        radiusKm: 50,
         sort: "distance" as const,
       };
     }
@@ -80,8 +77,7 @@ export function ExploreScreen({
     };
   }, [coordinates, query, ratingFilter]);
 
-  const { schools, loading, error, refetch, usedLocationFallback } =
-    useDiscoverSchools(discoverQuery);
+  const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
 
   const filteredSchools = useMemo(() => {
     let result = schools;
@@ -157,13 +153,47 @@ export function ExploreScreen({
           </View>
         </View>
 
-        {!coordinates && !isCheckingLocation ? (
+        {coordinates ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isLocating}
+            onPress={() => void requestLocation()}
+            className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="crosshairs-gps"
+              size={22}
+              color={colors.primary}
+            />
+            <Text
+              className="flex-1 text-[12px] leading-5"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              {isLocating
+                ? "Updating your current location…"
+                : placeName
+                  ? `Showing schools within 50 km of ${placeName}`
+                  : "Showing schools within 50 km of your current location"}
+            </Text>
+            <MaterialCommunityIcons
+              name="refresh"
+              size={20}
+              color={colors.textSubtle}
+            />
+          </Pressable>
+        ) : !isCheckingLocation ? (
           <Pressable
             accessibilityRole="button"
             disabled={isLocating}
             onPress={() => {
               if (isLocationGranted) {
-                autoLocationAttempted.current = true;
                 void requestLocation();
                 return;
               }
@@ -201,19 +231,6 @@ export function ExploreScreen({
               color={colors.textSubtle}
             />
           </Pressable>
-        ) : null}
-
-        {usedLocationFallback ? (
-          <Text
-            className="mb-4 text-[11px] leading-4"
-            style={{
-              color: colors.textMuted,
-              fontFamily: fontFamily.figtreeMedium,
-            }}
-          >
-            Showing all verified schools. Enable accurate location to sort by
-            distance from you.
-          </Text>
         ) : null}
 
         <View
@@ -321,7 +338,7 @@ export function ExploreScreen({
             description={
               schools.length === 0
                 ? coordinates
-                  ? "There are no verified schools within range right now. Try widening your search or change location."
+                  ? "No verified schools within 50 km of your current location. Try widening filters or check back when schools are available in your area."
                   : "There are no verified schools listed yet, or enable location for distance-based results."
                 : "Try another search or clear your current filters."
             }

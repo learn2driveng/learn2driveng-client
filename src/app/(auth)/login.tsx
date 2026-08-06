@@ -17,6 +17,8 @@ import { destinationForRole, useGoogleAuth } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { linkGoogleAccount, signInWithPassword } from "@/lib/api";
 import { hydrateSchoolOperations } from "@/lib/school/hydrate-school-operations";
+import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
+import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { isValidEmail } from "@/lib/auth/validation";
 import { useAuthStore } from "@/store/auth.store";
 import { useGoogleAuthStore } from "@/store/google-auth.store";
@@ -74,6 +76,11 @@ export default function LoginScreen() {
         await hydrateSchoolOperations(
           `${session.user.firstName} ${session.user.lastName}`.trim(),
         );
+      } else if (session.user.role === "learner") {
+        await Promise.all([
+          hydrateLearnerOperations().catch(() => undefined),
+          hydrateLearnerSessions().catch(() => undefined),
+        ]);
       }
       clearGoogleLink();
       router.replace(

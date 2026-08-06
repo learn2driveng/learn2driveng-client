@@ -15,6 +15,11 @@ import type {
   Vehicle,
   VehicleTransmissionType,
 } from "@/types";
+import type {
+  SchoolLearner,
+  SchoolLearnerListItem,
+  SchoolLearnerStatus,
+} from "@/types/readiness-assessment";
 
 function initialsFromName(name: string) {
   return name
@@ -222,4 +227,16 @@ export function bookingToSchoolAssignment(
     cancellationReason: booking.cancelReason ?? null,
     cancelledAt: booking.status === "cancelled" ? booking.updatedAt ?? null : null,
   };
+}
+
+export function schoolLearnerFromApi(learner: SchoolLearnerListItem): SchoolLearner {
+  return {
+    ...learner,
+    initials: initialsFromName(learner.name || "L"),
+    status: learner.status as SchoolLearnerStatus,
+  };
+}
+
+export function schoolLearnersFromApi(learners: SchoolLearnerListItem[]) {
+  return learners.map(schoolLearnerFromApi);
 }

@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 
 import { getAuthenticatedUser } from "@/lib/api";
+import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
+import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import { hydrateSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useSessionBootstrap() {
@@ -19,6 +22,16 @@ export function useSessionBootstrap() {
         const user = await getAuthenticatedUser();
         if (active) {
           useAuthStore.getState().completeHydration(user);
+          if (user.role === "learner") {
+            await Promise.all([
+              hydrateLearnerOperations().catch(() => undefined),
+              hydrateLearnerSessions().catch(() => undefined),
+            ]);
+          } else if (user.role === "driving_school") {
+            await hydrateSchoolOperations(
+              `${user.firstName} ${user.lastName}`.trim(),
+            ).catch(() => undefined);
+          }
         }
       } catch {
         if (active) {

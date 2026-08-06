@@ -7,7 +7,7 @@ import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { learnerBookings } from "@/sample_data";
+import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 import type { LearnerLessonCard } from "@/types";
 
 type HistoryFilter = "all" | LearnerLessonCard["status"];
@@ -15,6 +15,7 @@ type HistoryFilter = "all" | LearnerLessonCard["status"];
 const filters: { label: string; value: HistoryFilter }[] = [
   { label: "All", value: "all" },
   { label: "Upcoming", value: "scheduled" },
+  { label: "Live", value: "in_progress" },
   { label: "Completed", value: "completed" },
   { label: "Cancelled", value: "cancelled" },
 ];
@@ -23,7 +24,8 @@ export default function BookingHistoryScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const [filter, setFilter] = useState<HistoryFilter>("all");
-  const bookings = learnerBookings.filter(
+  const lessonCards = useLearnerSessionsStore((state) => state.lessonCards);
+  const bookings = lessonCards.filter(
     (booking) => filter === "all" || booking.status === filter,
   );
   const header = (
@@ -38,7 +40,7 @@ export default function BookingHistoryScreen() {
     </>
   );
 
-  if (learnerBookings.length === 0) {
+  if (lessonCards.length === 0) {
     return (
       <DashboardScreen>
         {header}
@@ -46,7 +48,7 @@ export default function BookingHistoryScreen() {
           <ContentEmptyState
             icon="calendar-blank-outline"
             title="No booking history yet"
-            description="Your upcoming and completed lessons will appear here after you make a booking."
+            description="Your upcoming and completed lessons will appear here after you book a session."
             actionLabel="Book a session"
             onActionPress={() => router.replace("/student/sessions")}
           />

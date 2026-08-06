@@ -4,7 +4,6 @@ import {
   assessmentAssignments,
   assessmentAttempts,
   readinessAssessments,
-  schoolLearners,
 } from "@/sample_data";
 import type {
   AssessmentAssignment,
@@ -18,6 +17,8 @@ type ReadinessAssessmentState = {
   assessments: ReadinessAssessment[];
   assignments: AssessmentAssignment[];
   attempts: AssessmentAttempt[];
+  hydrateLearners: (learners: SchoolLearner[]) => void;
+  resetLearners: () => void;
   createAssessment: (
     input: Omit<
       ReadinessAssessment,
@@ -34,15 +35,17 @@ type ReadinessAssessmentState = {
 
 export const useReadinessAssessmentStore = create<ReadinessAssessmentState>(
   (set, get) => ({
-    learners: schoolLearners,
+    learners: [],
     assessments: readinessAssessments,
     assignments: assessmentAssignments,
     attempts: assessmentAttempts,
+    hydrateLearners: (learners) => set({ learners }),
+    resetLearners: () => set({ learners: [] }),
     createAssessment: (input) => {
       const assessment: ReadinessAssessment = {
         ...input,
         id: `assessment-${Date.now().toString(36)}`,
-        schoolId: "school-elite-safety",
+        schoolId: "",
         createdAt: new Date().toISOString(),
         status: "published",
       };

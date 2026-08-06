@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
+import { useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getPackageById, getSchoolById } from "@/sample_data";
+import { packageDurationLabel } from "@/lib/school/mappers";
 
 type CheckoutResultStatus = "success" | "pending" | "failed" | "cancelled";
 
@@ -33,9 +34,22 @@ export default function CheckoutResultScreen() {
     method?: string;
     status?: string;
   }>();
-  const school = getSchoolById(schoolId);
-  const selectedPackage = getPackageById(schoolId, packageId);
+  const { school, selectedPackage, loading } = useCheckoutPackage(
+    schoolId,
+    packageId,
+  );
   const resultStatus = isCheckoutResultStatus(status) ? status : "success";
+
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.background }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   if (!school || !selectedPackage) return null;
 
@@ -65,7 +79,7 @@ export default function CheckoutResultScreen() {
       iconColor: colors.onPrimary,
       title: "Payment processing",
       description:
-        "We’re still confirming your payment. Your package will appear as soon as confirmation is complete.",
+        "We're still confirming your payment. Your package will appear as soon as confirmation is complete.",
       statusLabel: "Confirmation pending",
       statusColor: colors.primary,
     },
@@ -156,7 +170,7 @@ export default function CheckoutResultScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Please don’t make another payment while this one is processing.
+              Please don't make another payment while this one is processing.
             </Text>
           </View>
         ) : null}
@@ -197,7 +211,7 @@ export default function CheckoutResultScreen() {
                 }}
               >
                 {selectedPackage.numberOfLessons} session credits ·{" "}
-                {selectedPackage.durationInDays} days
+                {packageDurationLabel(selectedPackage)}
               </Text>
               <View className="mt-3 flex-row items-center gap-2">
                 <View

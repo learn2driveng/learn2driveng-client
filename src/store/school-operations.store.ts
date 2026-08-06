@@ -87,6 +87,7 @@ type SchoolOperationsState = {
   setVehicleActive: (vehicleId: string, isActive: boolean) => void;
   addPackage: (input: PackageInput) => SchoolPackageDefinition;
   upsertPackage: (packageDefinition: SchoolPackageDefinition) => void;
+  removePackage: (packageId: string) => void;
   setPackageActive: (packageId: string, isActive: boolean) => void;
   assignBooking: (
     bookingId: string,
@@ -277,6 +278,14 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
           },
         };
       }),
+    removePackage: (packageId) =>
+      set((state) => ({
+        packages: state.packages.filter((item) => item.id !== packageId),
+        profile: {
+          ...state.profile,
+          packages: state.packages.filter((item) => item.id !== packageId).length,
+        },
+      })),
     setPackageActive: (packageId, isActive) =>
       set((state) => ({
         packages: state.packages.map((packageDefinition) =>

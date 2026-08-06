@@ -14,6 +14,8 @@ import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { completeGoogleSignup } from "@/lib/api";
+import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
+import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { useAuthStore } from "@/store/auth.store";
 import { useGoogleAuthStore } from "@/store/google-auth.store";
 import type { ApiError } from "@/types";
@@ -114,6 +116,12 @@ export default function GoogleOnboardingScreen() {
         acceptTerms: true,
       });
       await authenticate(session);
+      if (session.user.role === "learner") {
+        await Promise.all([
+          hydrateLearnerOperations().catch(() => undefined),
+          hydrateLearnerSessions().catch(() => undefined),
+        ]);
+      }
       clearSignup();
       router.replace(
         destinationForRole(session.user.role, pendingSignup.returnTo),

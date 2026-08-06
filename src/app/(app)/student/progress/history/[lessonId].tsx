@@ -5,13 +5,15 @@ import { Pressable, Text, View } from "react-native";
 import { DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getProgressLessonById } from "@/sample_data";
+import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 
 export default function ProgressLessonDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { lessonId } = useLocalSearchParams<{ lessonId?: string }>();
-  const lesson = getProgressLessonById(lessonId);
+  const lesson = useLearnerSessionsStore((state) =>
+    state.progressLessons.find((item) => item.id === lessonId),
+  );
 
   if (!lesson) {
     return (

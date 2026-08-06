@@ -100,3 +100,33 @@ export type LiveLocationShare = {
   endedAt: string | null;
   failureReason: LocationSharingFailureReason | null;
 };
+
+type EnrichedNameRef = {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  state?: string;
+  addressLine1?: string;
+};
+
+export type EnrichedTrainingSession = Omit<
+  TrainingSession,
+  "instructorId" | "schoolId" | "vehicleId"
+> & {
+  instructorId: string | EnrichedNameRef;
+  schoolId: string | EnrichedNameRef;
+  vehicleId?: string | EnrichedNameRef | null;
+};
+
+export type LearnerJoinedSession = Omit<
+  TrainingSessionParticipant,
+  "sessionId" | "bookingId" | "packageId"
+> & {
+  sessionId: EnrichedTrainingSession | string;
+  bookingId: string | { id: string };
+  packageId: string | { id: string; name?: string };
+};
+
+export type AvailableTrainingSession = EnrichedTrainingSession;

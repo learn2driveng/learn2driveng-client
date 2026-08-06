@@ -7,3 +7,6 @@ export * from "./vehicles";
 export * from "./packages";
 export * from "./instructors";
 export * from "./bookings";
+export * from "./users";
+export * from "./payments";
+export * from "./training-sessions";

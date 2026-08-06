@@ -12,7 +12,16 @@ import {
 } from "@/components/dashboard";
 import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { learnerBookings, studentPackages } from "@/sample_data";
+import {
+  selectActiveLearnerPackages,
+  selectExpiredLearnerPackages,
+  selectTotalRemainingSessions,
+  useLearnerOperationsStore,
+} from "@/store/learner-operations.store";
+import {
+  selectUpcomingLessonCards,
+  useLearnerSessionsStore,
+} from "@/store/learner-sessions.store";
 
 export default function StudentSessionsScreen() {
   const router = useRouter();
@@ -20,31 +29,28 @@ export default function StudentSessionsScreen() {
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
     null,
   );
-  const activePackages = studentPackages.filter(
-    (item) => item.status === "active",
-  );
-  const expiredPackages = studentPackages.filter(
-    (item) => item.status === "expired",
+  const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
+  const expiredPackages = useLearnerOperationsStore(selectExpiredLearnerPackages);
+  const totalRemainingSessions = useLearnerOperationsStore(
+    selectTotalRemainingSessions,
   );
   const selectedPackage = activePackages.find(
     (item) => item.id === selectedPackageId,
   );
-  const totalRemainingSessions = activePackages.reduce(
-    (total, item) => total + item.remainingSessions,
-    0,
-  );
   const hasPackages = activePackages.length > 0;
   const hasCredits = totalRemainingSessions > 0;
-  const upcomingBooking = learnerBookings.find(
-    (booking) => booking.status === "scheduled",
-  );
+  const upcomingBooking = useLearnerSessionsStore(selectUpcomingLessonCards)[0];
 
   const bookSelectedPackage = () => {
     if (!selectedPackage) return;
 
     router.push({
       pathname: "/student/sessions/book",
-      params: { packageName: selectedPackage.name },
+      params: {
+        packageName: selectedPackage.name,
+        schoolName: selectedPackage.schoolName,
+        bookingId: selectedPackage.bookingId,
+      },
     });
   };
 
@@ -178,7 +184,7 @@ export default function StudentSessionsScreen() {
                     icon={item.icon}
                     totalSessions={item.totalSessions}
                     remainingSessions={item.remainingSessions}
-                    status={item.status}
+                    status={item.status === "pending" ? "active" : item.status}
                     selected={selectedPackageId === item.id}
                     disabled={!hasPackageCredits}
                     onPress={() => setSelectedPackageId(item.id)}
@@ -221,8 +227,7 @@ export default function StudentSessionsScreen() {
                 icon={item.icon}
                 totalSessions={item.totalSessions}
                 remainingSessions={item.remainingSessions}
-                status={item.status}
-                expiresOn={item.expiresOn}
+                status="expired"
                 actionLabel="Renew"
                 onPress={() => router.push("/student/explore")}
               />

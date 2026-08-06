@@ -37,3 +37,7 @@ export async function updateSchoolPackage(
   );
   return data.data;
 }
+
+export async function deleteSchoolPackage(packageId: string) {
+  await api.delete(`/packages/${packageId}`);
+}

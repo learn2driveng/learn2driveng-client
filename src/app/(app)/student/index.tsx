@@ -13,44 +13,49 @@ import {
   StatCard,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { studentPackages, studentProfile } from "@/sample_data";
-import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
+import { userInitials } from "@/lib/learner/map-api";
+import { computeProgressSummary } from "@/lib/learner/map-sessions";
+import { useAuthStore } from "@/store/auth.store";
+import {
+  selectActiveLearnerPackages,
+  selectExpiredLearnerPackages,
+  selectTotalRemainingSessions,
+  useLearnerOperationsStore,
+} from "@/store/learner-operations.store";
+import {
+  selectActiveLessonCard,
+  selectUpcomingLessonCards,
+  useLearnerSessionsStore,
+} from "@/store/learner-sessions.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function StudentDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
-  const activeSession = useTrainingSessionStore((state) => {
-    if (!state.activeSessionId) return undefined;
-    const session = state.sessions[state.activeSessionId];
-    const participant = state.participantsBySessionId[state.activeSessionId];
-    return participant?.learnerId === studentProfile.id ? session : undefined;
-  });
-  const activeParticipant = useTrainingSessionStore((state) =>
-    activeSession ? state.participantsBySessionId[activeSession.id] : undefined,
+  const user = useAuthStore((state) => state.user);
+  const bookings = useLearnerOperationsStore((state) => state.bookings);
+  const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
+  const expiredPackages = useLearnerOperationsStore(selectExpiredLearnerPackages);
+  const totalRemainingSessions = useLearnerOperationsStore(
+    selectTotalRemainingSessions,
   );
+  const joinedSessions = useLearnerSessionsStore((state) => state.joinedSessions);
+  const activeLesson = useLearnerSessionsStore(selectActiveLessonCard);
+  const upcomingLesson = useLearnerSessionsStore(selectUpcomingLessonCards)[0];
   const activeLocationShare = useTrainingSessionStore((state) =>
-    activeSession ? state.locationShares[activeSession.id] : undefined,
+    activeLesson
+      ? state.locationShares[activeLesson.sessionId]
+      : undefined,
   );
-  const activeLessonContext = getInstructorLessonContextBySessionId(
-    activeSession?.id,
-  );
-  const activePackages = studentPackages.filter(
-    (item) => item.status === "active",
-  );
-  const expiredPackages = studentPackages.filter(
-    (item) => item.status === "expired",
-  );
-  const totalRemainingSessions = activePackages.reduce(
-    (total, item) => total + item.remainingSessions,
-    0,
-  );
+  const progressSummary = computeProgressSummary(bookings, joinedSessions);
   const packagesWithCredits = activePackages.filter(
     (item) => item.remainingSessions > 0,
   );
   const hasPackages = activePackages.length > 0;
   const hasCredits = totalRemainingSessions > 0;
+  const greetingName = user?.firstName ?? "there";
+  const profileInitials = user ? userInitials(user) : "L2";
   const header = (
     <View className="flex-row items-center justify-between">
       <View>
@@ -65,7 +70,7 @@ export default function StudentDashboardScreen() {
           className="mt-1 font-figtree-bold text-[28px]"
           style={{ color: colors.text }}
         >
-          Welcome, {studentProfile.firstName}
+          Welcome, {greetingName}
         </Text>
       </View>
       <View className="flex-row items-center gap-3">
@@ -93,7 +98,7 @@ export default function StudentDashboardScreen() {
             className="font-figtree-bold text-[14px]"
             style={{ color: colors.primary }}
           >
-            {studentProfile.initials}
+            {profileInitials}
           </Text>
         </View>
       </View>
@@ -105,10 +110,10 @@ export default function StudentDashboardScreen() {
       <AppLogo height={48} className="mb-6" />
       {header}
 
-      {activeSession && activeLessonContext ? (
+      {activeLesson ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Active lesson with Instructor John. Location ${
+          accessibilityLabel={`Active lesson with ${activeLesson.instructor}. Location ${
             activeLocationShare?.status === "sharing"
               ? "is sharing"
               : "is not sharing"
@@ -117,7 +122,7 @@ export default function StudentDashboardScreen() {
           onPress={() =>
             router.push({
               pathname: "/student/sessions/[bookingId]/live-location",
-              params: { bookingId: activeParticipant?.bookingId ?? "" },
+              params: { bookingId: activeLesson.id },
             })
           }
           className="mt-8 overflow-hidden rounded-[28px] p-5 active:opacity-80"
@@ -154,13 +159,13 @@ export default function StudentDashboardScreen() {
             className="mt-5 font-figtree-bold text-[21px]"
             style={{ color: colors.contrastText }}
           >
-            {activeLessonContext.lesson.packageName}
+            {activeLesson.packageName}
           </Text>
           <Text
             className="mt-2 font-figtree text-[12px]"
             style={{ color: colors.contrastText }}
           >
-            Instructor John · {activeLessonContext.lesson.location}
+            {activeLesson.instructor} · {activeLesson.location}
           </Text>
           <View
             className="mt-5 flex-row items-center justify-between border-t pt-4"
@@ -182,7 +187,7 @@ export default function StudentDashboardScreen() {
       ) : null}
 
       <HeroSurface
-        className={`${activeSession ? "mt-5" : "mt-8"} rounded-[28px] p-6`}
+        className={`${activeLesson ? "mt-5" : "mt-8"} rounded-[28px] p-6`}
       >
         <Text
           className="font-figtree-medium text-[15px]"
@@ -241,8 +246,16 @@ export default function StudentDashboardScreen() {
       </HeroSurface>
 
       <View className="mt-8 flex-row gap-4">
-        <StatCard icon="calendar-check" value="4" label="Sessions completed" />
-        <StatCard icon="clock-outline" value="18.5h" label="Driving hours" />
+        <StatCard
+          icon="calendar-check"
+          value={String(progressSummary.completedLessons)}
+          label="Sessions completed"
+        />
+        <StatCard
+          icon="clock-outline"
+          value={progressSummary.drivingTime}
+          label="Driving hours"
+        />
       </View>
 
       <View className="mt-9">
@@ -269,7 +282,7 @@ export default function StudentDashboardScreen() {
                 icon={item.icon}
                 totalSessions={item.totalSessions}
                 remainingSessions={item.remainingSessions}
-                status={item.status}
+                status={item.status === "pending" ? "active" : item.status}
                 onPress={() => router.push("/student/sessions")}
               />
             ))}
@@ -306,8 +319,7 @@ export default function StudentDashboardScreen() {
                 icon={item.icon}
                 totalSessions={item.totalSessions}
                 remainingSessions={item.remainingSessions}
-                status={item.status}
-                expiresOn={item.expiresOn}
+                status="expired"
                 actionLabel="Renew"
                 onPress={() => router.push("/student/explore")}
               />
@@ -316,7 +328,7 @@ export default function StudentDashboardScreen() {
         </View>
       ) : null}
 
-      {hasPackages ? (
+      {hasPackages && hasCredits && upcomingLesson ? (
         <View className="mt-9">
           <SectionHeader
             title="Upcoming session"
@@ -326,7 +338,12 @@ export default function StudentDashboardScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="View upcoming session"
-            onPress={() => router.push("/student/sessions")}
+            onPress={() =>
+              router.push({
+                pathname: "/student/sessions/[bookingId]",
+                params: { bookingId: upcomingLesson.id },
+              })
+            }
             className="mt-4 flex-row items-center gap-4 rounded-3xl border p-5 active:opacity-70"
             style={surfaces.card}
           >
@@ -345,19 +362,19 @@ export default function StudentDashboardScreen() {
                 className="font-figtree-bold text-[17px]"
                 style={{ color: colors.text }}
               >
-                Practical Driving Session
+                {upcomingLesson.packageName}
               </Text>
               <Text
                 className="mt-1 font-figtree text-[13px]"
                 style={{ color: colors.textMuted }}
               >
-                Tomorrow · 10:00 AM · Instructor John
+                {upcomingLesson.date} · {upcomingLesson.time}
               </Text>
               <Text
                 className="mt-2 font-figtree-medium text-[12px]"
                 style={{ color: colors.primary }}
               >
-                Defensive Driving Package · Session 1 of 10
+                {upcomingLesson.instructor} · {upcomingLesson.school}
               </Text>
             </View>
             <MaterialCommunityIcons
