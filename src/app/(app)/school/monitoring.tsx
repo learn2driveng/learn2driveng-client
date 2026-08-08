@@ -11,9 +11,10 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
-  getInstructorLessonContextBySessionId,
-  instructorProfile,
-} from "@/sample_data/instructor";
+  readInstructorNameFromSession,
+  readLearnerLabelFromParticipant,
+  sessionDisplayLocation,
+} from "@/lib/instructor/map-sessions";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
@@ -48,9 +49,13 @@ export default function SchoolSessionMonitoringScreen() {
     (state) => state.participantsBySessionId,
   );
   const sessions = Object.values(sessionsById);
-  const schoolSessions = sessions.filter(
-    (session) => session.schoolId === schoolId,
-  );
+  const schoolSessions = sessions.filter((session) => {
+    const sessionSchoolId =
+      typeof session.schoolId === "object" && session.schoolId
+        ? session.schoolId.id
+        : session.schoolId;
+    return sessionSchoolId === schoolId;
+  });
   const activeSessions = schoolSessions.filter(
     (session) => session.status === "in_progress",
   );
@@ -148,8 +153,8 @@ export default function SchoolSessionMonitoringScreen() {
         <View className="mt-4 gap-3">
           {activeSessions.length ? (
             activeSessions.map((session) => {
-              const context = getInstructorLessonContextBySessionId(session.id);
               const share = locationShares[session.id];
+              const participant = participantsBySessionId[session.id];
               return (
                 <View
                   key={session.id}
@@ -175,9 +180,8 @@ export default function SchoolSessionMonitoringScreen() {
                           fontFamily: fontFamily.figtreeBold,
                         }}
                       >
-                        {context?.lesson.learnerName ??
-                          participantsBySessionId[session.id]?.learnerId ??
-                          "Learner"}
+                        {session.title ||
+                          readLearnerLabelFromParticipant(participant)}
                       </Text>
                       <Text
                         className="mt-1 text-[11px]"
@@ -186,8 +190,8 @@ export default function SchoolSessionMonitoringScreen() {
                           fontFamily: fontFamily.figtreeMedium,
                         }}
                       >
-                        {instructorProfile.name} ·{" "}
-                        {context?.lesson.location ?? "School route"}
+                        {readInstructorNameFromSession(session)} ·{" "}
+                        {sessionDisplayLocation(session)}
                       </Text>
                     </View>
                     <View
@@ -280,7 +284,12 @@ export default function SchoolSessionMonitoringScreen() {
             )
             .slice(0, 4)
             .map((session) => {
-              const context = getInstructorLessonContextBySessionId(session.id);
+              const participant = participantsBySessionId[session.id];
+              const transmission =
+                typeof session.vehicleId === "object" &&
+                session.vehicleId?.transmissionType
+                  ? session.vehicleId.transmissionType
+                  : "Lesson";
               return (
                 <View
                   key={session.id}
@@ -305,9 +314,8 @@ export default function SchoolSessionMonitoringScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {context?.lesson.learnerName ??
-                        participantsBySessionId[session.id]?.learnerId ??
-                        "Learner"}
+                      {session.title ||
+                        readLearnerLabelFromParticipant(participant)}
                     </Text>
                     <Text
                       className="mt-1 text-[11px]"
@@ -326,7 +334,7 @@ export default function SchoolSessionMonitoringScreen() {
                       fontFamily: fontFamily.figtreeBold,
                     }}
                   >
-                    {context?.lesson.transmission ?? "Lesson"}
+                    {transmission}
                   </Text>
                 </View>
               );

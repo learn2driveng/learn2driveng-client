@@ -15,6 +15,7 @@ import {
   instructorTimeOffOptions,
   instructorWeeklyAvailability,
 } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 type PickerOption = {
   id: string;
@@ -24,7 +25,13 @@ type PickerOption = {
 
 export default function InstructorAvailabilityScreen() {
   const { colors } = useAppTheme();
-  const [acceptingAssignments, setAcceptingAssignments] = useState(true);
+  const profile = useInstructorOperationsStore((state) => state.profile);
+  const setAvailableToday = useInstructorOperationsStore(
+    (state) => state.setAvailableToday,
+  );
+  const [acceptingAssignments, setAcceptingAssignments] = useState(
+    profile.availableToday ?? true,
+  );
   const [days, setDays] = useState(() =>
     instructorWeeklyAvailability.map((day) => ({ ...day })),
   );
@@ -366,7 +373,10 @@ export default function InstructorAvailabilityScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: saved }}
           disabled={saved}
-          onPress={() => setSaved(true)}
+          onPress={() => {
+            setAvailableToday(acceptingAssignments);
+            setSaved(true);
+          }}
           className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
           style={{
             backgroundColor: saved ? colors.surfaceStrong : colors.primary,

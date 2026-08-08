@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
@@ -14,7 +14,7 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { instructorScheduleDays } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
 
@@ -30,14 +30,25 @@ const filters: { label: string; value: ScheduleFilter }[] = [
 export default function InstructorScheduleScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const scheduleDays = useInstructorOperationsStore(
+    (state) => state.scheduleDays,
+  );
   const sessions = useTrainingSessionStore((state) => state.sessions);
   const [selectedDayId, setSelectedDayId] = useState(
-    instructorScheduleDays[0]?.id ?? "",
+    scheduleDays[0]?.id ?? "",
   );
   const [filter, setFilter] = useState<ScheduleFilter>("all");
   const selectedDay =
-    instructorScheduleDays.find((day) => day.id === selectedDayId) ??
-    instructorScheduleDays[0];
+    scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
+
+  useEffect(() => {
+    if (scheduleDays.length === 0) return;
+    setSelectedDayId((current) =>
+      scheduleDays.some((day) => day.id === current)
+        ? current
+        : (scheduleDays[0]?.id ?? ""),
+    );
+  }, [scheduleDays]);
   const lessonsWithStatus =
     selectedDay?.lessons.map((lesson) => ({
       lesson,
@@ -67,7 +78,7 @@ export default function InstructorScheduleScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="gap-2 py-6"
       >
-        {instructorScheduleDays.map((day) => {
+        {scheduleDays.map((day) => {
           const selected = selectedDayId === day.id;
 
           return (

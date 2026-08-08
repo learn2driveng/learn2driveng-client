@@ -16,6 +16,7 @@ import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole, useGoogleAuth } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { linkGoogleAccount, signInWithPassword } from "@/lib/api";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { hydrateSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
@@ -81,6 +82,8 @@ export default function LoginScreen() {
           hydrateLearnerOperations().catch(() => undefined),
           hydrateLearnerSessions().catch(() => undefined),
         ]);
+      } else if (session.user.role === "instructor") {
+        await hydrateInstructorOperations().catch(() => undefined);
       }
       clearGoogleLink();
       router.replace(

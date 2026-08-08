@@ -6,10 +6,11 @@ import {
   SettingsRow,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { instructorProfile } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 export default function InstructorAccountScreen() {
   const { colors } = useAppTheme();
+  const profile = useInstructorOperationsStore((state) => state.profile);
 
   return (
     <DashboardScreen>
@@ -28,7 +29,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="account-outline"
           title="Full name"
-          value={instructorProfile.name}
+          value={profile.name}
         />
         <View
           className="mx-4 h-px"
@@ -37,7 +38,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="email-outline"
           title="Email"
-          value={instructorProfile.email}
+          value={profile.email}
         />
         <View
           className="mx-4 h-px"
@@ -46,7 +47,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="phone-outline"
           title="Phone"
-          value={instructorProfile.phone}
+          value={profile.phone}
         />
       </View>
 
@@ -63,7 +64,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="identifier"
           title="Instructor ID"
-          value={instructorProfile.instructorId}
+          value={profile.instructorId}
         />
         <View
           className="mx-4 h-px"
@@ -72,7 +73,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="card-account-details-outline"
           title="Licence number"
-          value={instructorProfile.licenceNumber}
+          value={profile.licenceNumber ?? "Not provided"}
         />
         <View
           className="mx-4 h-px"
@@ -81,7 +82,7 @@ export default function InstructorAccountScreen() {
         <SettingsRow
           icon="school-outline"
           title="Driving school"
-          value={instructorProfile.schoolName}
+          value={profile.schoolName}
         />
       </View>
     </DashboardScreen>

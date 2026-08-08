@@ -10,7 +10,13 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getInstructorLessonContext } from "@/sample_data/instructor";
+import {
+  endInstructorTrainingSession,
+  markInstructorSessionAttendance,
+} from "@/lib/api/training-sessions";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
+import type { ApiError } from "@/types";
 
 type AttendanceStatus = "present" | "late" | "absent";
 type SkillRating = "needs_practice" | "developing" | "confident";
@@ -62,12 +68,17 @@ export default function InstructorLessonReportScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { lessonId } = useLocalSearchParams<{ lessonId?: string }>();
-  const context = getInstructorLessonContext(lessonId);
+  const getLessonContext = useInstructorOperationsStore(
+    (state) => state.getLessonContext,
+  );
+  const context = getLessonContext(lessonId);
   const [attendance, setAttendance] = useState<AttendanceStatus | null>(null);
   const [skillRatings, setSkillRatings] = useState(emptySkillRatings);
   const [notes, setNotes] = useState("");
   const [nextFocus, setNextFocus] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!context) {
     return (
@@ -89,10 +100,47 @@ export default function InstructorLessonReportScreen() {
     (skill) => skillRatings[skill.id] !== null,
   );
   const canSubmit =
-    attendance !== null && (attendance === "absent" || allSkillsRated);
+    attendance !== null &&
+    (attendance === "absent" || allSkillsRated) &&
+    !isSubmitting;
   const selectAttendance = (value: AttendanceStatus) => {
     setAttendance(value);
     if (value === "absent") setSkillRatings(emptySkillRatings);
+  };
+
+  const submitReport = async () => {
+    if (!context || !canSubmit || !attendance) return;
+
+    const { lesson } = context;
+    const participantId = lesson.participantId ?? lesson.id;
+    const completionNotes = [notes.trim(), nextFocus.trim()]
+      .filter(Boolean)
+      .join("\n\nNext lesson focus: ");
+
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      await markInstructorSessionAttendance(
+        lesson.sessionId,
+        participantId,
+        attendance === "absent" ? "absent" : "present",
+      );
+      await endInstructorTrainingSession(
+        lesson.sessionId,
+        completionNotes || undefined,
+      );
+      await refreshInstructorOperations();
+      setSubmitted(true);
+    } catch (caught) {
+      const error = caught as ApiError;
+      setSubmitError(
+        error.message ||
+          "We could not submit this report. Check attendance and try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -413,7 +461,7 @@ export default function InstructorLessonReportScreen() {
             : "Select attendance and complete each required skill rating"
         }
         disabled={!canSubmit}
-        onPress={() => setSubmitted(true)}
+        onPress={() => void submitReport()}
         className="mt-9 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{
           backgroundColor: canSubmit ? colors.primary : colors.surfaceStrong,
@@ -430,9 +478,17 @@ export default function InstructorLessonReportScreen() {
             color: canSubmit ? colors.onPrimary : colors.textSubtle,
           }}
         >
-          Submit lesson report
+          {isSubmitting ? "Submitting…" : "Submit lesson report"}
         </Text>
       </Pressable>
+      {submitError ? (
+        <Text
+          className="mt-3 text-center font-figtree-medium text-[12px]"
+          style={{ color: colors.error }}
+        >
+          {submitError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

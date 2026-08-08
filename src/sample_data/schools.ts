@@ -1,4 +1,4 @@
-import { formatFullAddress, formatSchoolLocation } from "@/lib/school/format";
+import { formatFullAddress } from "@/lib/school/format";
 import type { SchoolDetail, TrainingPackage } from "@/types";
 
 const ELITE_SCHOOL_ID = "11111111-1111-4111-8111-111111111101";
@@ -24,7 +24,6 @@ function buildSchoolDetail(input: {
   instructors: SchoolDetail["instructors"];
   vehicles: SchoolDetail["vehicles"];
 }): SchoolDetail {
-  const location = formatSchoolLocation(input.city, input.state);
   const address = formatFullAddress({
     addressLine1: input.addressLine1,
     city: input.city,
@@ -36,7 +35,7 @@ function buildSchoolDetail(input: {
   return {
     id: input.id,
     name: input.name,
-    location,
+    location: address,
     address,
     addressLine1: input.addressLine1,
     city: input.city,

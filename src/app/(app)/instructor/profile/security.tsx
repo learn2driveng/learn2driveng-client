@@ -7,11 +7,12 @@ import {
   SettingsRow,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { instructorProfile } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 export default function InstructorSecurityScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const profile = useInstructorOperationsStore((state) => state.profile);
 
   return (
     <DashboardScreen>
@@ -30,11 +31,11 @@ export default function InstructorSecurityScreen() {
         <SettingsRow
           icon="lock-reset"
           title="Change password"
-          description={`Receive a verification code at ${instructorProfile.email}`}
+          description={`Receive a verification code at ${profile.email}`}
           onPress={() =>
             router.push({
               pathname: "/forgot-password",
-              params: { email: instructorProfile.email },
+              params: { email: profile.email },
             })
           }
         />

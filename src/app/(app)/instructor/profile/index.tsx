@@ -8,7 +8,7 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { instructorProfile } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 function Divider() {
   const { colors } = useAppTheme();
@@ -21,6 +21,7 @@ export default function InstructorProfileScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
+  const profile = useInstructorOperationsStore((state) => state.profile);
   const { logout } = useLogout();
 
   return (
@@ -49,14 +50,14 @@ export default function InstructorProfileScreen() {
             className="font-figtree-bold text-[28px]"
             style={{ color: colors.primary }}
           >
-            {instructorProfile.initials}
+            {profile.initials}
           </Text>
         </View>
         <Text
           className="mt-4 font-figtree-bold text-[22px]"
           style={{ color: colors.text }}
         >
-          {instructorProfile.name}
+          {profile.name}
         </Text>
         <View className="mt-2 flex-row items-center gap-1.5">
           <MaterialCommunityIcons
@@ -68,7 +69,7 @@ export default function InstructorProfileScreen() {
             className="font-figtree-medium text-[13px]"
             style={{ color: colors.textMuted }}
           >
-            Verified instructor · {instructorProfile.schoolName}
+            Verified instructor · {profile.schoolName}
           </Text>
         </View>
       </View>

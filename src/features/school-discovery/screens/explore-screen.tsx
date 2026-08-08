@@ -338,23 +338,18 @@ export function ExploreScreen({
             description={
               schools.length === 0
                 ? coordinates
-                  ? "No verified schools within 50 km of your current location. Try widening filters or check back when schools are available in your area."
+                  ? "No verified schools within 50 km of this location. If you're testing on a simulator, set a custom location near Lagos (or Basky), then refresh GPS."
                   : "There are no verified schools listed yet, or enable location for distance-based results."
                 : "Try another search or clear your current filters."
             }
             actionLabel={
               schools.length === 0 && coordinates
-                ? "Change location"
+                ? "Refresh location"
                 : "Clear filters"
             }
             onActionPress={
               schools.length === 0 && coordinates
-                ? () =>
-                    router.push(
-                      publicMarketplace
-                        ? "/location"
-                        : "/student/profile/location",
-                    )
+                ? () => void requestLocation()
                 : resetFilters
             }
           />

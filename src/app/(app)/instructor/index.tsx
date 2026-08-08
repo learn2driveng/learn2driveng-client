@@ -16,10 +16,7 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import {
-  instructorProfile,
-  instructorTodayLessons,
-} from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
 
@@ -27,16 +24,20 @@ export default function InstructorDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
+  const profile = useInstructorOperationsStore((state) => state.profile);
+  const todayLessons = useInstructorOperationsStore(
+    (state) => state.todayLessons,
+  );
   const sessions = useTrainingSessionStore((state) => state.sessions);
   const getLessonStatus = (
     sessionId: string,
     fallback: InstructorLessonStatus,
   ) => toInstructorLessonStatus(sessions[sessionId]?.status, fallback);
-  const activeLesson = instructorTodayLessons.find(
+  const activeLesson = todayLessons.find(
     (lesson) =>
       getLessonStatus(lesson.sessionId, lesson.status) === "in_progress",
   );
-  const nextLesson = instructorTodayLessons.find(
+  const nextLesson = todayLessons.find(
     (lesson) =>
       getLessonStatus(lesson.sessionId, lesson.status) === "scheduled",
   );
@@ -44,7 +45,7 @@ export default function InstructorDashboardScreen() {
   const featuredStatus = featuredLesson
     ? getLessonStatus(featuredLesson.sessionId, featuredLesson.status)
     : null;
-  const availabilityColor = instructorProfile.availableToday
+  const availabilityColor = profile.availableToday
     ? colors.success
     : colors.textSubtle;
   const openLesson = (lessonId: string) =>
@@ -69,10 +70,10 @@ export default function InstructorDashboardScreen() {
             className="mt-1 font-figtree-bold text-[28px]"
             style={{ color: colors.text }}
           >
-            {instructorProfile.name}
+            {profile.name}
           </Text>
           <View className="mt-2 flex-row items-center gap-2">
-            {instructorProfile.verified ? (
+            {profile.verified ? (
               <MaterialCommunityIcons
                 name="check-decagram"
                 size={16}
@@ -83,7 +84,7 @@ export default function InstructorDashboardScreen() {
               className="font-figtree-medium text-[12px]"
               style={{ color: colors.textMuted }}
             >
-              {instructorProfile.schoolName}
+              {profile.schoolName}
             </Text>
           </View>
         </View>
@@ -95,7 +96,7 @@ export default function InstructorDashboardScreen() {
             className="font-figtree-bold text-[14px]"
             style={{ color: colors.primary }}
           >
-            {instructorProfile.initials}
+            {profile.initials}
           </Text>
         </View>
       </View>
@@ -108,14 +109,14 @@ export default function InstructorDashboardScreen() {
           <View
             className="h-9 w-9 items-center justify-center rounded-xl"
             style={{
-              backgroundColor: instructorProfile.availableToday
+              backgroundColor: profile.availableToday
                 ? colors.successSoft
                 : colors.surfaceStrong,
             }}
           >
             <MaterialCommunityIcons
               name={
-                instructorProfile.availableToday
+                profile.availableToday
                   ? "calendar-check-outline"
                   : "calendar-remove-outline"
               }
@@ -128,7 +129,7 @@ export default function InstructorDashboardScreen() {
               className="font-figtree-bold text-[13px]"
               style={{ color: colors.text }}
             >
-              {instructorProfile.availableToday
+              {profile.availableToday
                 ? "Available today"
                 : "Assignments paused"}
             </Text>
@@ -136,7 +137,7 @@ export default function InstructorDashboardScreen() {
               className="mt-0.5 font-figtree text-[11px]"
               style={{ color: colors.textMuted }}
             >
-              {instructorProfile.availableToday
+              {profile.availableToday
                 ? "Accepting assigned lessons"
                 : "Update availability to accept lessons"}
             </Text>
@@ -239,12 +240,12 @@ export default function InstructorDashboardScreen() {
       <View className="mt-8 flex-row gap-4">
         <StatCard
           icon="calendar-check"
-          value={`${instructorTodayLessons.length}`}
+          value={`${todayLessons.length}`}
           label="Lessons today"
         />
         <StatCard
           icon="clipboard-alert-outline"
-          value={`${instructorProfile.outstandingReports}`}
+          value={`${profile.outstandingReports ?? 0}`}
           label="Report due"
           accent={colors.error}
         />
@@ -257,8 +258,8 @@ export default function InstructorDashboardScreen() {
           onActionPress={() => router.push("/instructor/schedule")}
         />
         <View className="mt-4 gap-3">
-          {instructorTodayLessons.length > 0 ? (
-            instructorTodayLessons
+          {todayLessons.length > 0 ? (
+            todayLessons
               .slice(0, 2)
               .map((lesson) => (
                 <InstructorLessonCard

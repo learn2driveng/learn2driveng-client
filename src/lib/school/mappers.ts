@@ -2,7 +2,6 @@ import {
   computeStartingPrice,
   formatFullAddress,
   formatPackageDurationDays,
-  formatSchoolLocation,
   formatTransmissionLabel,
   vehicleDisplayName,
 } from "@/lib/school/format";
@@ -22,7 +21,13 @@ import type {
 export function mapPublicSchoolListItemToSummary(
   item: PublicDrivingSchoolListItem,
 ): SchoolSummary {
-  const location = formatSchoolLocation(item.city, item.state);
+  const location = formatFullAddress({
+    addressLine1: item.addressLine1,
+    addressLine2: item.addressLine2,
+    city: item.city,
+    state: item.state,
+    country: item.country,
+  });
 
   return {
     id: item.id,
@@ -41,7 +46,6 @@ export function mapPublicSchoolDetailToSchoolDetail(
   school: PublicDrivingSchoolDetail,
   options?: { distanceKm?: number; premium?: boolean },
 ): SchoolDetail {
-  const location = formatSchoolLocation(school.city, school.state);
   const address = formatFullAddress({
     addressLine1: school.addressLine1,
     addressLine2: school.addressLine2,
@@ -56,7 +60,7 @@ export function mapPublicSchoolDetailToSchoolDetail(
   return {
     id: school.id,
     name: school.name,
-    location,
+    location: address,
     distanceKm: options?.distanceKm ?? 0,
     startingPrice,
     rating: school.ratingAverage,
@@ -103,7 +107,13 @@ export function mapDrivingSchoolEntityToSummary(
     premium?: boolean;
   } = {},
 ): SchoolSummary {
-  const location = formatSchoolLocation(school.city, school.state);
+  const location = formatFullAddress({
+    addressLine1: school.addressLine1,
+    addressLine2: school.addressLine2,
+    city: school.city,
+    state: school.state,
+    country: school.country,
+  });
   return {
     id: school.id,
     name: school.name,

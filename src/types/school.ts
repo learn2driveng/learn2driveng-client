@@ -206,6 +206,8 @@ export type PublicDrivingSchoolListItem = Pick<
   DrivingSchool,
   | "id"
   | "name"
+  | "addressLine1"
+  | "addressLine2"
   | "city"
   | "state"
   | "country"
@@ -247,8 +249,6 @@ export type PublicDrivingSchoolVehicle = Pick<
 export type PublicDrivingSchoolDetail = PublicDrivingSchoolListItem & {
   email: string;
   phone: string;
-  addressLine1: string;
-  addressLine2?: string | null;
   totalInstructors: number;
   totalStudents: number;
   totalLessons: number;

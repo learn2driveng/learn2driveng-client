@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { getAuthenticatedUser } from "@/lib/api";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { hydrateSchoolOperations } from "@/lib/school/hydrate-school-operations";
@@ -31,6 +32,8 @@ export function useSessionBootstrap() {
             await hydrateSchoolOperations(
               `${user.firstName} ${user.lastName}`.trim(),
             ).catch(() => undefined);
+          } else if (user.role === "instructor") {
+            await hydrateInstructorOperations().catch(() => undefined);
           }
         }
       } catch {
