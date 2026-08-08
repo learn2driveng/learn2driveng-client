@@ -6,8 +6,9 @@ import { Linking, Pressable, Share, Text, View } from "react-native";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
-import { studentProfile } from "@/sample_data/student";
+import { participantToLessonCard } from "@/lib/learner/map-sessions";
+import { useAuthStore } from "@/store/auth.store";
+import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 function formatExpiry(expiresAt: string) {
@@ -19,13 +20,21 @@ function formatExpiry(expiresAt: string) {
 
 export default function LearnerLiveLocationScreen() {
   const { colors } = useAppTheme();
+  const user = useAuthStore((state) => state.user);
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const [shareError, setShareError] = useState<string | null>(null);
-  const participant = useTrainingSessionStore((state) =>
-    Object.values(state.participantsBySessionId).find(
-      (item) => item.bookingId === bookingId,
-    ),
+  const joinedSession = useLearnerSessionsStore((state) =>
+    state.joinedSessions.find((item) => item.id === bookingId),
   );
+  const lesson = joinedSession ? participantToLessonCard(joinedSession) : null;
+  const participant = useTrainingSessionStore((state) => {
+    if (!joinedSession) return undefined;
+    const sessionId =
+      typeof joinedSession.sessionId === "object"
+        ? joinedSession.sessionId.id
+        : joinedSession.sessionId;
+    return state.participantsBySessionId[sessionId];
+  });
   const session = useTrainingSessionStore((state) =>
     participant ? state.sessions[participant.sessionId] : undefined,
   );
@@ -38,9 +47,8 @@ export default function LearnerLiveLocationScreen() {
   const stopLocationSharing = useTrainingSessionStore(
     (state) => state.stopLocationSharing,
   );
-  const lessonContext = getInstructorLessonContextBySessionId(session?.id);
 
-  if (!session || !lessonContext) {
+  if (!session || !lesson || !user) {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Live location" />
@@ -55,7 +63,7 @@ export default function LearnerLiveLocationScreen() {
     );
   }
 
-  if (participant?.learnerId !== studentProfile.id) {
+  if (participant?.learnerId !== user.id) {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Live location" />
@@ -90,7 +98,6 @@ export default function LearnerLiveLocationScreen() {
     );
   }
 
-  const { lesson, day } = lessonContext;
   const sharingStatus = locationShare?.status ?? "inactive";
   const isRequesting = sharingStatus === "requesting_permission";
   const isSharing = sharingStatus === "sharing";
@@ -101,8 +108,8 @@ export default function LearnerLiveLocationScreen() {
     setShareError(null);
     try {
       await Share.share({
-        title: `${studentProfile.firstName}'s live driving lesson`,
-        message: `Follow ${studentProfile.firstName}'s live driving lesson on Learn2Drive. This private link expires when the lesson ends:\n${locationShare.shareUrl}`,
+        title: `${user.firstName}'s live driving lesson`,
+        message: `Follow ${user.firstName}'s live driving lesson on Learn2Drive. This private link expires when the lesson ends:\n${locationShare.shareUrl}`,
         url: locationShare.shareUrl,
       });
     } catch {
@@ -140,7 +147,7 @@ export default function LearnerLiveLocationScreen() {
           className="mt-2 font-figtree text-[13px]"
           style={{ color: colors.contrastMuted }}
         >
-          {day.fullLabel} · {lesson.time}
+          {lesson.date} · {lesson.time}
         </Text>
         <View
           className="mt-5 flex-row items-center gap-3 border-t pt-5"
@@ -155,7 +162,7 @@ export default function LearnerLiveLocationScreen() {
             className="flex-1 font-figtree-medium text-[12px]"
             style={{ color: colors.contrastMuted }}
           >
-            Instructor John · {lesson.location}
+            {lesson.instructor} · {lesson.location}
           </Text>
         </View>
       </View>
@@ -211,8 +218,13 @@ export default function LearnerLiveLocationScreen() {
               className="mt-1 font-figtree-semibold text-[13px]"
               style={{ color: colors.text }}
             >
-              {locationShare.lastLocation?.accuracy
-                ? `Accurate to about ${Math.round(locationShare.lastLocation.accuracy)} metres`
+              {locationShare.lastLocation?.accuracy ||
+              locationShare.lastLocation?.accuracyInMeters
+                ? `Accurate to about ${Math.round(
+                    locationShare.lastLocation.accuracy ??
+                      locationShare.lastLocation.accuracyInMeters ??
+                      0,
+                  )} metres`
                 : "Getting a precise location…"}
             </Text>
           </View>
@@ -277,38 +289,6 @@ export default function LearnerLiveLocationScreen() {
             </Text>
           </View>
 
-          <View
-            className="mt-5 rounded-3xl border p-5"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            {[
-              "Your location is shared only for this active lesson",
-              "The link contains no phone number or home address",
-              "You can expire the link at any time",
-              "The link stops working automatically when the lesson ends",
-            ].map((item, index) => (
-              <View
-                key={item}
-                className={`flex-row items-start gap-3 ${index ? "mt-4" : ""}`}
-              >
-                <MaterialCommunityIcons
-                  name="shield-check-outline"
-                  size={19}
-                  color={colors.success}
-                />
-                <Text
-                  className="flex-1 font-figtree-medium text-[12px] leading-5"
-                  style={{ color: colors.text }}
-                >
-                  {item}
-                </Text>
-              </View>
-            ))}
-          </View>
-
           {sharingStatus === "failed" ? (
             <View
               accessibilityLiveRegion="polite"
@@ -322,14 +302,6 @@ export default function LearnerLiveLocationScreen() {
                 {locationShare?.failureReason === "permission_denied"
                   ? "Location permission is off"
                   : "Location is currently unavailable"}
-              </Text>
-              <Text
-                className="mt-1 font-figtree text-[12px] leading-5"
-                style={{ color: colors.textMuted }}
-              >
-                {locationShare?.failureReason === "permission_denied"
-                  ? "Allow location access in your device settings, then try again."
-                  : "Check that location services are enabled, then try again."}
               </Text>
               {locationShare?.failureReason === "permission_denied" ? (
                 <Pressable
@@ -352,9 +324,7 @@ export default function LearnerLiveLocationScreen() {
             accessibilityRole="button"
             accessibilityState={{ disabled: isRequesting }}
             disabled={isRequesting}
-            onPress={() =>
-              requestLocationSharing(session.id, studentProfile.id)
-            }
+            onPress={() => requestLocationSharing(session.id, user.id)}
             className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{
               backgroundColor: isRequesting
@@ -380,21 +350,6 @@ export default function LearnerLiveLocationScreen() {
                   : "Create private tracking link"}
             </Text>
           </Pressable>
-
-          {isRequesting ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => stopLocationSharing(session.id)}
-              className="mt-3 h-12 items-center justify-center active:opacity-70"
-            >
-              <Text
-                className="font-figtree-bold text-[13px]"
-                style={{ color: colors.textMuted }}
-              >
-                Cancel
-              </Text>
-            </Pressable>
-          ) : null}
         </>
       )}
 

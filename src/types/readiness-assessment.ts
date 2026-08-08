@@ -41,6 +41,7 @@ export type ReadinessAssessment = {
 
 export type SchoolLearner = {
   id: string;
+  bookingId?: string;
   name: string;
   initials: string;
   email: string;
@@ -54,6 +55,9 @@ export type SchoolLearner = {
   totalLessons: number;
   practicalReadiness: number;
 };
+
+/** Server learner roster payload before client initials are added. */
+export type SchoolLearnerListItem = Omit<SchoolLearner, "initials">;
 
 export type AssessmentAssignment = {
   id: string;

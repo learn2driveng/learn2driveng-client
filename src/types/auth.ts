@@ -87,3 +87,11 @@ export interface CompleteGoogleSignupPayload {
   role: Extract<UserRole, "learner">;
   acceptTerms: true;
 }
+
+export interface UpdateUserProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  profilePhoto?: string | null;
+}

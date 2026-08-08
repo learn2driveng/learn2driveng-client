@@ -1,13 +1,26 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
-import { CheckoutShell } from "@/features/checkout";
+import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getPackageById, getSchoolById } from "@/sample_data";
-import { getSamplePaymentResult } from "@/sample_data/payment-results";
+import {
+  createLearnerBooking,
+  initializePayment,
+  verifyPayment,
+} from "@/lib/api";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
+import { packageDurationLabel } from "@/lib/school/mappers";
+import type { ApiError } from "@/types";
 
 const methodLabels: Record<string, string> = {
   card: "Debit or credit card",
@@ -28,18 +41,106 @@ export default function PurchaseReviewScreen() {
     packageId?: string;
     method?: string;
   }>();
-  const school = getSchoolById(schoolId);
-  const selectedPackage = getPackageById(schoolId, packageId);
+  const { school, selectedPackage, loading, error, refetch } =
+    useCheckoutPackage(schoolId, packageId);
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
-  if (!school || !selectedPackage) return null;
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.background }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error || !school || !selectedPackage) {
+    return (
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{ backgroundColor: colors.background }}
+      >
+        <Text
+          className="text-center text-[16px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          {error?.message ?? "Checkout details unavailable"}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => (error ? refetch() : router.back())}
+          className="mt-6 rounded-full px-6 py-3 active:opacity-75"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            style={{
+              color: colors.contrastText,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            {error ? "Try again" : "Go back"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const rows = [
     ["Driving school", school.name],
     ["Training package", selectedPackage.name],
-    ["Duration", `${selectedPackage.durationInDays} days`],
+    ["Duration", packageDurationLabel(selectedPackage)],
     ["Sessions", `${selectedPackage.numberOfLessons} lessons`],
     ["Payment method", methodLabels[method] ?? methodLabels.card],
   ];
+
+  const handlePay = async () => {
+    if (isPaying) return;
+
+    setIsPaying(true);
+    setPayError(null);
+
+    try {
+      const booking = await createLearnerBooking({
+        packageId: selectedPackage.id,
+      });
+      const payment = await initializePayment(booking.id);
+
+      let resultStatus: "success" | "pending" = "pending";
+      try {
+        const verified = await verifyPayment(payment.id);
+        resultStatus = verified.status === "success" ? "success" : "pending";
+      } catch {
+        resultStatus = "pending";
+      }
+
+      await refreshLearnerBookings();
+
+      router.replace({
+        pathname: "/checkout/[schoolId]/result",
+        params: {
+          schoolId: school.id,
+          packageId: selectedPackage.id,
+          method,
+          status: resultStatus,
+          bookingId: booking.id,
+        },
+      });
+    } catch (caught) {
+      setPayError(
+        caught &&
+          typeof caught === "object" &&
+          "message" in caught &&
+          typeof (caught as ApiError).message === "string"
+          ? (caught as ApiError).message
+          : "Payment could not be started. Please try again.",
+      );
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
   return (
     <CheckoutShell
@@ -66,7 +167,7 @@ export default function PurchaseReviewScreen() {
           className="mt-2 text-[14px] leading-5"
           style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
         >
-          Your sessions become available immediately after payment.
+          Your sessions become available after payment is confirmed.
         </Text>
 
         <View
@@ -148,26 +249,14 @@ export default function PurchaseReviewScreen() {
           </Text>
         </View>
 
-        <View
-          className="mt-5 flex-row items-start gap-3 rounded-2xl p-4"
-          style={{ backgroundColor: colors.verifiedSoft }}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={19}
-            color={colors.verified}
-          />
+        {payError ? (
           <Text
-            className="flex-1 text-[12px] leading-5"
-            style={{
-              color: colors.verified,
-              fontFamily: fontFamily.figtreeMedium,
-            }}
+            className="mt-5 font-figtree-medium text-[13px]"
+            style={{ color: colors.error }}
           >
-            By paying, you agree to the school’s cancellation and rescheduling
-            policy.
+            {payError}
           </Text>
-        </View>
+        ) : null}
       </ScrollView>
 
       <View
@@ -180,34 +269,32 @@ export default function PurchaseReviewScreen() {
       >
         <Pressable
           accessibilityRole="button"
-          onPress={() =>
-            router.replace({
-              pathname: "/checkout/[schoolId]/result",
-              params: {
-                schoolId: school.id,
-                packageId: selectedPackage.id,
-                method,
-                status: getSamplePaymentResult(method),
-              },
-            })
-          }
+          accessibilityState={{ disabled: isPaying }}
+          disabled={isPaying}
+          onPress={() => void handlePay()}
           className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
-          style={{ backgroundColor: colors.primary }}
+          style={{ backgroundColor: colors.primary, opacity: isPaying ? 0.8 : 1 }}
         >
-          <MaterialCommunityIcons
-            name="lock-outline"
-            size={19}
-            color={colors.onPrimary}
-          />
-          <Text
-            className="text-[15px]"
-            style={{
-              color: colors.onPrimary,
-              fontFamily: fontFamily.figtreeBold,
-            }}
-          >
-            Pay ₦{selectedPackage.price.toLocaleString("en-NG")}
-          </Text>
+          {isPaying ? (
+            <ActivityIndicator color={colors.onPrimary} />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={19}
+                color={colors.onPrimary}
+              />
+              <Text
+                className="text-[15px]"
+                style={{
+                  color: colors.onPrimary,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
+              >
+                Pay ₦{selectedPackage.price.toLocaleString("en-NG")}
+              </Text>
+            </>
+          )}
         </Pressable>
       </View>
     </CheckoutShell>

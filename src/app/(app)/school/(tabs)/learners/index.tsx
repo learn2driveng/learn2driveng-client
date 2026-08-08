@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
+import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import {
   DashboardPageHeader,
@@ -170,6 +171,13 @@ export default function SchoolLearnersScreen() {
           onActionPress={() => router.push("/school/learners/assessments")}
         />
         <View className="mt-4 gap-4">
+          {filteredLearners.length === 0 ? (
+            <ContentEmptyState
+              icon="account-school-outline"
+              title="No learners yet"
+              description="Learners appear here after they purchase one of your packages."
+            />
+          ) : null}
           {filteredLearners.map((learner) => {
             const learnerAssignments = assignments.filter(
               (item) => item.learnerId === learner.id,

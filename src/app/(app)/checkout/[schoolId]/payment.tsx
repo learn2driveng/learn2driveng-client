@@ -1,13 +1,18 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
-import { CheckoutShell } from "@/features/checkout";
+import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getPackageById, getSchoolById } from "@/sample_data";
 
 const paymentMethods = [
   {
@@ -43,8 +48,8 @@ export default function PaymentMethodScreen() {
     packageId?: string;
     method?: string;
   }>();
-  const school = getSchoolById(schoolId);
-  const selectedPackage = getPackageById(schoolId, packageId);
+  const { school, selectedPackage, loading, error, refetch } =
+    useCheckoutPackage(schoolId, packageId);
   const [method, setMethod] = useState<(typeof paymentMethods)[number]["id"]>(
     () =>
       paymentMethods.some((item) => item.id === initialMethod)
@@ -52,7 +57,47 @@ export default function PaymentMethodScreen() {
         : "card",
   );
 
-  if (!school || !selectedPackage) return null;
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.background }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error || !school || !selectedPackage) {
+    return (
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{ backgroundColor: colors.background }}
+      >
+        <Text
+          className="text-center text-[16px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          {error?.message ?? "Checkout details unavailable"}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => (error ? refetch() : router.back())}
+          className="mt-6 rounded-full px-6 py-3 active:opacity-75"
+          style={{ backgroundColor: colors.contrastSurface }}
+        >
+          <Text
+            style={{
+              color: colors.contrastText,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            {error ? "Try again" : "Go back"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <CheckoutShell title="Payment method" step={1} onBack={() => router.back()}>

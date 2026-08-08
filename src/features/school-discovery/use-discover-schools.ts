@@ -12,7 +12,6 @@ type UseDiscoverSchoolsResult = {
   schools: SchoolSummary[];
   loading: boolean;
   error: ApiError | null;
-  usedLocationFallback: boolean;
   refetch: () => void;
 };
 
@@ -22,7 +21,6 @@ export function useDiscoverSchools(
   const [schools, setSchools] = useState<SchoolSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
-  const [usedLocationFallback, setUsedLocationFallback] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const refetch = useCallback(() => {
@@ -35,28 +33,9 @@ export function useDiscoverSchools(
     async function load() {
       setLoading(true);
       setError(null);
-      setUsedLocationFallback(false);
 
       try {
-        let result = await fetchDiscoverSchools(query);
-        const usedGeoQuery =
-          query.latitude != null && query.longitude != null;
-
-        if (usedGeoQuery && result.items.length === 0) {
-          const fallbackQuery: DiscoverSchoolsQuery = {
-            page: query.page,
-            limit: query.limit,
-            search: query.search,
-            state: query.state,
-            city: query.city,
-            minRating: query.minRating,
-            sort: "rating",
-          };
-          result = await fetchDiscoverSchools(fallbackQuery);
-          if (!cancelled && result.items.length > 0) {
-            setUsedLocationFallback(true);
-          }
-        }
+        const result = await fetchDiscoverSchools(query);
 
         if (cancelled) {
           return;
@@ -68,7 +47,6 @@ export function useDiscoverSchools(
           return;
         }
         setSchools([]);
-        setUsedLocationFallback(false);
         setError(
           caught && typeof caught === "object" && "statusCode" in caught
             ? (caught as ApiError)
@@ -103,5 +81,5 @@ export function useDiscoverSchools(
     query.limit,
   ]);
 
-  return { schools, loading, error, usedLocationFallback, refetch };
+  return { schools, loading, error, refetch };
 }

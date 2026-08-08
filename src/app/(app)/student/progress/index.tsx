@@ -3,20 +3,33 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
-import { DashboardScreen, SectionHeader } from "@/components/dashboard";
+import { DashboardEmptyState, DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { learnerProgressLessons, progressSkills } from "@/sample_data";
+import {
+  computeProgressSkills,
+  computeProgressSummary,
+} from "@/lib/learner/map-sessions";
+import { useAuthStore } from "@/store/auth.store";
+import { useLearnerOperationsStore } from "@/store/learner-operations.store";
+import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 
 export default function StudentProgressScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const user = useAuthStore((state) => state.user);
+  const bookings = useLearnerOperationsStore((state) => state.bookings);
+  const joinedSessions = useLearnerSessionsStore((state) => state.joinedSessions);
+  const progressLessons = useLearnerSessionsStore((state) => state.progressLessons);
   const assignments = useReadinessAssessmentStore((state) => state.assignments);
   const assessments = useReadinessAssessmentStore((state) => state.assessments);
   const attempts = useReadinessAssessmentStore((state) => state.attempts);
+  const summary = computeProgressSummary(bookings, joinedSessions);
+  const progressSkills = computeProgressSkills(bookings, joinedSessions);
+  const recentLesson = progressLessons[0];
   const learnerAssignments = assignments.filter(
-    (item) => item.learnerId === "learner-amara",
+    (item) => item.learnerId === user?.id,
   );
   const assessmentAssignment =
     learnerAssignments.find((item) => item.status !== "completed") ??
@@ -27,7 +40,12 @@ export default function StudentProgressScreen() {
   const latestAttempt = attempts.find(
     (item) => item.id === assessmentAssignment?.latestAttemptId,
   );
-  const recentLesson = learnerProgressLessons[0];
+  const readinessLabel =
+    summary.totalLessons === 0
+      ? "Book your first lesson"
+      : summary.readiness >= 70
+        ? "You're right on track"
+        : "Keep building momentum";
 
   return (
     <DashboardScreen>
@@ -52,7 +70,7 @@ export default function StudentProgressScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Keep building confidence with every lesson.
+        Track lesson completion and readiness from your real bookings.
       </Text>
 
       <View
@@ -71,7 +89,7 @@ export default function StudentProgressScreen() {
               className="text-[22px] tracking-[-0.5px]"
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
-              68%
+              {summary.readiness}%
             </Text>
           </View>
           <View className="flex-1">
@@ -88,7 +106,7 @@ export default function StudentProgressScreen() {
               className="mt-2 text-[18px] leading-6"
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
-              You’re right on track
+              {readinessLabel}
             </Text>
             <Text
               className="mt-1 text-[12px] leading-4"
@@ -97,7 +115,8 @@ export default function StudentProgressScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              6 of 10 lessons completed
+              {summary.completedLessons} of {summary.totalLessons || 0} lessons
+              completed
             </Text>
           </View>
         </View>
@@ -108,9 +127,9 @@ export default function StudentProgressScreen() {
         />
         <View className="mt-4 flex-row">
           {[
-            ["7h 20m", "Driving time"],
-            ["86%", "Best score"],
-            ["4", "Lessons left"],
+            [summary.drivingTime, "Driving time"],
+            [`${summary.bestScore}%`, "Best score"],
+            [String(summary.remainingLessons), "Lessons left"],
           ].map(([value, label], index) => (
             <View
               key={label}
@@ -146,77 +165,89 @@ export default function StudentProgressScreen() {
 
       <View className="mt-8">
         <SectionHeader title="Skill development" />
-        <View
-          className="mt-4 overflow-hidden rounded-3xl border px-4"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          {progressSkills.map((skill, index) => (
-            <View
-              key={skill.id}
-              className="py-4"
-              style={
-                index
-                  ? { borderTopWidth: 1, borderTopColor: colors.border }
-                  : undefined
-              }
-            >
-              <View className="flex-row items-center">
+        {progressSkills.length > 0 ? (
+          <View
+            className="mt-4 overflow-hidden rounded-3xl border px-4"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            {progressSkills.map((skill, index) => (
+              <View
+                key={skill.id}
+                className="py-4"
+                style={
+                  index
+                    ? { borderTopWidth: 1, borderTopColor: colors.border }
+                    : undefined
+                }
+              >
+                <View className="flex-row items-center">
+                  <View
+                    className="h-10 w-10 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: colors.surfaceStrong }}
+                  >
+                    <MaterialCommunityIcons
+                      name={skill.icon}
+                      size={20}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <Text
+                    className="ml-3 flex-1 text-[13px]"
+                    style={{
+                      color: colors.text,
+                      fontFamily: fontFamily.figtreeSemibold,
+                    }}
+                  >
+                    {skill.name}
+                  </Text>
+                  <Text
+                    className="text-[12px]"
+                    style={{
+                      color: colors.textMuted,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  >
+                    {skill.progress}%
+                  </Text>
+                </View>
                 <View
-                  className="h-10 w-10 items-center justify-center rounded-xl"
+                  className="ml-[52px] mt-3 h-1.5 overflow-hidden rounded-full"
                   style={{ backgroundColor: colors.surfaceStrong }}
                 >
-                  <MaterialCommunityIcons
-                    name={skill.icon}
-                    size={20}
-                    color={colors.primary}
+                  <View
+                    className="h-full rounded-full"
+                    style={{
+                      backgroundColor: colors.primary,
+                      width: `${skill.progress}%`,
+                    }}
                   />
                 </View>
                 <Text
-                  className="ml-3 flex-1 text-[13px]"
-                  style={{
-                    color: colors.text,
-                    fontFamily: fontFamily.figtreeSemibold,
-                  }}
-                >
-                  {skill.name}
-                </Text>
-                <Text
-                  className="text-[12px]"
+                  className="ml-[52px] mt-2 text-[11px] leading-4"
                   style={{
                     color: colors.textMuted,
-                    fontFamily: fontFamily.figtreeBold,
+                    fontFamily: fontFamily.figtree,
                   }}
                 >
-                  {skill.progress}%
+                  {skill.note}
                 </Text>
               </View>
-              <View
-                className="ml-[52px] mt-3 h-1.5 overflow-hidden rounded-full"
-                style={{ backgroundColor: colors.surfaceStrong }}
-              >
-                <View
-                  className="h-full rounded-full"
-                  style={{
-                    backgroundColor: colors.primary,
-                    width: `${skill.progress}%`,
-                  }}
-                />
-              </View>
-              <Text
-                className="ml-[52px] mt-2 text-[11px] leading-4"
-                style={{
-                  color: colors.textMuted,
-                  fontFamily: fontFamily.figtree,
-                }}
-              >
-                {skill.note}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <View className="mt-4">
+            <DashboardEmptyState
+              icon="chart-line"
+              title="No progress yet"
+              description="Complete lessons to start building your skill profile."
+              actionLabel="Book a session"
+              onActionPress={() => router.push("/student/sessions")}
+            />
+          </View>
+        )}
       </View>
 
       <View className="mt-8">
@@ -261,7 +292,9 @@ export default function StudentProgressScreen() {
             >
               {assessmentAssignment?.status === "completed" && latestAttempt
                 ? `Completed with a ${latestAttempt.score}% score`
-                : "A readiness check is waiting for you"}
+                : learnerAssignments.length > 0
+                  ? "A readiness check is waiting for you"
+                  : "No assessments assigned yet"}
             </Text>
           </View>
           {latestAttempt ? (
@@ -292,68 +325,84 @@ export default function StudentProgressScreen() {
       <View className="mt-8">
         <SectionHeader
           title="Lesson history"
-          actionLabel="View all"
-          onActionPress={() => router.push("/student/progress/history")}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`View ${recentLesson.title}`}
-          onPress={() =>
-            router.push({
-              pathname: "/student/progress/history/[lessonId]",
-              params: { lessonId: recentLesson.id },
-            })
+          actionLabel={recentLesson ? "View all" : undefined}
+          onActionPress={
+            recentLesson
+              ? () => router.push("/student/progress/history")
+              : undefined
           }
-          className="mt-4 rounded-3xl border p-4 active:opacity-80"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <View className="flex-row items-center">
-            <View
-              className="h-11 w-11 items-center justify-center rounded-xl"
-              style={{ backgroundColor: colors.surfaceStrong }}
-            >
+        />
+        {recentLesson ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View ${recentLesson.title}`}
+            onPress={() =>
+              router.push({
+                pathname: "/student/progress/history/[lessonId]",
+                params: { lessonId: recentLesson.id },
+              })
+            }
+            className="mt-4 rounded-3xl border p-4 active:opacity-80"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <View className="flex-row items-center">
+              <View
+                className="h-11 w-11 items-center justify-center rounded-xl"
+                style={{ backgroundColor: colors.surfaceStrong }}
+              >
+                <MaterialCommunityIcons
+                  name="car-clock"
+                  size={22}
+                  color={colors.primary}
+                />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text
+                  className="text-[13px]"
+                  style={{
+                    color: colors.text,
+                    fontFamily: fontFamily.figtreeBold,
+                  }}
+                >
+                  {recentLesson.title}
+                </Text>
+                <Text
+                  className="mt-1 text-[11px]"
+                  style={{
+                    color: colors.textMuted,
+                    fontFamily: fontFamily.figtreeMedium,
+                  }}
+                >
+                  {recentLesson.completedAt} · {recentLesson.duration}
+                </Text>
+              </View>
               <MaterialCommunityIcons
-                name="car-clock"
+                name="chevron-right"
                 size={22}
-                color={colors.primary}
+                color={colors.textMuted}
               />
             </View>
-            <View className="ml-3 flex-1">
-              <Text
-                className="text-[13px]"
-                style={{
-                  color: colors.text,
-                  fontFamily: fontFamily.figtreeBold,
-                }}
-              >
-                {recentLesson.title}
-              </Text>
-              <Text
-                className="mt-1 text-[11px]"
-                style={{
-                  color: colors.textMuted,
-                  fontFamily: fontFamily.figtreeMedium,
-                }}
-              >
-                {recentLesson.completedAt} · {recentLesson.duration}
-              </Text>
-            </View>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={22}
-              color={colors.textMuted}
+            <Text
+              className="mt-4 text-[12px] leading-5"
+              style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
+            >
+              {recentLesson.feedback}
+            </Text>
+          </Pressable>
+        ) : (
+          <View className="mt-4">
+            <DashboardEmptyState
+              icon="history"
+              title="No completed lessons yet"
+              description="Finished sessions will appear here once your instructor marks attendance."
+              actionLabel="Book a session"
+              onActionPress={() => router.push("/student/sessions")}
             />
           </View>
-          <Text
-            className="mt-4 text-[12px] leading-5"
-            style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
-          >
-            {recentLesson.feedback}
-          </Text>
-        </Pressable>
+        )}
       </View>
     </DashboardScreen>
   );

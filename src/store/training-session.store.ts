@@ -1,23 +1,25 @@
 import { create } from "zustand";
 
-import {
-  instructorTrainingSessionParticipants,
-  instructorTrainingSessions,
-} from "@/sample_data/instructor";
 import type {
+  EnrichedTrainingSession,
   LiveLocationShare,
   LocationSharingFailureReason,
   SessionCoordinates,
-  TrainingSession,
   TrainingSessionParticipant,
 } from "@/types";
 
 type TrainingSessionState = {
-  sessions: Record<string, TrainingSession>;
+  sessions: Record<string, EnrichedTrainingSession>;
   participantsBySessionId: Record<string, TrainingSessionParticipant>;
   activeSessionId: string | null;
   locationShares: Record<string, LiveLocationShare>;
   devicePublishingSessionId: string | null;
+  hydrateFromApi: (input: {
+    sessions: Record<string, EnrichedTrainingSession>;
+    participantsBySessionId: Record<string, TrainingSessionParticipant>;
+    activeSessionId: string | null;
+  }) => void;
+  resetTrainingSessions: () => void;
   startSession: (sessionId: string) => void;
   endSession: (sessionId: string) => void;
   requestLocationSharing: (sessionId: string, learnerId: string) => void;
@@ -36,19 +38,6 @@ type TrainingSessionState = {
   stopLocationSharing: (sessionId: string) => void;
 };
 
-const initialSessions = Object.fromEntries(
-  instructorTrainingSessions.map((session) => [session.id, session]),
-);
-const initialActiveSessionId =
-  instructorTrainingSessions.find((session) => session.status === "in_progress")
-    ?.id ?? null;
-const initialParticipantsBySessionId = Object.fromEntries(
-  instructorTrainingSessionParticipants.map((participant) => [
-    participant.sessionId,
-    participant,
-  ]),
-);
-
 const PUBLIC_APP_URL = (
   process.env.EXPO_PUBLIC_WEB_APP_URL ?? "https://learn2drive.ng"
 ).replace(/\/+$/, "");
@@ -66,11 +55,35 @@ function createShareUrl(token: string) {
 }
 
 export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
-  sessions: initialSessions,
-  participantsBySessionId: initialParticipantsBySessionId,
-  activeSessionId: initialActiveSessionId,
+  sessions: {},
+  participantsBySessionId: {},
+  activeSessionId: null,
   locationShares: {},
   devicePublishingSessionId: null,
+  hydrateFromApi: ({ sessions, participantsBySessionId, activeSessionId }) =>
+    set((state) => ({
+      sessions,
+      participantsBySessionId,
+      activeSessionId,
+      locationShares: Object.fromEntries(
+        Object.entries(state.locationShares).filter(
+          ([sessionId]) => sessions[sessionId]?.status === "in_progress",
+        ),
+      ),
+      devicePublishingSessionId:
+        state.devicePublishingSessionId &&
+        sessions[state.devicePublishingSessionId]?.status === "in_progress"
+          ? state.devicePublishingSessionId
+          : null,
+    })),
+  resetTrainingSessions: () =>
+    set({
+      sessions: {},
+      participantsBySessionId: {},
+      activeSessionId: null,
+      locationShares: {},
+      devicePublishingSessionId: null,
+    }),
   startSession: (sessionId) =>
     set((state) => {
       const session = state.sessions[sessionId];

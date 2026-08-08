@@ -1,4 +1,4 @@
-import { fetchSchoolBookings } from "@/lib/api/bookings";
+import { fetchSchoolBookings, fetchSchoolLearners } from "@/lib/api/bookings";
 import { fetchMyDrivingSchool } from "@/lib/api/driving-schools";
 import { fetchSchoolInstructors } from "@/lib/api/instructors";
 import { fetchSchoolPackages } from "@/lib/api/packages";
@@ -9,9 +9,11 @@ import {
   instructorUserToRosterItem,
   mergeVerificationDocuments,
   packageToSchoolPackage,
+  schoolLearnersFromApi,
   vehicleToSchoolVehicle,
 } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 import type { ApiError, DrivingSchool } from "@/types";
 
 function countInstructors(
@@ -48,7 +50,8 @@ function applyHydratedSchool(
     fetchSchoolVehicles().catch(() => []),
     fetchSchoolPackages().catch(() => []),
     fetchSchoolBookings().catch(() => []),
-  ]).then(([instructors, vehicles, packages, bookings]) => {
+    fetchSchoolLearners().catch(() => []),
+  ]).then(([instructors, vehicles, packages, bookings, learners]) => {
     const roster = instructors.map(instructorUserToRosterItem);
     const { activeInstructors, pendingInstructors } = countInstructors(roster);
     const mappedBookings = bookings.map(bookingToSchoolAssignment);
@@ -73,6 +76,9 @@ function applyHydratedSchool(
       ),
       onboardingSubmitted: true,
     });
+    useReadinessAssessmentStore
+      .getState()
+      .hydrateLearners(schoolLearnersFromApi(learners));
   });
 }
 
@@ -108,11 +114,12 @@ export async function refreshApprovedSchoolOperations(adminName: string) {
     return school;
   }
 
-  const [instructors, vehicles, packages, bookings] = await Promise.all([
+  const [instructors, vehicles, packages, bookings, learners] = await Promise.all([
     fetchSchoolInstructors(),
     fetchSchoolVehicles(),
     fetchSchoolPackages(),
     fetchSchoolBookings(),
+    fetchSchoolLearners(),
   ]);
 
   const roster = instructors.map(instructorUserToRosterItem);
@@ -139,6 +146,17 @@ export async function refreshApprovedSchoolOperations(adminName: string) {
     ),
     onboardingSubmitted: true,
   });
+  useReadinessAssessmentStore
+    .getState()
+    .hydrateLearners(schoolLearnersFromApi(learners));
 
   return school;
+}
+
+export async function refreshSchoolLearners() {
+  const learners = await fetchSchoolLearners();
+  useReadinessAssessmentStore
+    .getState()
+    .hydrateLearners(schoolLearnersFromApi(learners));
+  return learners;
 }

@@ -8,12 +8,20 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { userDisplayName, userInitials } from "@/lib/learner/map-api";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const { logout } = useLogout();
+  const user = useAuthStore((state) => state.user);
+
+  if (!user) return null;
+
+  const displayName = userDisplayName(user);
+  const initials = userInitials(user);
 
   return (
     <DashboardScreen>
@@ -41,18 +49,18 @@ export default function StudentProfileScreen() {
             className="font-figtree-bold text-[28px]"
             style={{ color: colors.primary }}
           >
-            AJ
+            {initials}
           </Text>
         </View>
         <Text
           className="mt-4 font-figtree-bold text-[22px]"
           style={{ color: colors.text }}
         >
-          Alex Jordan
+          {displayName}
         </Text>
         <View className="mt-2 flex-row items-center gap-1.5">
           <MaterialCommunityIcons
-            name="check-decagram"
+            name={user.isEmailVerified ? "check-decagram" : "email-outline"}
             size={16}
             color={colors.primary}
           />
@@ -60,7 +68,7 @@ export default function StudentProfileScreen() {
             className="font-figtree-medium text-[13px]"
             style={{ color: colors.textMuted }}
           >
-            Verified student
+            {user.isEmailVerified ? "Verified student" : "Email not verified"}
           </Text>
         </View>
       </View>

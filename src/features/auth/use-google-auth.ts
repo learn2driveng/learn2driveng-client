@@ -3,6 +3,8 @@ import { useCallback, useState } from "react";
 
 import { destinationForRole } from "@/features/auth/navigation";
 import { authenticateWithGoogle } from "@/lib/api";
+import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
+import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { signInWithGoogle } from "@/lib/google/google-sign";
 import { useAuthStore } from "@/store/auth.store";
 import { useGoogleAuthStore } from "@/store/google-auth.store";
@@ -46,6 +48,12 @@ export function useGoogleAuth(role: GoogleSignupRole, returnTo?: string) {
         clearSignup();
         clearLink();
         await authenticate(result);
+        if (result.user.role === "learner") {
+          await Promise.all([
+            hydrateLearnerOperations().catch(() => undefined),
+            hydrateLearnerSessions().catch(() => undefined),
+          ]);
+        }
         router.replace(destinationForRole(result.user.role, returnTo));
         return;
       }

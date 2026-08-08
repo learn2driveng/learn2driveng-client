@@ -9,14 +9,27 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 export default function BookingConfirmationScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const { packageName, schoolName, date, time, instructor } =
-    useLocalSearchParams<{
-      packageName?: string;
-      schoolName?: string;
-      date?: string;
-      time?: string;
-      instructor?: string;
-    }>();
+  const {
+    packageName,
+    schoolName,
+    date,
+    time,
+    instructor,
+    participantId,
+    sessionTitle,
+  } = useLocalSearchParams<{
+    packageName?: string;
+    schoolName?: string;
+    date?: string;
+    time?: string;
+    instructor?: string;
+    participantId?: string;
+    sessionTitle?: string;
+  }>();
+
+  const reference = participantId
+    ? `L2D-${participantId.replace(/-/g, "").slice(0, 6).toUpperCase()}`
+    : "Pending";
 
   return (
     <DashboardScreen>
@@ -51,8 +64,8 @@ export default function BookingConfirmationScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          We reserved one session credit and sent the booking details to your
-          instructor.
+          We reserved one session credit. Your instructor will see this booking
+          on their schedule.
         </Text>
       </View>
 
@@ -85,16 +98,17 @@ export default function BookingConfirmationScreen() {
               className="mt-1 text-[16px]"
               style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
             >
-              {date ?? "Tue 25"} · {time ?? "11:30 AM"}
+              {date || "Scheduled date"} · {time || "Scheduled time"}
             </Text>
           </View>
         </View>
 
         {[
-          ["School", schoolName ?? "Elite Safety Driving Academy"],
+          ["School", schoolName ?? "Driving school"],
           ["Package", packageName ?? "Selected package"],
-          ["Instructor", instructor ?? "Best available instructor"],
-          ["Booking reference", "L2D-240625-A7"],
+          ["Session", sessionTitle ?? "Driving lesson"],
+          ["Instructor", instructor ?? "Assigned instructor"],
+          ["Booking reference", reference],
         ].map(([label, value]) => (
           <View
             key={label}
@@ -123,7 +137,16 @@ export default function BookingConfirmationScreen() {
       <View className="mt-8 gap-3">
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace("/student/sessions")}
+          onPress={() =>
+            router.replace(
+              participantId
+                ? {
+                    pathname: "/student/sessions/[bookingId]",
+                    params: { bookingId: participantId },
+                  }
+                : "/student/sessions",
+            )
+          }
           className="h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
@@ -134,7 +157,7 @@ export default function BookingConfirmationScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            View my sessions
+            View booking details
           </Text>
           <MaterialCommunityIcons
             name="arrow-right"
@@ -158,27 +181,6 @@ export default function BookingConfirmationScreen() {
             Return home
           </Text>
         </Pressable>
-      </View>
-
-      <View
-        className="mt-8 flex-row items-start gap-3 rounded-2xl p-4"
-        style={{ backgroundColor: colors.verifiedSoft }}
-      >
-        <MaterialCommunityIcons
-          name="information-outline"
-          size={19}
-          color={colors.verified}
-        />
-        <Text
-          className="flex-1 text-[12px] leading-5"
-          style={{
-            color: colors.verified,
-            fontFamily: fontFamily.figtreeMedium,
-          }}
-        >
-          You can reschedule or cancel from your booking details, subject to the
-          school’s policy.
-        </Text>
       </View>
     </DashboardScreen>
   );
