@@ -86,7 +86,9 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
               color={colors.textMuted}
             />
             <Text
-              className="text-[12px]"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              className="flex-1 text-[12px]"
               style={{
                 color: colors.textMuted,
                 fontFamily: fontFamily.figtreeMedium,

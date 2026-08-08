@@ -111,13 +111,29 @@ type EnrichedNameRef = {
   addressLine1?: string;
 };
 
+export type EnrichedVehicleRef = EnrichedNameRef & {
+  plateNumber?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  transmissionType?: "automatic" | "manual";
+};
+
+export type EnrichedLearnerRef = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+};
+
 export type EnrichedTrainingSession = Omit<
   TrainingSession,
   "instructorId" | "schoolId" | "vehicleId"
 > & {
   instructorId: string | EnrichedNameRef;
   schoolId: string | EnrichedNameRef;
-  vehicleId?: string | EnrichedNameRef | null;
+  vehicleId?: string | EnrichedVehicleRef | null;
 };
 
 export type LearnerJoinedSession = Omit<
@@ -130,3 +146,17 @@ export type LearnerJoinedSession = Omit<
 };
 
 export type AvailableTrainingSession = EnrichedTrainingSession;
+
+export type InstructorSessionParticipant = Omit<
+  TrainingSessionParticipant,
+  "sessionId" | "learnerId" | "bookingId" | "packageId"
+> & {
+  sessionId: string;
+  learnerId: string | EnrichedLearnerRef;
+  bookingId: string | { id: string };
+  packageId: string | { id: string; name?: string };
+};
+
+export type InstructorAssignedSession = EnrichedTrainingSession & {
+  participants: InstructorSessionParticipant[];
+};

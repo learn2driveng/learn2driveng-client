@@ -12,8 +12,13 @@ import {
 } from "@/components/dashboard";
 import { toInstructorLessonStatus } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getInstructorLessonContext } from "@/sample_data/instructor";
+import {
+  startInstructorTrainingSession,
+} from "@/lib/api/training-sessions";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
+import type { ApiError } from "@/types";
 
 type SessionStage = "ready" | "active" | "completed";
 type ChecklistKey = "learner" | "vehicle" | "brief";
@@ -55,12 +60,13 @@ export default function InstructorSessionScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { lessonId } = useLocalSearchParams<{ lessonId?: string }>();
-  const context = getInstructorLessonContext(lessonId);
+  const getLessonContext = useInstructorOperationsStore(
+    (state) => state.getLessonContext,
+  );
+  const context = getLessonContext(lessonId);
   const session = useTrainingSessionStore(
     (state) => state.sessions[context?.lesson.sessionId ?? ""],
   );
-  const startSession = useTrainingSessionStore((state) => state.startSession);
-  const endSession = useTrainingSessionStore((state) => state.endSession);
   const activeSessionId = useTrainingSessionStore(
     (state) => state.activeSessionId,
   );
@@ -68,10 +74,10 @@ export default function InstructorSessionScreen() {
     ? toInstructorLessonStatus(session?.status, context.lesson.status)
     : "scheduled";
   const stage: SessionStage =
-    lessonStatus === "in_progress"
-      ? "active"
-      : lessonStatus === "completed"
-        ? "completed"
+    lessonStatus === "completed"
+      ? "completed"
+      : lessonStatus === "in_progress"
+        ? "active"
         : "ready";
   const [checks, setChecks] = useState<Record<ChecklistKey, boolean>>({
     learner: false,
@@ -80,6 +86,8 @@ export default function InstructorSessionScreen() {
   });
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [endConfirmationVisible, setEndConfirmationVisible] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (stage !== "active") return;
@@ -424,7 +432,7 @@ export default function InstructorSessionScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ disabled: !canStart }}
+              accessibilityState={{ disabled: !canStart || isStarting }}
               accessibilityHint={
                 canStart
                   ? "Starts the lesson timer"
@@ -432,10 +440,25 @@ export default function InstructorSessionScreen() {
                     ? "Finish the active lesson before starting another"
                     : "Complete all pre-lesson checks before starting"
               }
-              disabled={!canStart}
+              disabled={!canStart || isStarting}
               onPress={() => {
-                setElapsedSeconds(0);
-                startSession(lesson.sessionId);
+                void (async () => {
+                  setActionError(null);
+                  setIsStarting(true);
+                  try {
+                    await startInstructorTrainingSession(lesson.sessionId);
+                    await refreshInstructorOperations();
+                    setElapsedSeconds(0);
+                  } catch (caught) {
+                    const error = caught as ApiError;
+                    setActionError(
+                      error.message ||
+                        "We could not start this lesson. Please try again.",
+                    );
+                  } finally {
+                    setIsStarting(false);
+                  }
+                })();
               }}
               className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
               style={{
@@ -455,9 +478,17 @@ export default function InstructorSessionScreen() {
                   color: canStart ? colors.onPrimary : colors.textSubtle,
                 }}
               >
-                Start lesson
+                {isStarting ? "Starting…" : "Start lesson"}
               </Text>
             </Pressable>
+            {actionError ? (
+              <Text
+                className="mt-3 text-center font-figtree-medium text-[12px]"
+                style={{ color: colors.error }}
+              >
+                {actionError}
+              </Text>
+            ) : null}
           </>
         ) : (
           <>
@@ -599,7 +630,10 @@ export default function InstructorSessionScreen() {
               accessibilityRole="button"
               onPress={() => {
                 setEndConfirmationVisible(false);
-                endSession(lesson.sessionId);
+                router.push({
+                  pathname: "/instructor/sessions/[lessonId]/report",
+                  params: { lessonId: lesson.id },
+                });
               }}
               className="mt-6 h-14 items-center justify-center rounded-full active:opacity-80"
               style={{ backgroundColor: colors.error }}

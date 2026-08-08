@@ -1,16 +1,38 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
+import { useEffect, useState } from "react";
 
 import { fontFamily } from "@/constants/fonts";
 import { useRoleRouteAccess } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 
 export default function InstructorLayout() {
   const { colors } = useAppTheme();
   const access = useRoleRouteAccess("instructor", "/instructor");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (access.status !== "allowed") return;
+
+    let active = true;
+
+    hydrateInstructorOperations()
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) {
+          setHydrated(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [access.status]);
 
   if (access.status === "checking") return null;
   if (access.status === "redirect") return <Redirect href={access.href} />;
+  if (!hydrated) return null;
 
   return (
     <Tabs

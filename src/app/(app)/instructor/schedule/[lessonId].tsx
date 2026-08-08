@@ -11,14 +11,17 @@ import {
 } from "@/components/dashboard";
 import { toInstructorLessonStatus } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getInstructorLessonContext } from "@/sample_data/instructor";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 export default function InstructorLessonDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { lessonId } = useLocalSearchParams<{ lessonId?: string }>();
-  const context = getInstructorLessonContext(lessonId);
+  const getLessonContext = useInstructorOperationsStore(
+    (state) => state.getLessonContext,
+  );
+  const context = getLessonContext(lessonId);
   const sessionStatus = useTrainingSessionStore(
     (state) => state.sessions[context?.lesson.sessionId ?? ""]?.status,
   );

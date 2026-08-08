@@ -7,8 +7,8 @@ import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardScreen } from "@/components/dashboard";
 import { LiveLocationMap } from "@/features/live-location";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getInstructorLessonContextBySessionId } from "@/sample_data/instructor";
-import { studentProfile } from "@/sample_data/student";
+import { readInstructorNameFromSession, sessionDisplayLocation } from "@/lib/instructor/map-sessions";
+import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 type PublicLiveLocationScreenProps = {
@@ -38,7 +38,9 @@ export function PublicLiveLocationScreen({
   const session = useTrainingSessionStore((state) =>
     locationShare ? state.sessions[locationShare.sessionId] : undefined,
   );
-  const lessonContext = getInstructorLessonContextBySessionId(session?.id);
+  const lessonContext = useInstructorOperationsStore((state) =>
+    session?.id ? state.getLessonContextBySessionId(session.id) : undefined,
+  );
 
   useEffect(() => {
     const updateCurrentTime = () => setCurrentTime(Date.now());
@@ -54,7 +56,7 @@ export function PublicLiveLocationScreen({
     session.status !== "in_progress" ||
     (currentTime > 0 && Date.parse(locationShare.expiresAt) <= currentTime);
 
-  if (hasExpired || !locationShare || !session || !lessonContext) {
+  if (hasExpired || !locationShare || !session) {
     return (
       <DashboardScreen>
         <View className="items-center pt-4">
@@ -93,7 +95,9 @@ export function PublicLiveLocationScreen({
     );
   }
 
-  const { lesson } = lessonContext;
+  const lesson = lessonContext?.lesson;
+  const learnerFirstName =
+    lesson?.learnerName.split(/\s+/)[0] ?? "The learner";
 
   return (
     <DashboardScreen>
@@ -122,7 +126,7 @@ export function PublicLiveLocationScreen({
           className="font-figtree-bold text-[29px] leading-9"
           style={{ color: colors.text }}
         >
-          {studentProfile.firstName} is on a driving lesson
+          {learnerFirstName} is on a driving lesson
         </Text>
         <Text
           className="mt-2 font-figtree text-[14px] leading-6"
@@ -137,7 +141,7 @@ export function PublicLiveLocationScreen({
         {locationShare.lastLocation ? (
           <LiveLocationMap
             coordinates={locationShare.lastLocation}
-            learnerName={studentProfile.firstName}
+            learnerName={learnerFirstName}
           />
         ) : (
           <View
@@ -175,10 +179,15 @@ export function PublicLiveLocationScreen({
         style={{ backgroundColor: colors.surface, borderColor: colors.border }}
       >
         {[
-          ["Instructor", "Instructor John"],
-          ["Driving school", "Elite Safety Driving Academy"],
-          ["Lesson", lesson.packageName],
-          ["Area", lesson.location],
+          ["Instructor", readInstructorNameFromSession(session)],
+          [
+            "Driving school",
+            typeof session.schoolId === "object" && session.schoolId?.name
+              ? session.schoolId.name
+              : "Driving school",
+          ],
+          ["Lesson", lesson?.packageName ?? session.title],
+          ["Area", lesson?.location ?? sessionDisplayLocation(session)],
         ].map(([label, value], index) => (
           <View
             key={label}
@@ -218,7 +227,7 @@ export function PublicLiveLocationScreen({
           className="flex-1 font-figtree text-[12px] leading-5"
           style={{ color: colors.textMuted }}
         >
-          No account is required. Access ends when {studentProfile.firstName}{" "}
+          No account is required. Access ends when {learnerFirstName}{" "}
           stops sharing or the lesson finishes.
         </Text>
       </View>
