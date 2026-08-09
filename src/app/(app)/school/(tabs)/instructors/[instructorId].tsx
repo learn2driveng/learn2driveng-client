@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -97,9 +97,12 @@ export default function SchoolInstructorDetailScreen() {
       >
         <View className="flex-row items-center gap-4">
           <View
-            className="h-16 w-16 items-center justify-center rounded-3xl"
+            className="h-16 w-16 items-center justify-center overflow-hidden rounded-full"
             style={{ backgroundColor: colors.primary }}
           >
+            {instructor.profilePhoto ? (
+              <Image source={{ uri: instructor.profilePhoto }} className="h-full w-full" resizeMode="cover" />
+            ) : (
             <Text
               className="text-[18px]"
               style={{
@@ -109,6 +112,7 @@ export default function SchoolInstructorDetailScreen() {
             >
               {instructor.initials}
             </Text>
+            )}
           </View>
           <View className="flex-1">
             <Text

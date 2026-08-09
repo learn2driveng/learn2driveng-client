@@ -100,10 +100,10 @@ export default function SchoolPackageDetailScreen() {
         price: Number(price),
         numberOfLessons: Number(numberOfLessons),
         durationInDays: Number(durationInDays),
+        eligibleTransmissions,
       });
       upsertPackage({
         ...packageToSchoolPackage(updated),
-        eligibleTransmissions,
         purchasesThisMonth: packageDefinition.purchasesThisMonth,
       });
       setSaved(true);
@@ -287,7 +287,7 @@ export default function SchoolPackageDetailScreen() {
       </View>
 
       <View className="mt-8">
-        <SectionHeader title="Eligible vehicles" />
+        <SectionHeader title="Available car types" />
         <View className="mt-4 flex-row gap-3">
           {transmissionOptions.map((item) => {
             const selected = eligibleTransmissions.includes(item);
@@ -362,7 +362,7 @@ export default function SchoolPackageDetailScreen() {
           {[
             ["Duration", packageDurationLabel(packageDefinition)],
             [
-              "Eligible vehicles",
+              "Available car types",
               (packageDefinition.eligibleTransmissions ?? [])
                 .map(formatTransmissionLabel)
                 .join(" / "),

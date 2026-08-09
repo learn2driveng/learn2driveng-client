@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import type { ApiSuccessResponse, TrainingPackage } from "@/types";
+import type { ApiSuccessResponse, TrainingPackage, VehicleTransmissionType } from "@/types";
 
 export type CreatePackageInput = {
   name: string;
@@ -8,6 +8,7 @@ export type CreatePackageInput = {
   currency?: string;
   numberOfLessons: number;
   durationInDays: number;
+  eligibleTransmissions?: VehicleTransmissionType[];
   isActive?: boolean;
 };
 

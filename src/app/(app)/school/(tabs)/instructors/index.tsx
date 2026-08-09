@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
 import { useSurfaceStyles } from "@/components/common/surface";
@@ -92,10 +92,13 @@ export default function SchoolInstructorsScreen() {
               >
                 <View className="flex-row items-center gap-3">
                   <View
-                    className="h-12 w-12 items-center justify-center rounded-2xl"
+                    className="h-12 w-12 items-center justify-center overflow-hidden rounded-full"
                     style={{ backgroundColor: colors.surfaceStrong }}
                   >
-                    <Text
+                    {instructor.profilePhoto ? (
+                      <Image source={{ uri: instructor.profilePhoto }} className="h-full w-full" resizeMode="cover" />
+                    ) : (
+                      <Text
                       className="text-[13px]"
                       style={{
                         color: colors.text,
@@ -104,6 +107,7 @@ export default function SchoolInstructorsScreen() {
                     >
                       {instructor.initials}
                     </Text>
+                    )}
                   </View>
                   <View className="flex-1">
                     <Text

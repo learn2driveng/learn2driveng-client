@@ -13,6 +13,7 @@
     },
     "android": {
       "usesCleartextTraffic": true,
+      "permissions": ["android.permission.CAMERA"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,6 +34,14 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and learner-approved sharing during active lessons."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Learn2Drive to access photos so you can upload school logos and instructor passport photographs.",
+          "cameraPermission": "Allow Learn2Drive to use the camera so you can take school logo photos and instructor passport photographs.",
+          "microphonePermission": false
         }
       ],
       [

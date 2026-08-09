@@ -21,8 +21,8 @@ import type {
   SchoolLearnerStatus,
 } from "@/types/readiness-assessment";
 
-function initialsFromName(name: string) {
-  return name
+function initialsFromName(name?: string | null) {
+  return (name ?? "")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -53,10 +53,12 @@ export function drivingSchoolToProfile(
     packages?: number;
   },
 ): SchoolOperationsProfile {
+  const schoolName = school.name?.trim() || "Your driving school";
+
   return {
     id: school.id,
-    name: school.name,
-    initials: initialsFromName(school.name),
+    name: schoolName,
+    initials: initialsFromName(schoolName),
     adminName,
     verificationStatus: school.verificationStatus,
     frscRegistrationNumber: school.businessRegistrationNumber ?? "",
@@ -122,7 +124,7 @@ export function packageToSchoolPackage(
 ): SchoolPackageDefinition {
   return {
     ...packageDefinition,
-    eligibleTransmissions: ["automatic", "manual"],
+    eligibleTransmissions: packageDefinition.eligibleTransmissions ?? ["automatic", "manual"],
     purchasesThisMonth: 0,
   };
 }

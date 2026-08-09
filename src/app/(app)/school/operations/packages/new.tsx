@@ -79,11 +79,11 @@ export default function NewSchoolPackageScreen() {
         price: Number(price),
         numberOfLessons: Number(numberOfLessons),
         durationInDays: Number(durationInDays),
+        eligibleTransmissions,
         isActive: false,
       });
       upsertPackage({
         ...packageToSchoolPackage(created),
-        eligibleTransmissions,
       });
       router.replace("/school/operations/packages");
     } catch (caught) {
@@ -196,7 +196,7 @@ export default function NewSchoolPackageScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            Eligible transmissions
+            Available car types
           </Text>
           <View className="flex-row gap-3">
             {transmissionOptions.map((item) => {

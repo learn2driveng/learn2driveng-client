@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
+import { SchoolAvatar } from "@/components/school/school-avatar";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { SchoolSummary } from "@/types";
@@ -37,7 +38,9 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
       }}
     >
       <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
+        <View className="flex-1 flex-row items-start gap-3">
+          <SchoolAvatar name={school.name} logoUrl={school.logoUrl} size={50} />
+          <View className="flex-1">
           <View className="mb-1 flex-row items-center gap-2">
             {school.premium ? (
               <View
@@ -96,6 +99,7 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
             >
               {school.location}
             </Text>
+          </View>
           </View>
         </View>
 

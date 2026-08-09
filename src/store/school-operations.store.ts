@@ -98,23 +98,26 @@ type SchoolOperationsState = {
   rescheduleBooking: (bookingId: string, scheduledAt: string) => void;
   cancelBooking: (bookingId: string, reason: string) => void;
   updateProfile: (
-    input: Pick<
-      SchoolOperationsProfile,
-      "name" | "email" | "phone" | "address" | "description" | "primaryLocation"
-    > &
-      Partial<
-        Pick<
-          SchoolOperationsProfile,
-          | "addressLine1"
-          | "addressLine2"
-          | "city"
-          | "state"
-          | "country"
-          | "latitude"
-          | "longitude"
-          | "operatingAreas"
-        >
-      >,
+    input: Partial<
+      Pick<
+        SchoolOperationsProfile,
+        | "name"
+        | "email"
+        | "phone"
+        | "address"
+        | "description"
+        | "primaryLocation"
+        | "addressLine1"
+        | "addressLine2"
+        | "city"
+        | "state"
+        | "country"
+        | "latitude"
+        | "longitude"
+        | "logoUrl"
+        | "operatingAreas"
+      >
+    >,
   ) => void;
   setVerificationDocument: (
     type: SchoolVerificationDocumentType,
@@ -351,7 +354,7 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
         profile: {
           ...state.profile,
           ...input,
-          initials: input.name
+          initials: (input.name ?? state.profile.name)
             .split(/\s+/)
             .filter(Boolean)
             .slice(0, 2)

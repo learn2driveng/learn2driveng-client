@@ -48,13 +48,14 @@ export function useGoogleAuth(role: GoogleSignupRole, returnTo?: string) {
         clearSignup();
         clearLink();
         await authenticate(result);
+        router.replace(destinationForRole(result.user.role, returnTo));
+
         if (result.user.role === "learner") {
-          await Promise.all([
+          void Promise.all([
             hydrateLearnerOperations().catch(() => undefined),
             hydrateLearnerSessions().catch(() => undefined),
           ]);
         }
-        router.replace(destinationForRole(result.user.role, returnTo));
         return;
       }
 
