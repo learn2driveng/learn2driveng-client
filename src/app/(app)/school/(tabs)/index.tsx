@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { AppLogo } from "@/components/common/app-logo";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
+import { SchoolAvatar } from "@/components/school/school-avatar";
 import {
   DashboardScreen,
   QuickAction,
@@ -60,25 +61,27 @@ export default function SchoolDashboardScreen() {
   return (
     <DashboardScreen>
       <AppLogo height={52} className="mb-6" />
+      <View className="flex-row items-center gap-3">
+        <SchoolAvatar name={profile.name} logoUrl={profile.logoUrl} size={52} />
+        <View className="flex-1">
+          <Text
+            className="text-[13px]"
+            style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
+          >
+            Welcome back, {profile.adminName}
+          </Text>
+          <Text
+            accessibilityRole="header"
+            className="mt-1 text-[25px] leading-7 tracking-[-0.7px]"
+            style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+          >
+            {profile.name}
+          </Text>
+        </View>
+      </View>
       <Text
-        className="text-[13px]"
-        style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}
-      >
-        Welcome back, {profile.adminName}
-      </Text>
-      <Text
-        accessibilityRole="header"
-        className="mt-1 text-[28px] leading-8 tracking-[-0.8px]"
-        style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-      >
-        {profile.name}
-      </Text>
-      <Text
-        className="mt-2 text-[13px] leading-5"
-        style={{
-          color: colors.textMuted,
-          fontFamily: fontFamily.figtreeMedium,
-        }}
+        className="mt-4 text-[13px] leading-5"
+        style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
       >
         Manage school-owned instructors, fleet, packages, and lesson operations
         from one place.

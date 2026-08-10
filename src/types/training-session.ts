@@ -62,6 +62,26 @@ export type TrainingSessionParticipant = {
   updatedAt?: string;
 };
 
+export type RecurringTrainingSchedule = {
+  id: string;
+  schoolId: string;
+  instructorId: string;
+  vehicleId?: string | null;
+  eligiblePackageIds: string[];
+  title: string;
+  sessionType: TrainingSessionType;
+  weekdays: number[];
+  startTime: string;
+  durationMinutes: number;
+  capacity: number;
+  startsOn: string;
+  endsOn?: string | null;
+  notes?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 /** Instructor-emitted GPS ping during an active session (server entity). */
 export type TrainingSessionLocationPing = {
   id: string;

@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   Text,
   TextInput,
@@ -10,11 +12,13 @@ import {
 } from "react-native";
 
 import { AuthDateOfBirthField } from "@/components/auth";
+import { useToast } from "@/components/common/toast";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { createSchoolInstructor } from "@/lib/api";
 import { instructorUserToRosterItem } from "@/lib/school/map-api";
+import { uploadInstructorPhoto } from "@/lib/school/upload-instructor-photo";
 import { isValidEmail } from "@/lib/auth/validation";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError } from "@/types";
@@ -30,6 +34,7 @@ function splitName(fullName: string) {
 export default function InviteInstructorScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { showToast } = useToast();
   const upsertInstructor = useSchoolOperationsStore(
     (state) => state.upsertInstructor,
   );
@@ -39,6 +44,12 @@ export default function InviteInstructorScreen() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [confirmTemporaryPassword, setConfirmTemporaryPassword] = useState("");
+  const [photo, setPhoto] = useState<{
+    uri: string;
+    fileName: string;
+    mimeType: string | null;
+    size: number | null;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -70,7 +81,7 @@ export default function InviteInstructorScreen() {
     setIsSubmitting(true);
 
     try {
-      const instructor = await createSchoolInstructor({
+      let instructor = await createSchoolInstructor({
         firstName,
         lastName,
         email: email.trim(),
@@ -79,7 +90,17 @@ export default function InviteInstructorScreen() {
         temporaryPassword,
         confirmTemporaryPassword,
       });
+      if (photo) {
+        instructor = await uploadInstructorPhoto({
+          instructorId: instructor.id,
+          uri: photo.uri,
+          fileName: photo.fileName,
+          mimeType: photo.mimeType,
+          size: photo.size,
+        });
+      }
       upsertInstructor(instructorUserToRosterItem(instructor));
+      showToast("Instructor invite created successfully.");
       router.replace("/school/instructors");
     } catch (caught) {
       const error = caught as ApiError;
@@ -87,6 +108,38 @@ export default function InviteInstructorScreen() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const choosePhoto = async (source: "camera" | "library") => {
+    const result =
+      source === "camera"
+        ? await (async () => {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permission.granted) {
+              throw new Error("Camera access is required to take a passport photograph.");
+            }
+            return ImagePicker.launchCameraAsync({
+              mediaTypes: ["images"],
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+          })()
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    setPhoto({
+      uri: asset.uri,
+      fileName: asset.fileName ?? "instructor-photo.jpg",
+      mimeType: asset.mimeType ?? null,
+      size: asset.fileSize ?? null,
+    });
   };
 
   return (
@@ -104,6 +157,53 @@ export default function InviteInstructorScreen() {
       </Text>
 
       <View className="mt-7 gap-5">
+        <View>
+          <Text
+            className="mb-2 text-[11px] uppercase tracking-[1.4px]"
+            style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
+          >
+            Passport photograph
+          </Text>
+          <View
+            className="flex-row items-center gap-4 rounded-3xl border p-4"
+            style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          >
+            <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: colors.surfaceStrong }}>
+              {photo ? (
+                <Image source={{ uri: photo.uri }} className="h-full w-full" resizeMode="cover" />
+              ) : (
+                <MaterialCommunityIcons name="account-outline" size={33} color={colors.textSubtle} />
+              )}
+            </View>
+            <View className="flex-1 gap-2">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void choosePhoto("library")}
+                className="h-10 flex-row items-center justify-center gap-2 rounded-xl active:opacity-80"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <MaterialCommunityIcons name="image-plus" size={17} color={colors.onPrimary} />
+                <Text className="text-[12px]" style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>
+                  {photo ? "Change photo" : "Choose photo"}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void choosePhoto("camera")}
+                className="h-10 flex-row items-center justify-center gap-2 rounded-xl active:opacity-80"
+                style={{ backgroundColor: colors.surfaceStrong }}
+              >
+                <MaterialCommunityIcons name="camera-outline" size={17} color={colors.text} />
+                <Text className="text-[12px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>
+                  Take photo
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text className="mt-2 text-[11px] leading-4" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>
+            Use a clear head-and-shoulders photo. JPG, PNG, or WebP up to 5 MB.
+          </Text>
+        </View>
         {[
           {
             label: "Full name",

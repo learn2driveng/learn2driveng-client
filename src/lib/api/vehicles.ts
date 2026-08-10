@@ -7,6 +7,7 @@ export type CreateVehicleInput = {
   year: number;
   plateNumber: string;
   color?: string;
+  photoUrl?: string;
   transmissionType: VehicleTransmissionType;
   isActive?: boolean;
 };
@@ -34,5 +35,17 @@ export async function updateSchoolVehicle(
     `/vehicles/${vehicleId}`,
     input,
   );
+  return data.data;
+}
+
+export async function createVehiclePhotoUploadUrl(
+  vehicleId: string,
+  input: { filename: string; mimeType: "image/jpeg" | "image/png" | "image/webp" },
+) {
+  const { data } = await api.post<ApiSuccessResponse<{
+    uploadUrl: string;
+    fileUrl: string;
+    headers?: Record<string, string>;
+  }>>(`/vehicles/${vehicleId}/photo/upload-url`, input);
   return data.data;
 }

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -71,14 +71,14 @@ export default function SchoolFleetScreen() {
               style={surfaces.card}
             >
               <View
-                className="h-12 w-12 items-center justify-center rounded-2xl"
+                className="h-12 w-12 items-center justify-center overflow-hidden rounded-2xl"
                 style={{ backgroundColor: colors.surfaceStrong }}
               >
-                <MaterialCommunityIcons
+                {vehicle.photoUrl ? <Image source={{ uri: vehicle.photoUrl }} className="h-full w-full" resizeMode="cover" /> : <MaterialCommunityIcons
                   name="car-hatchback"
                   size={24}
                   color={colors.primary}
-                />
+                />}
               </View>
               <View className="flex-1">
                 <Text
@@ -97,18 +97,8 @@ export default function SchoolFleetScreen() {
                     fontFamily: fontFamily.figtreeMedium,
                   }}
                 >
-                  {vehicle.plateNumber} ·{" "}
+                  {vehicle.plateNumber.toUpperCase()} · {vehicle.color ? `${vehicle.color} · ` : ""}
                   {formatTransmissionLabel(vehicle.transmissionType)}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-1 text-[10px]"
-                  style={{
-                    color: colors.textSubtle,
-                    fontFamily: fontFamily.figtreeMedium,
-                  }}
-                >
-                  {vehicle.assignedLocation}
                 </Text>
               </View>
               <View className="items-end">
@@ -121,11 +111,19 @@ export default function SchoolFleetScreen() {
                 >
                   {vehicle.isActive ? "active" : "inactive"}
                 </Text>
-                <MaterialCommunityIcons
-                  name="chevron-right"
-                  size={20}
-                  color={colors.textSubtle}
-                />
+                <View className="mt-2 flex-row items-center gap-1">
+                  <Text
+                    className="text-[11px]"
+                    style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+                  >
+                    View vehicle
+                  </Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={17}
+                    color={colors.textSubtle}
+                  />
+                </View>
               </View>
             </Pressable>
           ))}

@@ -99,6 +99,8 @@ export interface TrainingPackage {
   currency: string;
   numberOfLessons: number;
   durationInDays: number;
+  /** Car types available with this package. Older API responses may omit it. */
+  eligibleTransmissions?: VehicleTransmissionType[];
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -113,6 +115,7 @@ export interface Vehicle {
   year: number;
   plateNumber: string;
   color?: string | null;
+  photoUrl?: string | null;
   transmissionType: VehicleTransmissionType;
   isActive: boolean;
   createdAt?: string;

@@ -6,6 +6,7 @@ import { Pressable, Text, View } from "react-native";
 import { AppLogo } from "@/components/common/app-logo";
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
+import { SchoolAvatar } from "@/components/school/school-avatar";
 import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useLogout } from "@/features/auth";
@@ -122,20 +123,12 @@ export default function SchoolMoreScreen() {
       </Text>
 
       <HeroSurface className="mt-7 flex-row items-center gap-4 overflow-hidden rounded-[28px] p-5">
-        <View
-          className="h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: colors.primary }}
-        >
-          <Text
-            className="text-[15px]"
-            style={{
-              color: colors.onPrimary,
-              fontFamily: fontFamily.figtreeBold,
-            }}
-          >
-            {profile.initials}
-          </Text>
-        </View>
+        <SchoolAvatar
+          name={profile.name}
+          logoUrl={profile.logoUrl}
+          size={56}
+          inverse
+        />
         <View className="flex-1">
           <Text
             className="text-[17px]"

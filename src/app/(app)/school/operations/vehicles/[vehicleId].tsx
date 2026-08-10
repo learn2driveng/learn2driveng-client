@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -17,15 +17,8 @@ import { vehicleToSchoolVehicle } from "@/lib/school/map-api";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError } from "@/types";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export default function SchoolVehicleDetailScreen() {
+  const router = useRouter();
   const { colors } = useAppTheme();
   const { vehicleId } = useLocalSearchParams<{ vehicleId?: string }>();
   const vehicle = useSchoolOperationsStore((state) =>
@@ -33,6 +26,7 @@ export default function SchoolVehicleDetailScreen() {
   );
   const upsertVehicle = useSchoolOperationsStore((state) => state.upsertVehicle);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   const setActiveState = async (isActive: boolean) => {
@@ -81,16 +75,24 @@ export default function SchoolVehicleDetailScreen() {
         style={{ backgroundColor: colors.contrastSurface }}
       >
         <View className="flex-row items-center gap-4">
-          <View
-            className="h-16 w-16 items-center justify-center rounded-3xl"
+          <Pressable
+            accessibilityRole={vehicle.photoUrl ? "button" : undefined}
+            accessibilityLabel={
+              vehicle.photoUrl
+                ? `View ${vehicle.name} photograph full screen`
+                : undefined
+            }
+            disabled={!vehicle.photoUrl}
+            onPress={() => setIsPhotoOpen(true)}
+            className="h-16 w-16 items-center justify-center overflow-hidden rounded-3xl"
             style={{ backgroundColor: colors.primary }}
           >
-            <MaterialCommunityIcons
+            {vehicle.photoUrl ? <Image source={{ uri: vehicle.photoUrl }} className="h-full w-full" resizeMode="cover" /> : <MaterialCommunityIcons
               name="car-hatchback"
               size={32}
               color={colors.onPrimary}
-            />
-          </View>
+            />}
+          </Pressable>
           <View className="flex-1">
             <Text
               accessibilityRole="header"
@@ -109,12 +111,39 @@ export default function SchoolVehicleDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {vehicle.plateNumber} ·{" "}
+              {vehicle.plateNumber.toUpperCase()} ·{" "}
               {formatTransmissionLabel(vehicle.transmissionType)}
             </Text>
           </View>
         </View>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isPhotoOpen}
+        onRequestClose={() => setIsPhotoOpen(false)}
+      >
+        <View className="flex-1 items-center justify-center p-5" style={{ backgroundColor: "rgba(4,19,32,0.96)" }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close vehicle photograph"
+            onPress={() => setIsPhotoOpen(false)}
+            className="absolute right-5 top-16 z-10 h-11 w-11 items-center justify-center rounded-full"
+            style={{ backgroundColor: "rgba(255,255,255,0.16)" }}
+          >
+            <MaterialCommunityIcons name="close" size={24} color={colors.contrastText} />
+          </Pressable>
+          {vehicle.photoUrl ? (
+            <Image
+              source={{ uri: vehicle.photoUrl }}
+              accessibilityLabel={`${vehicle.name} photograph full screen`}
+              className="h-full w-full"
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      </Modal>
 
       <View className="mt-8">
         <SectionHeader title="Fleet details" />
@@ -124,9 +153,9 @@ export default function SchoolVehicleDetailScreen() {
         >
           {[
             ["Status", vehicle.isActive ? "active" : "inactive"],
-            ["Assigned location", vehicle.assignedLocation],
-            ["Last inspection", formatDate(vehicle.lastInspectionAt ?? new Date().toISOString())],
-            ["Lessons this week", String(vehicle.lessonsThisWeek)],
+            ["Plate number", vehicle.plateNumber.toUpperCase()],
+            ["Colour", vehicle.color ?? "Not set"],
+            ["Transmission", formatTransmissionLabel(vehicle.transmissionType)],
           ].map(([label, value]) => (
             <View
               key={label}
@@ -176,6 +205,17 @@ export default function SchoolVehicleDetailScreen() {
       </View>
 
       <View className="mt-7 gap-3">
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/school/operations/vehicles/${vehicle.id}/edit`)}
+          className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.onPrimary} />
+          <Text className="text-[15px]" style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>
+            Edit vehicle
+          </Text>
+        </Pressable>
         {!vehicle.isActive ? (
           <Pressable
             accessibilityRole="button"

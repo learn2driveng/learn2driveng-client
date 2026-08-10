@@ -50,6 +50,11 @@ export type DocumentUploadUrlResponse = {
   headers?: Record<string, string>;
 };
 
+export type SchoolLogoUploadUrlInput = {
+  filename: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+};
+
 export async function searchSchoolAddresses(
   query: string,
   signal?: AbortSignal,
@@ -79,6 +84,14 @@ export async function fetchMyDrivingSchool() {
 export async function updateMyDrivingSchool(input: UpdateDrivingSchoolInput) {
   const { data } = await api.patch<ApiSuccessResponse<DrivingSchool>>(
     "/driving-schools/me",
+    input,
+  );
+  return data.data;
+}
+
+export async function createSchoolLogoUploadUrl(input: SchoolLogoUploadUrlInput) {
+  const { data } = await api.post<ApiSuccessResponse<DocumentUploadUrlResponse>>(
+    "/driving-schools/me/logo/upload-url",
     input,
   );
   return data.data;

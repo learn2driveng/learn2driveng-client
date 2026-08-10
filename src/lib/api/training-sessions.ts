@@ -4,8 +4,111 @@ import type {
   AvailableTrainingSession,
   InstructorAssignedSession,
   LearnerJoinedSession,
+  TrainingSession,
   TrainingSessionParticipant,
+  TrainingSessionType,
+  RecurringTrainingSchedule,
 } from "@/types/training-session";
+
+export type CreateRecurringTrainingScheduleInput = {
+  instructorId: string;
+  vehicleId?: string;
+  eligiblePackageIds: string[];
+  title: string;
+  sessionType: TrainingSessionType;
+  weekdays: number[];
+  startTime: string;
+  durationMinutes: number;
+  capacity: number;
+  startsOn: string;
+  endsOn?: string;
+  notes?: string;
+};
+
+export async function createRecurringTrainingSchedule(input: CreateRecurringTrainingScheduleInput) {
+  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>("/training-sessions/recurring", input);
+  return data.data;
+}
+
+export async function fetchRecurringTrainingSchedules() {
+  const { data } = await api.get<ApiSuccessResponse<RecurringTrainingSchedule[]>>("/training-sessions/recurring");
+  return data.data;
+}
+
+export async function pauseRecurringTrainingSchedule(scheduleId: string) {
+  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}/pause`, {});
+  return data.data;
+}
+
+export async function resumeRecurringTrainingSchedule(scheduleId: string) {
+  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}/resume`, {});
+  return data.data;
+}
+
+export async function updateRecurringTrainingSchedule(
+  scheduleId: string,
+  input: Partial<CreateRecurringTrainingScheduleInput>,
+) {
+  const { data } = await api.patch<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}`, input);
+  return data.data;
+}
+
+export type CreateSchoolTrainingSessionInput = {
+  instructorId: string;
+  vehicleId?: string;
+  eligiblePackageIds: string[];
+  title: string;
+  sessionType: TrainingSessionType;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  capacity: number;
+  notes?: string;
+};
+
+export type UpdateSchoolTrainingSessionInput = Partial<CreateSchoolTrainingSessionInput>;
+
+export async function fetchSchoolTrainingSessions() {
+  const { data } = await api.get<ApiSuccessResponse<TrainingSession[]>>(
+    "/training-sessions",
+  );
+  return data.data;
+}
+
+export async function fetchSchoolTrainingSession(sessionId: string) {
+  const { data } = await api.get<ApiSuccessResponse<TrainingSession>>(
+    `/training-sessions/${encodeURIComponent(sessionId)}`,
+  );
+  return data.data;
+}
+
+export async function createSchoolTrainingSession(
+  input: CreateSchoolTrainingSessionInput,
+) {
+  const { data } = await api.post<ApiSuccessResponse<TrainingSession>>(
+    "/training-sessions",
+    input,
+  );
+  return data.data;
+}
+
+export async function updateSchoolTrainingSession(
+  sessionId: string,
+  input: UpdateSchoolTrainingSessionInput,
+) {
+  const { data } = await api.patch<ApiSuccessResponse<TrainingSession>>(
+    `/training-sessions/${encodeURIComponent(sessionId)}`,
+    input,
+  );
+  return data.data;
+}
+
+export async function cancelSchoolTrainingSession(sessionId: string) {
+  const { data } = await api.post<ApiSuccessResponse<TrainingSession>>(
+    `/training-sessions/${encodeURIComponent(sessionId)}/cancel`,
+    {},
+  );
+  return data.data;
+}
 
 export type AvailableTrainingSessionsQuery = {
   sessionType?: string;
