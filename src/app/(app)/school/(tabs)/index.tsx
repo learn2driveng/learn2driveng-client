@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { SchoolAvatar } from "@/components/school/school-avatar";
 import {
@@ -60,7 +59,6 @@ export default function SchoolDashboardScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={52} className="mb-6" />
       <View className="flex-row items-center gap-3">
         <SchoolAvatar name={profile.name} logoUrl={profile.logoUrl} size={52} />
         <View className="flex-1">

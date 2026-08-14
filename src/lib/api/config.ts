@@ -9,3 +9,7 @@ export function getApiBaseUrl(): string {
 
   return configured.replace(/\/+$/, "");
 }
+
+export function getRealtimeBaseUrl(): string {
+  return getApiBaseUrl().replace(/\/api\/v1\/?$/, "");
+}

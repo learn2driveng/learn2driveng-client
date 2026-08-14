@@ -26,6 +26,7 @@ type EnrichedLearnerBooking = BookingListItem & {
 export type LearnerPackageCredit = {
   id: string;
   bookingId: string;
+  packageId: string;
   name: string;
   schoolName: string;
   icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -50,11 +51,13 @@ function packageIconForName(name: string) {
 
 function remainingSessions(booking: BookingListItem) {
   return Math.max(
-    booking.sessionsTotal -
-      booking.sessionsScheduledCount -
-      booking.sessionsCompletedCount,
+    booking.sessionsTotal - booking.sessionsScheduledCount,
     0,
   );
+}
+
+function readRefId(value: string | EnrichedRef | undefined) {
+  return typeof value === "string" ? value : (value?.id ?? "");
 }
 
 function packageStatus(
@@ -83,6 +86,7 @@ export function bookingToLearnerPackage(
       ? `${booking.id}-${booking.packageId}`
       : booking.id,
     bookingId: booking.id,
+    packageId: readRefId(booking.packageId),
     name: packageName,
     schoolName,
     icon: packageIconForName(packageName),
@@ -113,9 +117,7 @@ export function formatLearnerId(userId: string) {
 }
 
 export function activeLearnerPackages(packages: LearnerPackageCredit[]) {
-  return packages.filter(
-    (item) => item.status === "active" || item.status === "pending",
-  );
+  return packages.filter((item) => item.status === "active");
 }
 
 export function expiredLearnerPackages(packages: LearnerPackageCredit[]) {

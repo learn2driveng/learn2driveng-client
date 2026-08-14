@@ -1,15 +1,26 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { useToast } from "@/components/common/toast";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
+import { BookingCancellationModal } from "@/features/session-booking";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { cancelLearnerTrainingSession } from "@/lib/api";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
+import type { ApiError } from "@/types";
 
 export default function BookingDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { showToast } = useToast();
+  const [showCancellation, setShowCancellation] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const booking = useLearnerSessionsStore((state) =>
     state.lessonCards.find((item) => item.id === bookingId),
@@ -62,6 +73,26 @@ export default function BookingDetailScreen() {
     ["Location", booking.location],
     ["Booking reference", booking.reference ?? booking.id],
   ];
+
+  const cancelLesson = async () => {
+    if (cancelling) return;
+    setCancelling(true);
+    setActionError(null);
+    try {
+      await cancelLearnerTrainingSession(booking.id);
+      await Promise.all([refreshLearnerBookings(), refreshLearnerSessions()]);
+      setShowCancellation(false);
+      showToast("Lesson cancelled. One lesson returned to your package.");
+      router.replace("/student/sessions");
+    } catch (caught) {
+      setShowCancellation(false);
+      setActionError(
+        (caught as ApiError).message || "We could not cancel this lesson.",
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <DashboardScreen>
@@ -157,7 +188,7 @@ export default function BookingDetailScreen() {
               params: { bookingId: booking.id },
             })
           }
-          className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+          className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
           <MaterialCommunityIcons
@@ -172,24 +203,18 @@ export default function BookingDetailScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            Manage live location
+            View live location
           </Text>
         </Pressable>
       ) : null}
 
       {status === "scheduled" ? (
-        <View
-          className="mt-7 rounded-3xl border p-5"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
+        <View className="mt-7">
           <Text
-            className="text-[14px]"
+            className="text-[18px]"
             style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
           >
-            Need to change this lesson?
+            Change this lesson
           </Text>
           <Text
             className="mt-2 text-[12px] leading-5"
@@ -198,11 +223,84 @@ export default function BookingDetailScreen() {
               fontFamily: fontFamily.figtreeMedium,
             }}
           >
-            Contact your driving school to reschedule or cancel this booking.
-            Self-service changes will be added in a later update.
+            Choose another available school slot or cancel and return the lesson
+            to your package.
           </Text>
+          {actionError ? (
+            <Text
+              className="mt-4 text-[13px]"
+              style={{
+                color: colors.error,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              {actionError}
+            </Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({
+                pathname: "/student/sessions/[bookingId]/reschedule",
+                params: { bookingId: booking.id },
+              })
+            }
+            className="mt-5 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons
+              name="calendar-sync"
+              size={20}
+              color={colors.onPrimary}
+            />
+            <Text
+              className="text-[14px]"
+              style={{
+                color: colors.onPrimary,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Reschedule lesson
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowCancellation(true)}
+            className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-70"
+            style={{
+              borderColor: colors.error,
+              backgroundColor: colors.surface,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="calendar-remove-outline"
+              size={20}
+              color={colors.error}
+            />
+            <Text
+              className="text-[14px]"
+              style={{
+                color: colors.error,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Cancel lesson
+            </Text>
+          </Pressable>
         </View>
       ) : null}
+
+      <BookingCancellationModal
+        visible={showCancellation}
+        date={booking.date}
+        time={booking.time}
+        packageName={booking.packageName}
+        submitting={cancelling}
+        onDismiss={() => {
+          if (!cancelling) setShowCancellation(false);
+        }}
+        onConfirm={() => void cancelLesson()}
+      />
     </DashboardScreen>
   );
 }

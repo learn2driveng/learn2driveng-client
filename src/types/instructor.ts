@@ -26,6 +26,15 @@ export type InstructorLessonSummary = {
   transmission: VehicleTransmissionType;
   status: InstructorLessonStatus;
   sessionStatus?: TrainingSessionStatus;
+  learnerCount?: number;
+  learners?: {
+    participantId: string;
+    learnerId: string;
+    name: string;
+    initials: string;
+    packageName: string;
+    status: "scheduled" | "present" | "absent" | "cancelled";
+  }[];
 };
 
 export type InstructorProfileSummary = {

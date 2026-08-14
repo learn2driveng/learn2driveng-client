@@ -12,30 +12,28 @@ import {
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   endInstructorTrainingSession,
+  fetchInstructorAssignedSession,
   markInstructorSessionAttendance,
 } from "@/lib/api/training-sessions";
 import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
-import type { ApiError } from "@/types";
+import type { ApiError, InstructorLessonSummary } from "@/types";
 
-type AttendanceStatus = "present" | "late" | "absent";
-type SkillRating = "needs_practice" | "developing" | "confident";
-type SkillId = "vehicle_control" | "observation" | "junctions" | "parking";
+type AttendanceStatus = "present" | "absent";
+type AttendanceByParticipant = Record<string, AttendanceStatus | undefined>;
+type FeedbackByParticipant = Record<string, string | undefined>;
+
+type AttendanceLearner = NonNullable<InstructorLessonSummary["learners"]>[number];
 
 const attendanceOptions: {
   value: AttendanceStatus;
   label: string;
-  icon: "account-check-outline" | "clock-alert-outline" | "account-off-outline";
+  icon: "account-check-outline" | "account-off-outline";
 }[] = [
   {
     value: "present",
     label: "Present",
     icon: "account-check-outline",
-  },
-  {
-    value: "late",
-    label: "Late",
-    icon: "clock-alert-outline",
   },
   {
     value: "absent",
@@ -44,25 +42,35 @@ const attendanceOptions: {
   },
 ];
 
-const skills: { id: SkillId; label: string }[] = [
-  { id: "vehicle_control", label: "Vehicle control" },
-  { id: "observation", label: "Observation and mirrors" },
-  { id: "junctions", label: "Junctions and traffic" },
-  { id: "parking", label: "Parking and manoeuvres" },
-];
+function lessonLearners(
+  lesson: InstructorLessonSummary | undefined,
+): AttendanceLearner[] {
+  if (!lesson) return [];
+  if (lesson.learners?.length) return lesson.learners;
+  if (!lesson.participantId) return [];
 
-const ratings: { value: SkillRating; label: string }[] = [
-  { value: "needs_practice", label: "Needs practice" },
-  { value: "developing", label: "Developing" },
-  { value: "confident", label: "Confident" },
-];
+  return [
+    {
+      participantId: lesson.participantId,
+      learnerId: lesson.learnerId,
+      name: lesson.learnerName,
+      initials: lesson.learnerInitials,
+      packageName: lesson.packageName,
+      status: "scheduled",
+    },
+  ];
+}
 
-const emptySkillRatings: Record<SkillId, SkillRating | null> = {
-  vehicle_control: null,
-  observation: null,
-  junctions: null,
-  parking: null,
-};
+function initialAttendance(learners: AttendanceLearner[]) {
+  return Object.fromEntries(
+    learners
+      .filter(
+        (learner) =>
+          learner.status === "present" || learner.status === "absent",
+      )
+      .map((learner) => [learner.participantId, learner.status]),
+  ) as AttendanceByParticipant;
+}
 
 export default function InstructorLessonReportScreen() {
   const router = useRouter();
@@ -72,10 +80,12 @@ export default function InstructorLessonReportScreen() {
     (state) => state.getLessonContext,
   );
   const context = getLessonContext(lessonId);
-  const [attendance, setAttendance] = useState<AttendanceStatus | null>(null);
-  const [skillRatings, setSkillRatings] = useState(emptySkillRatings);
-  const [notes, setNotes] = useState("");
-  const [nextFocus, setNextFocus] = useState("");
+  const learners = lessonLearners(context?.lesson);
+  const [attendance, setAttendance] = useState<AttendanceByParticipant>(() =>
+    initialAttendance(learners),
+  );
+  const [feedback, setFeedback] = useState<FeedbackByParticipant>({});
+  const [openFeedbackId, setOpenFeedbackId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -83,7 +93,7 @@ export default function InstructorLessonReportScreen() {
   if (!context) {
     return (
       <DashboardScreen>
-        <DashboardPageHeader title="Attendance and report" />
+        <DashboardPageHeader title="Attendance" />
         <View className="mt-8">
           <ContentEmptyState
             icon="calendar-remove-outline"
@@ -96,47 +106,80 @@ export default function InstructorLessonReportScreen() {
   }
 
   const { lesson, day } = context;
-  const allSkillsRated = skills.every(
-    (skill) => skillRatings[skill.id] !== null,
+  const learnersToRecord = learners.filter(
+    (learner) => learner.status === "scheduled",
+  );
+  const allSelected = learnersToRecord.every(
+    (learner) => attendance[learner.participantId],
   );
   const canSubmit =
-    attendance !== null &&
-    (attendance === "absent" || allSkillsRated) &&
-    !isSubmitting;
-  const selectAttendance = (value: AttendanceStatus) => {
-    setAttendance(value);
-    if (value === "absent") setSkillRatings(emptySkillRatings);
+    learnersToRecord.length > 0 && allSelected && !isSubmitting;
+  const presentCount = learners.filter(
+    (learner) => attendance[learner.participantId] === "present",
+  ).length;
+  const absentCount = learners.filter(
+    (learner) => attendance[learner.participantId] === "absent",
+  ).length;
+
+  const selectAttendance = (
+    participantId: string,
+    value: AttendanceStatus,
+  ) => {
+    setAttendance((current) => ({ ...current, [participantId]: value }));
+    if (value === "absent" && openFeedbackId === participantId) {
+      setOpenFeedbackId(null);
+    }
   };
 
-  const submitReport = async () => {
-    if (!context || !canSubmit || !attendance) return;
+  const markEveryonePresent = () => {
+    setAttendance((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        learnersToRecord.map((learner) => [learner.participantId, "present"]),
+      ),
+    }));
+  };
 
-    const { lesson } = context;
-    const participantId = lesson.participantId ?? lesson.id;
-    const completionNotes = [notes.trim(), nextFocus.trim()]
-      .filter(Boolean)
-      .join("\n\nNext lesson focus: ");
+  const saveAttendance = async () => {
+    if (!canSubmit) return;
 
     setSubmitError(null);
     setIsSubmitting(true);
 
     try {
-      await markInstructorSessionAttendance(
-        lesson.sessionId,
-        participantId,
-        attendance === "absent" ? "absent" : "present",
+      await Promise.all(
+        learnersToRecord.map((learner) => {
+          const status = attendance[learner.participantId];
+          if (!status) return Promise.resolve();
+
+          const note = feedback[learner.participantId]?.trim();
+          return markInstructorSessionAttendance(
+            lesson.sessionId,
+            learner.participantId,
+            status,
+            status === "present" && note
+              ? { instructorFeedback: note }
+              : undefined,
+          );
+        }),
       );
-      await endInstructorTrainingSession(
+
+      const updatedSession = await fetchInstructorAssignedSession(
         lesson.sessionId,
-        completionNotes || undefined,
       );
+      const allAttendanceMarked = updatedSession.participants.every(
+        (participant) => participant.status !== "scheduled",
+      );
+      if (allAttendanceMarked) {
+        await endInstructorTrainingSession(lesson.sessionId);
+      }
       await refreshInstructorOperations();
       setSubmitted(true);
     } catch (caught) {
       const error = caught as ApiError;
       setSubmitError(
         error.message ||
-          "We could not submit this report. Check attendance and try again.",
+          "We could not save all attendance. Refresh and try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -144,10 +187,6 @@ export default function InstructorLessonReportScreen() {
   };
 
   if (submitted) {
-    const attendanceLabel =
-      attendanceOptions.find((item) => item.value === attendance)?.label ??
-      "Recorded";
-
     return (
       <DashboardScreen>
         <View className="items-center pt-12">
@@ -172,40 +211,43 @@ export default function InstructorLessonReportScreen() {
             className="mt-7 text-center font-figtree-bold text-[28px]"
             style={{ color: colors.text }}
           >
-            Report submitted
+            Attendance saved
           </Text>
           <Text
             className="mt-3 max-w-[310px] text-center font-figtree text-[14px] leading-6"
             style={{ color: colors.textMuted }}
           >
-            Attendance and lesson feedback for {lesson.learnerName} have been
-            recorded.
+            Attendance has been recorded for {learners.length}{" "}
+            {learners.length === 1 ? "learner" : "learners"}.
           </Text>
         </View>
 
         <View
-          className="mt-8 rounded-3xl border p-5"
+          className="mt-8 flex-row rounded-3xl border p-5"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
           }}
         >
-          <ReportSummaryRow label="Learner" value={lesson.learnerName} />
-          <ReportSummaryRow label="Lesson" value={lesson.packageName} />
-          <ReportSummaryRow label="Attendance" value={attendanceLabel} last />
+          <AttendanceSummary value={presentCount} label="Present" />
+          <View
+            className="mx-5 w-px"
+            style={{ backgroundColor: colors.border }}
+          />
+          <AttendanceSummary value={absentCount} label="Absent" />
         </View>
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace("/instructor/schedule")}
-          className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+          onPress={() => router.replace("/instructor/attendance")}
+          className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full px-6 active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
           <Text
             className="font-figtree-bold text-[15px]"
             style={{ color: colors.onPrimary }}
           >
-            Back to schedule
+            Back to attendance
           </Text>
           <MaterialCommunityIcons
             name="arrow-right"
@@ -219,270 +261,274 @@ export default function InstructorLessonReportScreen() {
 
   return (
     <DashboardScreen>
-      <DashboardPageHeader title="Attendance and report" />
+      <DashboardPageHeader title="Attendance" />
 
       <View
-        className="mt-6 flex-row items-center rounded-3xl border p-4"
+        className="mt-6 rounded-3xl border p-5"
         style={{ backgroundColor: colors.surface, borderColor: colors.border }}
       >
-        <View
-          className="h-12 w-12 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: colors.surfaceStrong }}
-        >
-          <Text
-            className="font-figtree-bold text-[13px]"
-            style={{ color: colors.text }}
+        <View className="flex-row items-center gap-3">
+          <View
+            className="h-11 w-11 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.surfaceStrong }}
           >
-            {lesson.learnerInitials}
-          </Text>
-        </View>
-        <View className="ml-3 flex-1">
-          <Text
-            className="font-figtree-bold text-[16px]"
-            style={{ color: colors.text }}
-          >
-            {lesson.learnerName}
-          </Text>
-          <Text
-            className="mt-1 font-figtree text-[11px]"
-            style={{ color: colors.textMuted }}
-          >
-            {day.fullLabel} · {lesson.packageName}
-          </Text>
-        </View>
-        <MaterialCommunityIcons
-          name="check-circle"
-          size={22}
-          color={colors.success}
-        />
-      </View>
-
-      <View className="mt-9">
-        <SectionHeader title="Attendance" />
-        <Text
-          className="mt-2 font-figtree text-[13px]"
-          style={{ color: colors.textMuted }}
-        >
-          Confirm whether the learner attended this lesson.
-        </Text>
-        <View className="mt-4 flex-row gap-2">
-          {attendanceOptions.map((item) => {
-            const selected = attendance === item.value;
-
-            return (
-              <Pressable
-                key={item.value}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => selectAttendance(item.value)}
-                className="min-h-24 flex-1 items-center justify-center rounded-2xl border p-3 active:opacity-75"
-                style={{
-                  backgroundColor: selected
-                    ? colors.surfaceStrong
-                    : colors.surface,
-                  borderColor: selected ? colors.primary : colors.border,
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={item.icon}
-                  size={23}
-                  color={selected ? colors.primary : colors.textSubtle}
-                />
-                <Text
-                  className="mt-2 text-center font-figtree-bold text-[11px]"
-                  style={{ color: colors.text }}
-                >
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {attendance === "absent" ? (
-        <View
-          className="mt-7 flex-row items-start gap-3 rounded-2xl p-4"
-          style={{ backgroundColor: colors.verifiedSoft }}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={20}
-            color={colors.verified}
-          />
-          <Text
-            className="flex-1 font-figtree-medium text-[12px] leading-5"
-            style={{ color: colors.verified }}
-          >
-            Skill ratings are not required when the learner is absent. You may
-            add a note explaining the absence.
-          </Text>
-        </View>
-      ) : null}
-
-      {attendance !== "absent" ? (
-        <View className="mt-9">
-          <SectionHeader title="Skill assessment" />
-          <Text
-            className="mt-2 font-figtree text-[13px]"
-            style={{ color: colors.textMuted }}
-          >
-            Rate the learner’s performance during this lesson.
-          </Text>
-          <View className="mt-4 gap-3">
-            {skills.map((skill) => (
-              <View
-                key={skill.id}
-                className="rounded-3xl border p-4"
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text
-                  className="font-figtree-bold text-[14px]"
-                  style={{ color: colors.text }}
-                >
-                  {skill.label}
-                </Text>
-                <View className="mt-3 flex-row gap-2">
-                  {ratings.map((rating) => {
-                    const selected = skillRatings[skill.id] === rating.value;
-
-                    return (
-                      <Pressable
-                        key={rating.value}
-                        accessibilityRole="radio"
-                        accessibilityLabel={`${skill.label}: ${rating.label}`}
-                        accessibilityState={{ selected }}
-                        onPress={() =>
-                          setSkillRatings((current) => ({
-                            ...current,
-                            [skill.id]: rating.value,
-                          }))
-                        }
-                        className="min-h-12 flex-1 items-center justify-center rounded-xl border px-2 active:opacity-75"
-                        style={{
-                          backgroundColor: selected
-                            ? colors.primary
-                            : colors.surface,
-                          borderColor: selected
-                            ? colors.primary
-                            : colors.border,
-                        }}
-                      >
-                        <Text
-                          className="text-center font-figtree-bold text-[11px]"
-                          style={{
-                            color: selected
-                              ? colors.onPrimary
-                              : colors.textMuted,
-                          }}
-                        >
-                          {rating.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
+            <MaterialCommunityIcons
+              name="car-clock"
+              size={21}
+              color={colors.primary}
+            />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text
+              className="font-figtree-bold text-[16px]"
+              style={{ color: colors.text }}
+            >
+              {lesson.packageName}
+            </Text>
+            <Text
+              className="mt-1 font-figtree text-[12px]"
+              style={{ color: colors.textMuted }}
+            >
+              {day.fullLabel} · {lesson.time} · {learners.length}{" "}
+              {learners.length === 1 ? "learner" : "learners"}
+            </Text>
           </View>
         </View>
-      ) : null}
-
-      <View className="mt-9">
-        <SectionHeader title="Instructor notes" />
-        <Text
-          className="mt-2 font-figtree text-[13px]"
-          style={{ color: colors.textMuted }}
-        >
-          Record useful observations for the learner and school.
-        </Text>
-        <View
-          className="mt-4 rounded-3xl border p-4"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <TextInput
-            accessibilityLabel="Instructor lesson notes"
-            multiline
-            maxLength={500}
-            onChangeText={setNotes}
-            placeholder="What went well? What needs more practice?"
-            placeholderTextColor={colors.textFaint}
-            textAlignVertical="top"
-            value={notes}
-            className="min-h-28 font-figtree text-[14px] leading-5"
-            style={{ color: colors.text }}
-          />
-          <Text
-            className="mt-2 self-end font-figtree text-[10px]"
-            style={{ color: colors.textSubtle }}
-          >
-            {notes.length}/500
-          </Text>
-        </View>
       </View>
 
-      {attendance !== "absent" ? (
-        <View className="mt-7">
+      <View className="mt-8 flex-row items-end justify-between gap-4">
+        <View className="flex-1">
+          <SectionHeader title="Learners" />
           <Text
-            className="font-figtree-bold text-[12px] uppercase tracking-[1px]"
-            style={{ color: colors.textSubtle }}
+            className="mt-2 font-figtree text-[13px] leading-5"
+            style={{ color: colors.textMuted }}
           >
-            Next lesson focus
+            Mark each learner, then save once.
           </Text>
-          <TextInput
-            accessibilityLabel="Recommended focus for the next lesson"
-            maxLength={160}
-            onChangeText={setNextFocus}
-            placeholder="e.g. Earlier mirror checks before lane changes"
-            placeholderTextColor={colors.textFaint}
-            value={nextFocus}
-            className="mt-3 min-h-14 rounded-full border px-5 font-figtree text-[13px]"
+        </View>
+        {learnersToRecord.length > 1 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={markEveryonePresent}
+            className="min-h-11 items-center justify-center rounded-full border px-4 active:opacity-75"
             style={{
-              color: colors.text,
               backgroundColor: colors.surface,
               borderColor: colors.border,
             }}
-          />
-        </View>
-      ) : null}
+          >
+            <Text
+              className="font-figtree-bold text-[12px]"
+              style={{ color: colors.primary }}
+            >
+              All present
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View className="mt-4 gap-3">
+        {learners.map((learner) => {
+          const selectedStatus = attendance[learner.participantId];
+          const alreadyRecorded = learner.status !== "scheduled";
+          const feedbackOpen = openFeedbackId === learner.participantId;
+
+          return (
+            <View
+              key={learner.participantId}
+              className="rounded-3xl border p-4"
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              }}
+            >
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="h-11 w-11 items-center justify-center rounded-full"
+                  style={{ backgroundColor: colors.surfaceStrong }}
+                >
+                  <Text
+                    className="font-figtree-bold text-[12px]"
+                    style={{ color: colors.text }}
+                  >
+                    {learner.initials}
+                  </Text>
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text
+                    className="font-figtree-bold text-[14px]"
+                    style={{ color: colors.text }}
+                  >
+                    {learner.name}
+                  </Text>
+                  <Text
+                    className="mt-1 font-figtree text-[11px]"
+                    style={{ color: colors.textMuted }}
+                  >
+                    {learner.packageName}
+                  </Text>
+                </View>
+                {alreadyRecorded ? (
+                  <Text
+                    className="font-figtree-bold text-[10px] uppercase"
+                    style={{
+                      color:
+                        selectedStatus === "present"
+                          ? colors.success
+                          : colors.error,
+                    }}
+                  >
+                    Recorded
+                  </Text>
+                ) : null}
+              </View>
+
+              <View className="mt-4 flex-row gap-2">
+                {attendanceOptions.map((option) => {
+                  const selected = selectedStatus === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`${learner.name}: ${option.label}`}
+                      accessibilityState={{ selected, disabled: alreadyRecorded }}
+                      disabled={alreadyRecorded}
+                      onPress={() =>
+                        selectAttendance(learner.participantId, option.value)
+                      }
+                      className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-full border px-4 active:opacity-75"
+                      style={{
+                        backgroundColor: selected
+                          ? option.value === "present"
+                            ? colors.successSoft
+                            : colors.surfaceStrong
+                          : colors.surface,
+                        borderColor: selected
+                          ? option.value === "present"
+                            ? colors.success
+                            : colors.error
+                          : colors.border,
+                        opacity: alreadyRecorded && !selected ? 0.45 : 1,
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name={option.icon}
+                        size={18}
+                        color={
+                          selected
+                            ? option.value === "present"
+                              ? colors.success
+                              : colors.error
+                            : colors.textSubtle
+                        }
+                      />
+                      <Text
+                        className="font-figtree-bold text-[12px]"
+                        style={{
+                          color: selected
+                            ? option.value === "present"
+                              ? colors.success
+                              : colors.error
+                            : colors.textMuted,
+                        }}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {!alreadyRecorded && selectedStatus === "present" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: feedbackOpen }}
+                  onPress={() =>
+                    setOpenFeedbackId((current) =>
+                      current === learner.participantId
+                        ? null
+                        : learner.participantId,
+                    )
+                  }
+                  className="mt-3 min-h-10 flex-row items-center justify-center gap-2 rounded-full px-4 active:opacity-75"
+                >
+                  <MaterialCommunityIcons
+                    name={feedbackOpen ? "chevron-up" : "message-plus-outline"}
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text
+                    className="font-figtree-bold text-[12px]"
+                    style={{ color: colors.primary }}
+                  >
+                    {feedbackOpen ? "Hide note" : "Add optional note"}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {feedbackOpen && selectedStatus === "present" ? (
+                <View
+                  className="mt-2 rounded-2xl border px-4 py-3"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <TextInput
+                    accessibilityLabel={`Optional lesson note for ${learner.name}`}
+                    multiline
+                    maxLength={500}
+                    onChangeText={(value) =>
+                      setFeedback((current) => ({
+                        ...current,
+                        [learner.participantId]: value,
+                      }))
+                    }
+                    placeholder="Add a short observation"
+                    placeholderTextColor={colors.textFaint}
+                    textAlignVertical="top"
+                    value={feedback[learner.participantId] ?? ""}
+                    className="min-h-20 font-figtree text-[13px] leading-5"
+                    style={{ color: colors.text }}
+                  />
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
 
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: !canSubmit }}
         accessibilityHint={
           canSubmit
-            ? "Submits attendance and the lesson report"
-            : "Select attendance and complete each required skill rating"
+            ? "Saves attendance for every learner"
+            : "Mark every learner present or absent"
         }
         disabled={!canSubmit}
-        onPress={() => void submitReport()}
-        className="mt-9 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+        onPress={() => void saveAttendance()}
+        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full px-6 active:opacity-80"
         style={{
           backgroundColor: canSubmit ? colors.primary : colors.surfaceStrong,
         }}
       >
         <MaterialCommunityIcons
-          name="send-check-outline"
+          name="clipboard-check-outline"
           size={20}
           color={canSubmit ? colors.onPrimary : colors.textSubtle}
         />
         <Text
           className="font-figtree-bold text-[15px]"
-          style={{
-            color: canSubmit ? colors.onPrimary : colors.textSubtle,
-          }}
+          style={{ color: canSubmit ? colors.onPrimary : colors.textSubtle }}
         >
-          {isSubmitting ? "Submitting…" : "Submit lesson report"}
+          {isSubmitting ? "Saving…" : "Save attendance"}
         </Text>
       </Pressable>
+
       {submitError ? (
         <Text
+          accessibilityLiveRegion="polite"
           className="mt-3 text-center font-figtree-medium text-[12px]"
           style={{ color: colors.error }}
         >
@@ -493,37 +539,22 @@ export default function InstructorLessonReportScreen() {
   );
 }
 
-type ReportSummaryRowProps = {
-  label: string;
-  value: string;
-  last?: boolean;
-};
-
-function ReportSummaryRow({
-  label,
-  value,
-  last = false,
-}: ReportSummaryRowProps) {
+function AttendanceSummary({ value, label }: { value: number; label: string }) {
   const { colors } = useAppTheme();
 
   return (
-    <View
-      className="flex-row items-start justify-between gap-5 py-3"
-      style={
-        last ? undefined : { borderBottomWidth: 1, borderColor: colors.border }
-      }
-    >
+    <View className="flex-1 items-center">
       <Text
-        className="font-figtree text-[12px]"
-        style={{ color: colors.textMuted }}
-      >
-        {label}
-      </Text>
-      <Text
-        className="max-w-[62%] text-right font-figtree-bold text-[12px]"
+        className="font-figtree-bold text-[24px]"
         style={{ color: colors.text }}
       >
         {value}
+      </Text>
+      <Text
+        className="mt-1 font-figtree text-[12px]"
+        style={{ color: colors.textMuted }}
+      >
+        {label}
       </Text>
     </View>
   );

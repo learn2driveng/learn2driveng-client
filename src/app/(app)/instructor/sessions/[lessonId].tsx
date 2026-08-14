@@ -12,9 +12,7 @@ import {
 } from "@/components/dashboard";
 import { toInstructorLessonStatus } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import {
-  startInstructorTrainingSession,
-} from "@/lib/api/training-sessions";
+import { startInstructorTrainingSession } from "@/lib/api/training-sessions";
 import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
@@ -30,8 +28,8 @@ const checklistItems: {
 }[] = [
   {
     key: "learner",
-    title: "Learner confirmed",
-    description: "Identity and booking match the assigned lesson.",
+    title: "Learners confirmed",
+    description: "Every learner present matches the lesson roster.",
   },
   {
     key: "vehicle",
@@ -166,8 +164,8 @@ export default function InstructorSessionScreen() {
             className="mt-3 max-w-[310px] text-center font-figtree text-[14px] leading-6"
             style={{ color: colors.textMuted }}
           >
-            {lesson.learnerName}’s driving lesson is complete. Record attendance
-            and submit the lesson report next.
+            This driving lesson is complete. Record attendance for
+            each learner next.
           </Text>
 
           <View
@@ -221,7 +219,7 @@ export default function InstructorSessionScreen() {
             className="font-figtree-bold text-[15px]"
             style={{ color: colors.onPrimary }}
           >
-            Record attendance and report
+            Record attendance
           </Text>
         </Pressable>
         <Pressable
@@ -543,7 +541,7 @@ export default function InstructorSessionScreen() {
                 className="flex-1 font-figtree-medium text-[12px] leading-5"
                 style={{ color: colors.verified }}
               >
-                The learner controls any private live-location link during this
+                Live location will be shared only with learners booked into this
                 active session.
               </Text>
             </View>
@@ -623,8 +621,8 @@ export default function InstructorSessionScreen() {
               className="mt-2 font-figtree text-[13px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              This stops the session timer. You’ll record attendance and the
-              learner’s progress immediately afterward.
+              This stops the session timer. You’ll record each learner’s
+              attendance immediately afterward.
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -688,7 +686,7 @@ function SessionSummary({ lessonName }: { lessonName: string }) {
           className="font-figtree text-[11px]"
           style={{ color: colors.textMuted }}
         >
-          Learner
+          Learners
         </Text>
         <Text
           className="mt-1 font-figtree-bold text-[14px]"

@@ -54,6 +54,13 @@ export async function updateSchoolInstructor(
   return data.data;
 }
 
+export async function fetchSchoolInstructor(instructorId: string) {
+  const { data } = await api.get<ApiSuccessResponse<AuthUser>>(
+    `/instructors/${encodeURIComponent(instructorId)}`,
+  );
+  return data.data;
+}
+
 export async function createInstructorPhotoUploadUrl(
   instructorId: string,
   input: { filename: string; mimeType: "image/jpeg" | "image/png" | "image/webp" },

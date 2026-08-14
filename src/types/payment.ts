@@ -1,5 +1,7 @@
 export type PaymentProvider = "paystack";
 
+export type PaymentChannel = "card" | "bank_transfer" | "ussd";
+
 export type PaymentStatus =
   | "initiated"
   | "pending"

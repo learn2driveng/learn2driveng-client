@@ -58,6 +58,9 @@ export type TrainingSessionParticipant = {
   status: TrainingSessionParticipantStatus;
   joinedAt: string;
   attendanceMarkedAt?: string | null;
+  instructorFeedback?: string | null;
+  nextFocus?: string | null;
+  skillRatings?: Record<string, string> | null;
   createdAt?: string;
   updatedAt?: string;
 };

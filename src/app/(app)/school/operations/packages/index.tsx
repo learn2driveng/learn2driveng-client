@@ -9,6 +9,7 @@ import {
 } from "@/components/dashboard";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
+import { borderRadius } from "@/constants/theme";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
@@ -39,8 +40,11 @@ export default function SchoolPackagesScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/school/operations/packages/new")}
-          className="h-12 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
-          style={{ backgroundColor: colors.primary }}
+          className="h-12 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+          style={{
+            backgroundColor: colors.primary,
+            borderRadius: borderRadius.button,
+          }}
         >
           <MaterialCommunityIcons
             name="plus"

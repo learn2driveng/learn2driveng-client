@@ -2,16 +2,23 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
 import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
-import {
-  packageDurationLabel,
-  packageLessonCount,
-} from "@/lib/school/mappers";
+import { packageDurationLabel, packageLessonCount } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import {
+  selectActiveLearnerPackages,
+  useLearnerOperationsStore,
+} from "@/store/learner-operations.store";
 import type { TrainingPackage } from "@/types";
 
 function formatPrice(price: number) {
@@ -78,6 +85,7 @@ type PackageCardProps = {
   index: number;
   publicMarketplace: boolean;
   selected: boolean;
+  alreadyOwned: boolean;
   onSelect: () => void;
   onContinue: () => void;
 };
@@ -87,6 +95,7 @@ function PackageCard({
   index,
   publicMarketplace,
   selected,
+  alreadyOwned,
   onSelect,
   onContinue,
 }: PackageCardProps) {
@@ -98,13 +107,12 @@ function PackageCard({
     `${lessonCount} lessons`,
     index === 1 ? "Auto Only" : index === 2 ? "All Types" : "Manual/Auto",
   ];
-  const features =
-    item.description?.trim()
-      ? item.description
-          .split(/[\n•]/)
-          .map((line) => line.trim())
-          .filter(Boolean)
-      : [`${lessonCount} practical driving lessons`, packageDurationLabel(item)];
+  const features = item.description?.trim()
+    ? item.description
+        .split(/[\n•]/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+    : [`${lessonCount} practical driving lessons`, packageDurationLabel(item)];
 
   return (
     <View
@@ -168,7 +176,8 @@ function PackageCard({
                 fontFamily: fontFamily.figtree,
               }}
             >
-              {formatPrice(Math.round(item.price / Math.max(lessonCount, 1)))} / lesson
+              {formatPrice(Math.round(item.price / Math.max(lessonCount, 1)))} /
+              lesson
             </Text>
           </View>
         </View>
@@ -217,38 +226,53 @@ function PackageCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          selected
-            ? publicMarketplace
-              ? `Sign in to book ${item.name}`
-              : `Book ${item.name}`
-            : `Select ${item.name}`
+          alreadyOwned
+            ? `${item.name} is already active`
+            : selected
+              ? publicMarketplace
+                ? `Sign in to book ${item.name}`
+                : `Book ${item.name}`
+              : `Select ${item.name}`
         }
+        accessibilityState={{ disabled: alreadyOwned }}
+        disabled={alreadyOwned}
         onPress={selected ? onContinue : onSelect}
         className="mx-5 mb-5 items-center justify-center rounded-2xl border-2 active:opacity-80"
         style={{
-          backgroundColor: selected ? colors.primary : colors.surface,
-          borderColor: colors.primary,
+          backgroundColor: alreadyOwned
+            ? colors.surfaceStrong
+            : selected
+              ? colors.primary
+              : colors.surface,
+          borderColor: alreadyOwned ? colors.border : colors.primary,
           paddingHorizontal: 20,
           paddingVertical: 14,
-          shadowColor: selected ? colors.primary : "transparent",
+          shadowColor:
+            selected && !alreadyOwned ? colors.primary : "transparent",
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: selected ? 0.24 : 0,
+          shadowOpacity: selected && !alreadyOwned ? 0.24 : 0,
           shadowRadius: 14,
-          elevation: selected ? 3 : 0,
+          elevation: selected && !alreadyOwned ? 3 : 0,
         }}
       >
         <Text
           className="text-center text-[13px]"
           style={{
-            color: selected ? colors.onPrimary : colors.text,
+            color: alreadyOwned
+              ? colors.textMuted
+              : selected
+                ? colors.onPrimary
+                : colors.text,
             fontFamily: fontFamily.figtreeBold,
           }}
         >
-          {selected
-            ? publicMarketplace
-              ? "Sign in to book"
-              : "Book this package"
-            : "Select package"}
+          {alreadyOwned
+            ? "Package already active"
+            : selected
+              ? publicMarketplace
+                ? "Sign in to book"
+                : "Book this package"
+              : "Select package"}
         </Text>
       </Pressable>
     </View>
@@ -265,6 +289,7 @@ export function PackageSelectionScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
+  const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
   const { schoolId, distanceKm: distanceKmParam } = useLocalSearchParams<{
     schoolId?: string;
     distanceKm?: string;
@@ -454,6 +479,9 @@ export function PackageSelectionScreen({
               index={index}
               publicMarketplace={publicMarketplace}
               selected={effectiveSelectedId === item.id}
+              alreadyOwned={activePackages.some(
+                (activePackage) => activePackage.packageId === item.id,
+              )}
               onSelect={() => setSelectedId(item.id)}
               onContinue={() => bookPackage(item)}
             />

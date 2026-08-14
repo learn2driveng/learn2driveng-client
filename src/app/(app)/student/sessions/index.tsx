@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import {
   DashboardEmptyState,
   DashboardScreen,
@@ -56,7 +55,6 @@ export default function StudentSessionsScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={48} className="mb-6" />
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"

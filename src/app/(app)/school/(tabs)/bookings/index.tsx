@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { useSurfaceStyles } from "@/components/common/surface";
 import {
@@ -71,7 +70,6 @@ export default function SchoolBookingAssignmentsScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={52} className="mb-6" />
       <DashboardPageHeader title="Bookings" showBack={false} />
       <Text
         className="mt-3 text-[13px] leading-5"

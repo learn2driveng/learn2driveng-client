@@ -8,6 +8,7 @@ import type {
   TrainingSessionParticipant,
   TrainingSessionType,
   RecurringTrainingSchedule,
+  SessionCoordinates,
 } from "@/types/training-session";
 
 export type CreateRecurringTrainingScheduleInput = {
@@ -25,23 +26,36 @@ export type CreateRecurringTrainingScheduleInput = {
   notes?: string;
 };
 
-export async function createRecurringTrainingSchedule(input: CreateRecurringTrainingScheduleInput) {
-  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>("/training-sessions/recurring", input);
+export async function createRecurringTrainingSchedule(
+  input: CreateRecurringTrainingScheduleInput,
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<RecurringTrainingSchedule>
+  >("/training-sessions/recurring", input);
   return data.data;
 }
 
 export async function fetchRecurringTrainingSchedules() {
-  const { data } = await api.get<ApiSuccessResponse<RecurringTrainingSchedule[]>>("/training-sessions/recurring");
+  const { data } = await api.get<
+    ApiSuccessResponse<RecurringTrainingSchedule[]>
+  >("/training-sessions/recurring");
   return data.data;
 }
 
 export async function pauseRecurringTrainingSchedule(scheduleId: string) {
-  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}/pause`, {});
+  const { data } = await api.post<
+    ApiSuccessResponse<RecurringTrainingSchedule>
+  >(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}/pause`, {});
   return data.data;
 }
 
 export async function resumeRecurringTrainingSchedule(scheduleId: string) {
-  const { data } = await api.post<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}/resume`, {});
+  const { data } = await api.post<
+    ApiSuccessResponse<RecurringTrainingSchedule>
+  >(
+    `/training-sessions/recurring/${encodeURIComponent(scheduleId)}/resume`,
+    {},
+  );
   return data.data;
 }
 
@@ -49,7 +63,9 @@ export async function updateRecurringTrainingSchedule(
   scheduleId: string,
   input: Partial<CreateRecurringTrainingScheduleInput>,
 ) {
-  const { data } = await api.patch<ApiSuccessResponse<RecurringTrainingSchedule>>(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}`, input);
+  const { data } = await api.patch<
+    ApiSuccessResponse<RecurringTrainingSchedule>
+  >(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}`, input);
   return data.data;
 }
 
@@ -65,12 +81,12 @@ export type CreateSchoolTrainingSessionInput = {
   notes?: string;
 };
 
-export type UpdateSchoolTrainingSessionInput = Partial<CreateSchoolTrainingSessionInput>;
+export type UpdateSchoolTrainingSessionInput =
+  Partial<CreateSchoolTrainingSessionInput>;
 
 export async function fetchSchoolTrainingSessions() {
-  const { data } = await api.get<ApiSuccessResponse<TrainingSession[]>>(
-    "/training-sessions",
-  );
+  const { data } =
+    await api.get<ApiSuccessResponse<TrainingSession[]>>("/training-sessions");
   return data.data;
 }
 
@@ -126,9 +142,9 @@ type AvailableSessionsResponse = {
 };
 
 export async function fetchInstructorAssignedSessions() {
-  const { data } = await api.get<ApiSuccessResponse<InstructorAssignedSession[]>>(
-    "/training-sessions/instructor/me",
-  );
+  const { data } = await api.get<
+    ApiSuccessResponse<InstructorAssignedSession[]>
+  >("/training-sessions/instructor/me");
   return data.data;
 }
 
@@ -140,9 +156,26 @@ export async function fetchInstructorAssignedSession(sessionId: string) {
 }
 
 export async function startInstructorTrainingSession(sessionId: string) {
-  const { data } = await api.post<ApiSuccessResponse<InstructorAssignedSession>>(
-    `/training-sessions/${encodeURIComponent(sessionId)}/start`,
-    {},
+  const { data } = await api.post<
+    ApiSuccessResponse<InstructorAssignedSession>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/start`, {});
+  return data.data;
+}
+
+export async function recordInstructorSessionLocation(
+  sessionId: string,
+  location: {
+    latitude: number;
+    longitude: number;
+    accuracyInMeters?: number;
+    recordedAt: string;
+  },
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<SessionCoordinates & { sessionId: string }>
+  >(
+    `/training-sessions/${encodeURIComponent(sessionId)}/location-pings`,
+    location,
   );
   return data.data;
 }
@@ -151,7 +184,9 @@ export async function endInstructorTrainingSession(
   sessionId: string,
   completionNotes?: string,
 ) {
-  const { data } = await api.post<ApiSuccessResponse<InstructorAssignedSession>>(
+  const { data } = await api.post<
+    ApiSuccessResponse<InstructorAssignedSession>
+  >(
     `/training-sessions/${encodeURIComponent(sessionId)}/end`,
     completionNotes ? { completionNotes } : {},
   );
@@ -162,11 +197,19 @@ export async function markInstructorSessionAttendance(
   sessionId: string,
   participantId: string,
   status: "present" | "absent",
+  report?: {
+    instructorFeedback?: string;
+    nextFocus?: string;
+    skillRatings?: Record<string, string>;
+  },
 ) {
-  const { data } = await api.post<ApiSuccessResponse<TrainingSessionParticipant>>(
-    `/training-sessions/${encodeURIComponent(sessionId)}/attendance`,
-    { participantId, status },
-  );
+  const { data } = await api.post<
+    ApiSuccessResponse<TrainingSessionParticipant>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/attendance`, {
+    participantId,
+    status,
+    ...report,
+  });
   return data.data;
 }
 
@@ -184,6 +227,67 @@ export async function fetchLearnerJoinedSession(participantId: string) {
   return data.data;
 }
 
+export async function cancelLearnerTrainingSession(participantId: string) {
+  const { data } = await api.post<
+    ApiSuccessResponse<TrainingSessionParticipant>
+  >(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/cancel`,
+    {},
+  );
+  return data.data;
+}
+
+export async function rescheduleLearnerTrainingSession(
+  participantId: string,
+  targetSessionId: string,
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<TrainingSessionParticipant>
+  >(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/reschedule`,
+    { targetSessionId },
+  );
+  return data.data;
+}
+
+export type LearnerLocationShare = {
+  token: string;
+  sessionId: string;
+  expiresAt: string;
+};
+
+export async function createLearnerLocationShare(participantId: string) {
+  const { data } = await api.post<ApiSuccessResponse<LearnerLocationShare>>(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-share`,
+    {},
+  );
+  return data.data;
+}
+
+export async function revokeLearnerLocationShare(participantId: string) {
+  await api.post(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-share/revoke`,
+    {},
+  );
+}
+
+export type PublicLessonLocationShare = {
+  sessionId: string;
+  title: string;
+  status: "in_progress";
+  expiresAt: string;
+  location:
+    | (SessionCoordinates & { sessionId: string; recordedAt: string })
+    | null;
+};
+
+export async function fetchPublicLessonLocationShare(token: string) {
+  const { data } = await api.get<ApiSuccessResponse<PublicLessonLocationShare>>(
+    `/training-sessions/location-shares/${encodeURIComponent(token)}`,
+  );
+  return data.data;
+}
+
 export async function fetchAvailableTrainingSessions(
   bookingId: string,
   query: AvailableTrainingSessionsQuery = {},
@@ -195,20 +299,21 @@ export async function fetchAvailableTrainingSessions(
 
   return {
     items: Array.isArray(data?.data) ? data.data : [],
-    pagination:
-      data?.pagination ?? {
-        page: query.page ?? 1,
-        limit: query.limit ?? 20,
-        total: 0,
-        totalPages: 0,
-      },
+    pagination: data?.pagination ?? {
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      total: 0,
+      totalPages: 0,
+    },
   };
 }
 
-export async function joinTrainingSession(sessionId: string, bookingId: string) {
-  const { data } = await api.post<ApiSuccessResponse<TrainingSessionParticipant>>(
-    `/training-sessions/${encodeURIComponent(sessionId)}/join`,
-    { bookingId },
-  );
+export async function joinTrainingSession(
+  sessionId: string,
+  bookingId: string,
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<TrainingSessionParticipant>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/join`, { bookingId });
   return data.data;
 }

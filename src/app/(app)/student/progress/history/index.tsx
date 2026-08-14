@@ -11,7 +11,9 @@ import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 export default function ProgressHistoryScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const progressLessons = useLearnerSessionsStore((state) => state.progressLessons);
+  const progressLessons = useLearnerSessionsStore(
+    (state) => state.progressLessons,
+  );
 
   return (
     <DashboardScreen>
@@ -112,15 +114,6 @@ export default function ProgressHistoryScreen() {
                     {lesson.completedAt} · {lesson.duration}
                   </Text>
                 </View>
-                <Text
-                  className="mr-2 text-[12px]"
-                  style={{
-                    color: colors.textMuted,
-                    fontFamily: fontFamily.figtreeBold,
-                  }}
-                >
-                  {lesson.score}%
-                </Text>
                 <MaterialCommunityIcons
                   name="chevron-right"
                   size={22}

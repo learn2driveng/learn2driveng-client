@@ -1,5 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -21,10 +23,11 @@ import {
 import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import type { ApiError } from "@/types";
+import type { PaymentChannel, PaymentStatus } from "@/types/payment";
 
 const methodLabels: Record<string, string> = {
   card: "Debit or credit card",
-  transfer: "Bank transfer",
+  bank_transfer: "Bank transfer",
   ussd: "USSD",
 };
 
@@ -106,17 +109,45 @@ export default function PurchaseReviewScreen() {
       const booking = await createLearnerBooking({
         packageId: selectedPackage.id,
       });
-      const payment = await initializePayment(booking.id);
+      const channel = (
+        method in methodLabels ? method : "card"
+      ) as PaymentChannel;
+      const payment = await initializePayment(booking.id, channel);
 
-      let resultStatus: "success" | "pending" = "pending";
-      try {
-        const verified = await verifyPayment(payment.id);
-        resultStatus = verified.status === "success" ? "success" : "pending";
-      } catch {
-        resultStatus = "pending";
+      if (!payment.authorizationUrl) {
+        throw new Error(
+          "The secure payment page is unavailable. Please try again.",
+        );
       }
 
-      await refreshLearnerBookings();
+      const returnUrl = Linking.createURL("checkout/payment-return", {
+        scheme: "learn2driveng",
+      });
+      const browserResult = await WebBrowser.openAuthSessionAsync(
+        payment.authorizationUrl,
+        returnUrl,
+        { preferEphemeralSession: true },
+      );
+
+      let paymentStatus: PaymentStatus = "pending";
+      try {
+        const verified = await verifyPayment(payment.id);
+        paymentStatus = verified.status;
+      } catch {
+        paymentStatus = "pending";
+      }
+
+      const resultStatus =
+        paymentStatus === "success"
+          ? "success"
+          : paymentStatus === "failed"
+            ? "failed"
+            : browserResult.type === "cancel" ||
+                browserResult.type === "dismiss"
+              ? "cancelled"
+              : "pending";
+
+      await refreshLearnerBookings().catch(() => undefined);
 
       router.replace({
         pathname: "/checkout/[schoolId]/result",
@@ -126,6 +157,7 @@ export default function PurchaseReviewScreen() {
           method,
           status: resultStatus,
           bookingId: booking.id,
+          paymentId: payment.id,
         },
       });
     } catch (caught) {
@@ -273,7 +305,10 @@ export default function PurchaseReviewScreen() {
           disabled={isPaying}
           onPress={() => void handlePay()}
           className="h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
-          style={{ backgroundColor: colors.primary, opacity: isPaying ? 0.8 : 1 }}
+          style={{
+            backgroundColor: colors.primary,
+            opacity: isPaying ? 0.8 : 1,
+          }}
         >
           {isPaying ? (
             <ActivityIndicator color={colors.onPrimary} />

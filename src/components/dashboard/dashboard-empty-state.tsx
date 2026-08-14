@@ -51,7 +51,7 @@ export function DashboardEmptyState({
         accessibilityRole="button"
         accessibilityLabel={actionLabel}
         onPress={onActionPress}
-        className="mt-5 h-12 items-center justify-center rounded-2xl px-6 active:opacity-80"
+        className="mt-5 h-12 items-center justify-center rounded-full px-6 active:opacity-80"
         style={{ backgroundColor: colors.primary }}
       >
         <Text

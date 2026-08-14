@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -56,7 +55,6 @@ export default function InstructorDashboardScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={48} className="mb-6" />
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text

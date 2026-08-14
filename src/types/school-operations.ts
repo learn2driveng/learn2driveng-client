@@ -140,4 +140,5 @@ export type SchoolVerificationDocument = {
   size: number | null;
   uploadedAt: string | null;
   status?: DrivingSchoolVerificationDocumentStatus;
+  reviewNotes?: string | null;
 };
