@@ -79,6 +79,9 @@ export function mapPublicSchoolDetailToSchoolDetail(
     latitude: school.latitude,
     longitude: school.longitude,
     reviewCount: school.totalReviews,
+    totalInstructors:
+      school.totalInstructors ?? school.instructors?.length ?? 0,
+    totalVehicles: school.totalVehicles ?? school.vehicles?.length ?? 0,
     instructors: (school.instructors ?? []).map(mapPublicInstructorSummary),
     vehicles: (school.vehicles ?? []).map(mapPublicVehicleSummary),
     packages,
@@ -149,6 +152,9 @@ function mapPublicVehicleSummary(
     year: vehicle.year,
     transmissionType: vehicle.transmissionType,
     name: vehicleDisplayName(vehicle),
+    plateNumber: vehicle.plateNumber,
+    color: vehicle.color,
+    photoUrl: vehicle.photoUrl,
   };
 }
 
@@ -160,6 +166,9 @@ export function mapVehicleToSummary(vehicle: Vehicle): VehicleSummary {
     year: vehicle.year,
     transmissionType: vehicle.transmissionType,
     name: vehicleDisplayName(vehicle),
+    plateNumber: vehicle.plateNumber,
+    color: vehicle.color,
+    photoUrl: vehicle.photoUrl,
   };
 }
 

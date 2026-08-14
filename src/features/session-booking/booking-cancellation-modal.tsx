@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -11,6 +11,7 @@ type BookingCancellationModalProps = {
   packageName: string;
   onDismiss: () => void;
   onConfirm: () => void;
+  submitting?: boolean;
 };
 
 export function BookingCancellationModal({
@@ -20,6 +21,7 @@ export function BookingCancellationModal({
   packageName,
   onDismiss,
   onConfirm,
+  submitting = false,
 }: BookingCancellationModalProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
@@ -73,8 +75,8 @@ export function BookingCancellationModal({
             className="mt-2 font-figtree text-[13px] leading-5"
             style={{ color: colors.textMuted }}
           >
-            This action cannot be undone. You can reschedule instead if you
-            still want to attend.
+            Your place will be released. You can reschedule instead if you still
+            want to attend this lesson.
           </Text>
 
           <View
@@ -111,16 +113,17 @@ export function BookingCancellationModal({
               className="flex-1 font-figtree text-[12px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              If this cancellation is eligible under the school’s policy, one
-              session credit will return to this package.
+              One lesson will return to your package after cancellation.
             </Text>
           </View>
 
           <View className="mt-6 flex-row gap-3">
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ disabled: submitting }}
+              disabled={submitting}
               onPress={onDismiss}
-              className="h-14 flex-1 items-center justify-center rounded-2xl border active:opacity-70"
+              className="h-14 flex-1 items-center justify-center rounded-full border active:opacity-70"
               style={{
                 borderColor: colors.border,
                 backgroundColor: colors.surface,
@@ -135,16 +138,22 @@ export function BookingCancellationModal({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ disabled: submitting }}
+              disabled={submitting}
               onPress={onConfirm}
-              className="h-14 flex-1 items-center justify-center rounded-2xl active:opacity-80"
+              className="h-14 flex-1 items-center justify-center rounded-full active:opacity-80"
               style={{ backgroundColor: colors.error }}
             >
-              <Text
-                className="font-figtree-bold text-[14px]"
-                style={{ color: colors.onDark }}
-              >
-                Cancel lesson
-              </Text>
+              {submitting ? (
+                <ActivityIndicator color={colors.onDark} />
+              ) : (
+                <Text
+                  className="font-figtree-bold text-[14px]"
+                  style={{ color: colors.onDark }}
+                >
+                  Cancel lesson
+                </Text>
+              )}
             </Pressable>
           </View>
         </View>

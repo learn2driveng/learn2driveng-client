@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 
@@ -37,6 +37,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function SchoolInstructorDetailScreen() {
+  const router = useRouter();
   const { colors } = useAppTheme();
   const { instructorId } = useLocalSearchParams<{ instructorId?: string }>();
   const instructor = useSchoolOperationsStore((state) =>
@@ -89,7 +90,7 @@ export default function SchoolInstructorDetailScreen() {
 
   return (
     <DashboardScreen>
-      <DashboardPageHeader title="Instructor details" />
+      <DashboardPageHeader title="Instructor profile" />
 
       <View
         className="mt-7 rounded-[28px] p-5"
@@ -144,6 +145,30 @@ export default function SchoolInstructorDetailScreen() {
           </View>
         </View>
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: "/school/instructor/[instructorId]/edit",
+            params: { instructorId: instructor.id },
+          })
+        }
+        className="mt-5 h-12 flex-row items-center justify-center gap-2 rounded-full border active:opacity-80"
+        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      >
+        <MaterialCommunityIcons
+          name="pencil-outline"
+          size={18}
+          color={colors.text}
+        />
+        <Text
+          className="text-[13px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          Edit instructor
+        </Text>
+      </Pressable>
 
       <View className="mt-8">
         <SectionHeader title="Onboarding state" />

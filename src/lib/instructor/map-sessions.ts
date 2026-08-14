@@ -4,9 +4,7 @@ import type {
   VehicleTransmissionType,
 } from "@/types";
 import type {
-  EnrichedLearnerRef,
   EnrichedTrainingSession,
-  EnrichedVehicleRef,
   InstructorAssignedSession,
   InstructorSessionParticipant,
   TrainingSessionParticipant,
@@ -91,10 +89,7 @@ function mapLessonStatus(
   sessionStatus: TrainingSessionStatus,
   participantStatus?: InstructorSessionParticipant["status"],
 ): InstructorLessonSummary["status"] {
-  if (
-    sessionStatus === "cancelled" ||
-    participantStatus === "cancelled"
-  ) {
+  if (sessionStatus === "cancelled" || participantStatus === "cancelled") {
     return "cancelled";
   }
   if (sessionStatus === "completed" || participantStatus === "present") {
@@ -141,30 +136,57 @@ function dayLabels(date: Date, now: Date) {
   return { dayLabel, dateLabel, fullLabel };
 }
 
-function participantToLesson(
+function sessionToLesson(
   session: InstructorAssignedSession,
-  participant: InstructorSessionParticipant,
 ): InstructorLessonSummary {
-  const learnerName = readRefName(participant.learnerId, "Assigned learner");
-  const packageName = readRefName(participant.packageId, session.title);
+  const learners = session.participants.map((participant) => {
+    const name = readRefName(participant.learnerId, "Assigned learner");
+    return {
+      participantId: participant.id,
+      learnerId:
+        typeof participant.learnerId === "object"
+          ? participant.learnerId.id
+          : participant.learnerId,
+      name,
+      initials: initialsFromName(name),
+      packageName: readRefName(participant.packageId, session.title),
+      status: participant.status,
+    };
+  });
+  const nextLearner =
+    learners.find((learner) => learner.status === "scheduled") ?? learners[0];
+  const packageNames = [
+    ...new Set(learners.map((learner) => learner.packageName)),
+  ];
+  const learnerCount = learners.length;
+  const learnerName =
+    learnerCount === 0
+      ? "No learners booked"
+      : learnerCount === 1
+        ? (nextLearner?.name ?? "Assigned learner")
+        : `${learnerCount} learners`;
+  const packageName =
+    packageNames.length === 0
+      ? session.title
+      : packageNames.length === 1
+        ? (packageNames[0] ?? session.title)
+        : `${packageNames.length} eligible packages`;
 
   return {
-    id: participant.id,
+    id: session.id,
     sessionId: session.id,
     bookingId:
-      typeof participant.bookingId === "object"
-        ? participant.bookingId.id
-        : participant.bookingId,
-    learnerId:
-      typeof participant.learnerId === "object"
-        ? participant.learnerId.id
-        : participant.learnerId,
-    participantId: participant.id,
+      typeof session.participants[0]?.bookingId === "object"
+        ? session.participants[0].bookingId.id
+        : (session.participants[0]?.bookingId ?? ""),
+    learnerId: nextLearner?.learnerId ?? "",
+    participantId: nextLearner?.participantId,
     scheduledAt: session.scheduledStartTime,
     scheduledStartTime: session.scheduledStartTime,
     scheduledEndTime: session.scheduledEndTime,
     learnerName,
-    learnerInitials: initialsFromName(learnerName),
+    learnerInitials:
+      learnerCount > 1 ? String(learnerCount) : initialsFromName(learnerName),
     packageName,
     time: formatLessonTime(session.scheduledStartTime),
     duration: formatDurationMinutes(
@@ -173,8 +195,10 @@ function participantToLesson(
     ),
     location: sessionLocation(session),
     transmission: readTransmission(session.vehicleId),
-    status: mapLessonStatus(session.status, participant.status),
+    status: mapLessonStatus(session.status),
     sessionStatus: session.status,
+    learnerCount,
+    learners,
   };
 }
 
@@ -201,16 +225,18 @@ function sessionToPlaceholderLesson(
     transmission: readTransmission(session.vehicleId),
     status: mapLessonStatus(session.status),
     sessionStatus: session.status,
+    learnerCount: 0,
+    learners: [],
   };
 }
 
-export function assignedSessionsToLessons(sessions: InstructorAssignedSession[]) {
-  return sessions.flatMap((session) =>
+export function assignedSessionsToLessons(
+  sessions: InstructorAssignedSession[],
+) {
+  return sessions.map((session) =>
     session.participants.length > 0
-      ? session.participants.map((participant) =>
-          participantToLesson(session, participant),
-        )
-      : [sessionToPlaceholderLesson(session)],
+      ? sessionToLesson(session)
+      : sessionToPlaceholderLesson(session),
   );
 }
 
@@ -311,7 +337,8 @@ export function sessionsAndParticipantsFromAssigned(
   sessions: InstructorAssignedSession[],
 ) {
   const sessionMap: Record<string, EnrichedTrainingSession> = {};
-  const participantsBySessionId: Record<string, TrainingSessionParticipant> = {};
+  const participantsBySessionId: Record<string, TrainingSessionParticipant> =
+    {};
 
   for (const session of sessions) {
     const { participants, ...sessionRecord } = session;

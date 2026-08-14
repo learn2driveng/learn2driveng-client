@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
@@ -26,7 +25,6 @@ export default function InstructorProfileScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={48} className="mb-6" />
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"

@@ -1,12 +1,15 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
 import { useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { verifyPayment } from "@/lib/api";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 
 type CheckoutResultStatus = "success" | "pending" | "failed" | "cancelled";
@@ -28,17 +31,64 @@ export default function CheckoutResultScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { schoolId, packageId, method, status } = useLocalSearchParams<{
-    schoolId?: string;
-    packageId?: string;
-    method?: string;
-    status?: string;
-  }>();
+  const { schoolId, packageId, method, status, bookingId, paymentId } =
+    useLocalSearchParams<{
+      schoolId?: string;
+      packageId?: string;
+      method?: string;
+      status?: string;
+      bookingId?: string;
+      paymentId?: string;
+    }>();
   const { school, selectedPackage, loading } = useCheckoutPackage(
     schoolId,
     packageId,
   );
-  const resultStatus = isCheckoutResultStatus(status) ? status : "success";
+  const [resultStatus, setResultStatus] = useState<CheckoutResultStatus>(
+    isCheckoutResultStatus(status) ? status : "pending",
+  );
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const automaticChecks = useRef(0);
+
+  const checkPayment = useCallback(async () => {
+    if (typeof paymentId !== "string" || isChecking) return;
+
+    setIsChecking(true);
+    setCheckError(null);
+    try {
+      const payment = await verifyPayment(paymentId);
+      if (payment.status === "success") {
+        setResultStatus("success");
+        await refreshLearnerBookings().catch(() => undefined);
+      } else if (payment.status === "failed") {
+        setResultStatus("failed");
+      } else {
+        setResultStatus("pending");
+      }
+    } catch {
+      setCheckError("We could not check Paystack right now. Please try again.");
+    } finally {
+      setIsChecking(false);
+    }
+  }, [isChecking, paymentId]);
+
+  useEffect(() => {
+    if (
+      resultStatus !== "pending" ||
+      typeof paymentId !== "string" ||
+      isChecking ||
+      automaticChecks.current >= 6
+    ) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      automaticChecks.current += 1;
+      void checkPayment();
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [checkPayment, isChecking, paymentId, resultStatus]);
 
   if (loading) {
     return (
@@ -170,9 +220,19 @@ export default function CheckoutResultScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Please don't make another payment while this one is processing.
+              Please don&apos;t make another payment while this one is
+              processing.
             </Text>
           </View>
+        ) : null}
+
+        {checkError ? (
+          <Text
+            className="mt-3 text-center text-[12px] leading-5"
+            style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+          >
+            {checkError}
+          </Text>
         ) : null}
 
         <View
@@ -245,6 +305,7 @@ export default function CheckoutResultScreen() {
                   params: {
                     packageName: selectedPackage.name,
                     schoolName: school.name,
+                    ...(typeof bookingId === "string" ? { bookingId } : {}),
                   },
                 })
               }
@@ -260,14 +321,15 @@ export default function CheckoutResultScreen() {
         {resultStatus === "pending" ? (
           <>
             <ResultButton
-              label="Back to dashboard"
-              icon="arrow-right"
-              onPress={() => router.replace("/student")}
+              label={isChecking ? "Checking payment…" : "Check payment status"}
+              icon="refresh"
+              disabled={isChecking}
+              onPress={() => void checkPayment()}
             />
             <ResultButton
               secondary
-              label="Get payment help"
-              onPress={() => router.push("/student/profile/support")}
+              label="Back to dashboard"
+              onPress={() => router.replace("/student")}
             />
           </>
         ) : null}
@@ -311,6 +373,7 @@ type ResultButtonProps = {
   icon?: "arrow-right" | "refresh";
   secondary?: boolean;
   onPress: () => void;
+  disabled?: boolean;
 };
 
 function ResultButton({
@@ -318,17 +381,21 @@ function ResultButton({
   icon,
   secondary = false,
   onPress,
+  disabled = false,
 }: ResultButtonProps) {
   const { colors } = useAppTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       className="h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-80"
       style={{
         backgroundColor: secondary ? colors.surface : colors.primary,
         borderColor: secondary ? colors.border : colors.primary,
+        opacity: disabled ? 0.7 : 1,
       }}
     >
       <Text

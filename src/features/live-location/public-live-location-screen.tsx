@@ -1,107 +1,107 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+import { io } from "socket.io-client";
 
 import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardScreen } from "@/components/dashboard";
-import { LiveLocationMap } from "@/features/live-location";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { readInstructorNameFromSession, sessionDisplayLocation } from "@/lib/instructor/map-sessions";
-import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
-import { useTrainingSessionStore } from "@/store/training-session.store";
+import { getRealtimeBaseUrl } from "@/lib/api/config";
+import {
+  fetchPublicLessonLocationShare,
+  type PublicLessonLocationShare,
+} from "@/lib/api/training-sessions";
+import { LiveLocationMap } from "./live-location-map";
+import type { ApiError } from "@/types";
 
-type PublicLiveLocationScreenProps = {
-  shareToken?: string;
-};
-
-function formatUpdatedAt(timestamp: string | null) {
-  if (!timestamp) return "Waiting for the first location update";
-
-  return `Updated ${new Intl.DateTimeFormat("en-NG", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(new Date(timestamp))}`;
-}
+type PublicLiveLocationScreenProps = { shareToken?: string };
 
 export function PublicLiveLocationScreen({
   shareToken,
 }: PublicLiveLocationScreenProps) {
   const { colors } = useAppTheme();
-  const [currentTime, setCurrentTime] = useState(0);
-  const locationShare = useTrainingSessionStore((state) =>
-    Object.values(state.locationShares).find(
-      (share) => share.shareToken === shareToken,
-    ),
-  );
-  const session = useTrainingSessionStore((state) =>
-    locationShare ? state.sessions[locationShare.sessionId] : undefined,
-  );
-  const lessonContext = useInstructorOperationsStore((state) =>
-    session?.id ? state.getLessonContextBySessionId(session.id) : undefined,
-  );
+  const [share, setShare] = useState<PublicLessonLocationShare | null>(null);
+  const [unavailableReason, setUnavailableReason] = useState<
+    "expired" | "connection" | null
+  >(null);
 
   useEffect(() => {
-    const updateCurrentTime = () => setCurrentTime(Date.now());
-    updateCurrentTime();
-    const timer = setInterval(updateCurrentTime, 30_000);
-    return () => clearInterval(timer);
-  }, []);
+    if (!shareToken) {
+      const timer = setTimeout(() => setUnavailableReason("expired"), 0);
+      return () => clearTimeout(timer);
+    }
+    let active = true;
+    let socket: ReturnType<typeof io> | null = null;
 
-  const hasExpired =
-    !locationShare ||
-    locationShare.status !== "sharing" ||
-    !session ||
-    session.status !== "in_progress" ||
-    (currentTime > 0 && Date.parse(locationShare.expiresAt) <= currentTime);
+    const connect = async () => {
+      try {
+        const initial = await fetchPublicLessonLocationShare(shareToken);
+        if (!active) return;
+        setShare(initial);
+        socket = io(`${getRealtimeBaseUrl()}/session-location`, {
+          auth: { shareToken },
+          transports: ["websocket"],
+        });
+        socket.on("connect", () => {
+          socket?.emit("session:subscribe", { sessionId: initial.sessionId });
+        });
+        socket.on(
+          "location:updated",
+          (location: NonNullable<PublicLessonLocationShare["location"]>) => {
+            setShare((current) =>
+              current ? { ...current, location } : current,
+            );
+          },
+        );
+        socket.on("session:ended", () => setUnavailableReason("expired"));
+        socket.on("connect_error", () => setUnavailableReason("connection"));
+      } catch (caught) {
+        if (active) {
+          const error = caught as ApiError;
+          setUnavailableReason(
+            error.statusCode === 404 ? "expired" : "connection",
+          );
+        }
+      }
+    };
 
-  if (hasExpired || !locationShare || !session) {
+    void connect();
+    return () => {
+      active = false;
+      socket?.disconnect();
+    };
+  }, [shareToken]);
+
+  if (unavailableReason) {
+    const expired = unavailableReason === "expired";
     return (
       <DashboardScreen>
-        <View className="items-center pt-4">
+        <View className="items-center">
           <AppLogo height={48} />
         </View>
         <View className="mt-16">
           <ContentEmptyState
-            icon="link-variant-off"
-            title="This tracking link is no longer active"
-            description="The learner may have stopped sharing, the lesson may have ended, or the private link may have expired."
+            icon={expired ? "link-variant-off" : "cloud-alert-outline"}
+            title={
+              expired
+                ? "This tracking link is no longer active"
+                : "Live tracking is temporarily unavailable"
+            }
+            description={
+              expired
+                ? "The lesson may have ended, or the learner may have stopped sharing."
+                : "The tracking page cannot reach Learn2Drive right now. Check the connection and try again."
+            }
           />
-        </View>
-        <View
-          className="mt-6 rounded-3xl border p-5"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <View className="flex-row items-start gap-3">
-            <MaterialCommunityIcons
-              name="shield-lock-outline"
-              size={22}
-              color={colors.success}
-            />
-            <Text
-              className="flex-1 font-figtree text-[12px] leading-5"
-              style={{ color: colors.textMuted }}
-            >
-              Learn2Drive automatically removes location access when a learner
-              stops sharing or an active lesson ends.
-            </Text>
-          </View>
         </View>
       </DashboardScreen>
     );
   }
 
-  const lesson = lessonContext?.lesson;
-  const learnerFirstName =
-    lesson?.learnerName.split(/\s+/)[0] ?? "The learner";
-
   return (
     <DashboardScreen>
-      <View className="flex-row items-center justify-between pt-2">
+      <View className="flex-row items-center justify-between">
         <AppLogo height={46} />
         <View
           className="flex-row items-center gap-2 rounded-full px-3 py-2"
@@ -112,36 +112,33 @@ export function PublicLiveLocationScreen({
             style={{ backgroundColor: colors.success }}
           />
           <Text
-            className="font-figtree-bold text-[10px] uppercase tracking-[1px]"
+            className="font-figtree-bold text-[10px] uppercase"
             style={{ color: colors.success }}
           >
             Live lesson
           </Text>
         </View>
       </View>
-
-      <View className="mt-8">
-        <Text
-          accessibilityRole="header"
-          className="font-figtree-bold text-[29px] leading-9"
-          style={{ color: colors.text }}
-        >
-          {learnerFirstName} is on a driving lesson
-        </Text>
-        <Text
-          className="mt-2 font-figtree text-[14px] leading-6"
-          style={{ color: colors.textMuted }}
-        >
-          This private view shows only the learner’s current location and
-          essential lesson information.
-        </Text>
-      </View>
+      <Text
+        accessibilityRole="header"
+        className="mt-8 font-figtree-bold text-[28px] leading-9"
+        style={{ color: colors.text }}
+      >
+        Live driving lesson
+      </Text>
+      <Text
+        className="mt-2 font-figtree text-[13px] leading-5"
+        style={{ color: colors.textMuted }}
+      >
+        The learner shared this private view with you. It closes automatically
+        when the lesson ends.
+      </Text>
 
       <View className="mt-6">
-        {locationShare.lastLocation ? (
+        {share?.location ? (
           <LiveLocationMap
-            coordinates={locationShare.lastLocation}
-            learnerName={learnerFirstName}
+            coordinates={share.location}
+            learnerName="Training vehicle"
           />
         ) : (
           <View
@@ -153,84 +150,43 @@ export function PublicLiveLocationScreen({
           >
             <MaterialCommunityIcons
               name="map-marker-radius-outline"
-              size={36}
+              size={38}
               color={colors.primary}
             />
             <Text
-              className="mt-4 font-figtree-semibold text-[14px]"
+              className="mt-4 font-figtree-bold text-[15px]"
               style={{ color: colors.text }}
             >
-              Waiting for a location update
+              Waiting for location
             </Text>
           </View>
         )}
       </View>
 
-      <Text
-        accessibilityLiveRegion="polite"
-        className="mt-3 text-center font-figtree-medium text-[11px]"
-        style={{ color: colors.textSubtle }}
-      >
-        {formatUpdatedAt(locationShare.lastUpdatedAt)}
-      </Text>
-
-      <View
-        className="mt-6 overflow-hidden rounded-3xl border px-5"
-        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
-      >
-        {[
-          ["Instructor", readInstructorNameFromSession(session)],
-          [
-            "Driving school",
-            typeof session.schoolId === "object" && session.schoolId?.name
-              ? session.schoolId.name
-              : "Driving school",
-          ],
-          ["Lesson", lesson?.packageName ?? session.title],
-          ["Area", lesson?.location ?? sessionDisplayLocation(session)],
-        ].map(([label, value], index) => (
-          <View
-            key={label}
-            className="flex-row items-start justify-between gap-5 py-4"
-            style={
-              index
-                ? { borderTopWidth: 1, borderTopColor: colors.border }
-                : undefined
-            }
-          >
-            <Text
-              className="font-figtree-medium text-[12px]"
-              style={{ color: colors.textMuted }}
-            >
-              {label}
-            </Text>
-            <Text
-              className="max-w-[62%] text-right font-figtree-bold text-[12px]"
-              style={{ color: colors.text }}
-            >
-              {value}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View
-        className="mt-6 flex-row items-start gap-3 rounded-3xl p-5"
-        style={{ backgroundColor: colors.surfaceStrong }}
-      >
-        <MaterialCommunityIcons
-          name="shield-lock-outline"
-          size={22}
-          color={colors.success}
-        />
-        <Text
-          className="flex-1 font-figtree text-[12px] leading-5"
-          style={{ color: colors.textMuted }}
+      {share ? (
+        <View
+          className="mt-6 rounded-3xl border p-5"
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
-          No account is required. Access ends when {learnerFirstName}{" "}
-          stops sharing or the lesson finishes.
-        </Text>
-      </View>
+          <Text
+            className="font-figtree-bold text-[16px]"
+            style={{ color: colors.text }}
+          >
+            {share.title}
+          </Text>
+          <Text
+            className="mt-2 font-figtree text-[11px]"
+            style={{ color: colors.textMuted }}
+          >
+            {share.location
+              ? `Updated ${new Intl.DateTimeFormat("en-NG", { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(share.location.recordedAt))}`
+              : "Connecting to the instructor’s location…"}
+          </Text>
+        </View>
+      ) : null}
     </DashboardScreen>
   );
 }

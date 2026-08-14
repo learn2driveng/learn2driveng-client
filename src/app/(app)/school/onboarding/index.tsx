@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { AddressAutocompleteField } from "@/components/school/address-autocomplete-field";
 import { fontFamily } from "@/constants/fonts";
@@ -150,7 +149,6 @@ export default function SchoolOnboardingIdentityScreen() {
   return (
     <DashboardScreen>
       <DashboardPageHeader title="School verification" />
-      <AppLogo height={52} className="mt-6" />
       <View className="mt-7 flex-row items-center gap-2">
         <View
           className="h-2 flex-1 rounded-full"

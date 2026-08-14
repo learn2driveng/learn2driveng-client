@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fontFamily } from "@/constants/fonts";
 import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import type { PaymentChannel } from "@/types/payment";
 
 const paymentMethods = [
   {
@@ -22,7 +23,7 @@ const paymentMethods = [
     description: "Visa, Mastercard or Verve",
   },
   {
-    id: "transfer",
+    id: "bank_transfer",
     icon: "bank-transfer" as const,
     title: "Bank transfer",
     description: "Pay securely from your bank app",
@@ -50,11 +51,10 @@ export default function PaymentMethodScreen() {
   }>();
   const { school, selectedPackage, loading, error, refetch } =
     useCheckoutPackage(schoolId, packageId);
-  const [method, setMethod] = useState<(typeof paymentMethods)[number]["id"]>(
-    () =>
-      paymentMethods.some((item) => item.id === initialMethod)
-        ? (initialMethod as (typeof paymentMethods)[number]["id"])
-        : "card",
+  const [method, setMethod] = useState<PaymentChannel>(() =>
+    paymentMethods.some((item) => item.id === initialMethod)
+      ? (initialMethod as PaymentChannel)
+      : "card",
   );
 
   if (loading) {

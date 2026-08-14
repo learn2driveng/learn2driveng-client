@@ -52,6 +52,8 @@ function buildSchoolDetail(input: {
     reviewCount: input.reviewCount,
     premium: input.premium,
     verificationStatus: "approved",
+    totalInstructors: input.instructors.length,
+    totalVehicles: input.vehicles.length,
     instructors: input.instructors,
     vehicles: input.vehicles,
     packages: input.packages,

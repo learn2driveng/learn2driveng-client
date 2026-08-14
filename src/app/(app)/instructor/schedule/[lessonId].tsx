@@ -140,6 +140,74 @@ export default function InstructorLessonDetailScreen() {
         </View>
       </View>
 
+      {lesson.learners && lesson.learners.length > 0 ? (
+        <View className="mt-9">
+          <SectionHeader
+            title={`Learners (${lesson.learnerCount ?? lesson.learners.length})`}
+          />
+          <View
+            className="mt-4 overflow-hidden rounded-3xl border px-5"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            {lesson.learners.map((learner, index) => (
+              <View
+                key={learner.participantId}
+                className="flex-row items-center py-4"
+                style={
+                  index
+                    ? { borderTopWidth: 1, borderTopColor: colors.border }
+                    : undefined
+                }
+              >
+                <View
+                  className="h-10 w-10 items-center justify-center rounded-full"
+                  style={{ backgroundColor: colors.surfaceStrong }}
+                >
+                  <Text
+                    className="font-figtree-bold text-[12px]"
+                    style={{ color: colors.text }}
+                  >
+                    {learner.initials}
+                  </Text>
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text
+                    className="font-figtree-bold text-[14px]"
+                    style={{ color: colors.text }}
+                  >
+                    {learner.name}
+                  </Text>
+                  <Text
+                    className="mt-1 font-figtree text-[11px]"
+                    style={{ color: colors.textMuted }}
+                  >
+                    {learner.packageName}
+                  </Text>
+                </View>
+                <Text
+                  className="font-figtree-bold text-[10px] uppercase"
+                  style={{
+                    color:
+                      learner.status === "present"
+                        ? colors.success
+                        : learner.status === "absent"
+                          ? colors.error
+                          : colors.textSubtle,
+                  }}
+                >
+                  {learner.status === "scheduled"
+                    ? "Not marked"
+                    : learner.status}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       <View className="mt-9">
         <SectionHeader title="Lesson overview" />
         <View

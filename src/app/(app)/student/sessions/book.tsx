@@ -9,23 +9,19 @@ import {
   DashboardScreen,
 } from "@/components/dashboard";
 import {
+  AvailableSessionCalendar,
   BookingOptionCard,
   BookingStepIndicator,
 } from "@/features/session-booking";
-import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import {
-  fetchAvailableTrainingSessions,
-  joinTrainingSession,
-} from "@/lib/api";
+import { fetchAvailableTrainingSessions, joinTrainingSession } from "@/lib/api";
 import {
   availableSessionInstructorLabel,
   availableSessionTimeLabel,
+  availableSessionVehicleLabel,
   groupAvailableSessionsByDate,
 } from "@/lib/learner/map-sessions";
-import {
-  refreshLearnerBookings,
-} from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import {
   selectActiveLearnerPackages,
@@ -49,7 +45,7 @@ export default function BookSessionScreen() {
     (item) => item.bookingId === bookingId,
   );
   const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(bookingId));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableSessions, setAvailableSessions] = useState<
@@ -58,31 +54,48 @@ export default function BookSessionScreen() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bookingId) {
-      setLoading(false);
       return;
     }
 
     let active = true;
+    const loadAvailableSessions = async () => {
+      try {
+        const firstPage = await fetchAvailableTrainingSessions(bookingId, {
+          page: 1,
+          limit: 50,
+        });
+        const sessions = [...firstPage.items];
 
-    fetchAvailableTrainingSessions(bookingId, { limit: 50 })
-      .then((result) => {
+        for (let page = 2; page <= firstPage.pagination.totalPages; page += 1) {
+          const nextPage = await fetchAvailableTrainingSessions(bookingId, {
+            page,
+            limit: 50,
+          });
+          sessions.push(...nextPage.items);
+        }
+
         if (!active) return;
-        setAvailableSessions(result.items);
-        setSelectedSessionId(result.items[0]?.id ?? null);
-      })
-      .catch((caught: ApiError) => {
+        setAvailableSessions(sessions);
+        setSelectedSessionId(sessions[0]?.id ?? null);
+        setSelectedDateId(
+          groupAvailableSessionsByDate(sessions)[0]?.id ?? null,
+        );
+      } catch (caught) {
         if (!active) return;
         setError(
-          caught?.message ??
+          (caught as ApiError)?.message ??
             "We could not load available sessions. Please try again.",
         );
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    void loadAvailableSessions();
 
     return () => {
       active = false;
@@ -96,9 +109,14 @@ export default function BookSessionScreen() {
   const selectedSession = availableSessions.find(
     (item) => item.id === selectedSessionId,
   );
-  const selectedDateGroup = groupedDates.find((group) =>
-    group.sessions.some((item) => item.id === selectedSessionId),
+  const selectedDateGroup = groupedDates.find(
+    (group) => group.id === selectedDateId,
   );
+  const calendarDates = groupedDates.map((group) => ({
+    id: group.id,
+    label: group.label,
+    sessionCount: group.sessions.length,
+  }));
   const selectedPackageName =
     packageName ?? selectedPackage?.name ?? "Selected package";
   const selectedSchoolName =
@@ -106,6 +124,12 @@ export default function BookSessionScreen() {
   const remainingCredits = selectedPackage?.remainingSessions ?? 0;
   const isReview = step === steps.length - 1;
   const canContinue = Boolean(selectedSession && bookingId);
+
+  const selectDate = (dateId: string) => {
+    const dateGroup = groupedDates.find((group) => group.id === dateId);
+    setSelectedDateId(dateId);
+    setSelectedSessionId(dateGroup?.sessions[0]?.id ?? null);
+  };
 
   const handleConfirm = async () => {
     if (!selectedSession || !bookingId || submitting) return;
@@ -255,30 +279,62 @@ export default function BookSessionScreen() {
                 Pick from the lesson slots published by your driving school.
               </Text>
 
-              <View className="mt-7 gap-6">
-                {groupedDates.map((group) => (
-                  <View key={group.id}>
-                    <Text
-                      className="mb-3 font-figtree-bold text-[12px] tracking-[1.2px]"
-                      style={{ color: colors.textSubtle }}
-                    >
-                      {group.label.toUpperCase()}
-                    </Text>
+              <View className="mt-7">
+                {selectedDateId ? (
+                  <AvailableSessionCalendar
+                    dates={calendarDates}
+                    selectedDateId={selectedDateId}
+                    onSelectDate={selectDate}
+                  />
+                ) : null}
+
+                {selectedDateGroup ? (
+                  <View className="mt-7">
+                    <View className="mb-3 flex-row items-end justify-between gap-4">
+                      <View>
+                        <Text
+                          className="font-figtree-bold text-[17px]"
+                          style={{ color: colors.text }}
+                        >
+                          {selectedDateGroup.label}
+                        </Text>
+                        <Text
+                          className="mt-1 font-figtree text-[12px]"
+                          style={{ color: colors.textMuted }}
+                        >
+                          Choose an available time
+                        </Text>
+                      </View>
+                      <Text
+                        className="font-figtree-semibold text-[11px]"
+                        style={{ color: colors.primary }}
+                      >
+                        {selectedDateGroup.sessions.length} available
+                      </Text>
+                    </View>
+
                     <View className="gap-3">
-                      {group.sessions.map((session) => (
-                        <BookingOptionCard
-                          key={session.id}
-                          icon="calendar-clock"
-                          title={session.title}
-                          description={`${availableSessionTimeLabel(session)} · ${availableSessionInstructorLabel(session)}`}
-                          meta={`${session.participantCount}/${session.capacity} booked`}
-                          selected={selectedSessionId === session.id}
-                          onPress={() => setSelectedSessionId(session.id)}
-                        />
-                      ))}
+                      {selectedDateGroup.sessions.map((session) => {
+                        const seatsLeft = Math.max(
+                          session.capacity - session.participantCount,
+                          0,
+                        );
+
+                        return (
+                          <BookingOptionCard
+                            key={session.id}
+                            icon="clock-outline"
+                            title={availableSessionTimeLabel(session)}
+                            description={`${session.title} · ${availableSessionInstructorLabel(session)}`}
+                            meta={`${availableSessionVehicleLabel(session)} · ${seatsLeft} ${seatsLeft === 1 ? "seat" : "seats"} left`}
+                            selected={selectedSessionId === session.id}
+                            onPress={() => setSelectedSessionId(session.id)}
+                          />
+                        );
+                      })}
                     </View>
                   </View>
-                ))}
+                ) : null}
               </View>
             </View>
           )
@@ -312,7 +368,10 @@ export default function BookSessionScreen() {
                 ["Session", selectedSession.title],
                 ["Date", selectedDateGroup?.label ?? "Selected date"],
                 ["Time", availableSessionTimeLabel(selectedSession)],
-                ["Instructor", availableSessionInstructorLabel(selectedSession)],
+                [
+                  "Instructor",
+                  availableSessionInstructorLabel(selectedSession),
+                ],
                 [
                   "Credit balance",
                   `${remainingCredits} → ${Math.max(remainingCredits - 1, 0)} sessions`,
@@ -352,7 +411,7 @@ export default function BookSessionScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => setStep((current) => current - 1)}
-              className="h-14 flex-1 items-center justify-center rounded-2xl border active:opacity-70"
+              className="h-14 flex-1 items-center justify-center rounded-full border active:opacity-70"
               style={{
                 borderColor: colors.border,
                 backgroundColor: colors.surface,
@@ -377,7 +436,7 @@ export default function BookSessionScreen() {
               }
               void handleConfirm();
             }}
-            className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+            className="h-14 flex-[2] flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
             style={{
               backgroundColor: canContinue
                 ? colors.primary

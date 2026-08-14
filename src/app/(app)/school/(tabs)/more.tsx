@@ -3,7 +3,6 @@ import { useRouter, type Href } from "expo-router";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { SchoolAvatar } from "@/components/school/school-avatar";
@@ -40,7 +39,7 @@ const setupDestinations: Destination[] = [
     icon: "file-certificate-outline" as const,
     title: "Verification documents",
     description: "Review or replace the evidence used for approval",
-    href: "/school/onboarding/documents" as const,
+    href: "/school/verification-documents" as const,
   },
   {
     icon: "shield-check-outline" as const,
@@ -104,7 +103,6 @@ export default function SchoolMoreScreen() {
 
   return (
     <DashboardScreen>
-      <AppLogo height={52} className="mb-6" />
       <Text
         accessibilityRole="header"
         className="text-[28px] leading-8 tracking-[-0.8px]"

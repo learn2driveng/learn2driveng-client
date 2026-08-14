@@ -137,7 +137,11 @@ export function participantToProgressLesson(
   participant: LearnerJoinedSession,
 ): LearnerProgressLesson | null {
   const session = readSession(participant);
-  if (!session || session.status !== "completed") {
+  if (
+    !session ||
+    session.status !== "completed" ||
+    participant.status !== "present"
+  ) {
     return null;
   }
 
@@ -156,12 +160,40 @@ export function participantToProgressLesson(
       session.actualStartTime ?? session.scheduledStartTime,
       completedAt,
     ),
-    score: participant.status === "present" ? 100 : 0,
-    focusAreas: [session.sessionType.replace(/_/g, " ")],
-    feedback:
-      session.notes?.trim() ||
-      "Lesson completed. Review your instructor notes after your next session.",
+    score: scoreFromSkillRatings(participant.skillRatings),
+    focusAreas: focusAreasFromSkillRatings(participant.skillRatings),
+    feedback: [
+      participant.instructorFeedback?.trim(),
+      participant.nextFocus?.trim()
+        ? `Next focus: ${participant.nextFocus.trim()}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n") || "Lesson completed. Your instructor has not added feedback yet.",
   };
+}
+
+const skillLabels: Record<string, string> = {
+  vehicle_control: "Vehicle control",
+  observation: "Observation and mirrors",
+  junctions: "Junctions and traffic",
+  parking: "Parking and manoeuvres",
+};
+
+function scoreFromSkillRatings(ratings?: Record<string, string> | null) {
+  const scores = Object.values(ratings ?? {}).map((rating) =>
+    rating === "confident" ? 100 : rating === "developing" ? 65 : 35,
+  );
+  return scores.length
+    ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
+    : 0;
+}
+
+function focusAreasFromSkillRatings(ratings?: Record<string, string> | null) {
+  const areas = Object.entries(ratings ?? {})
+    .filter(([, rating]) => rating !== "confident")
+    .map(([skill]) => skillLabels[skill] ?? skill.replace(/_/g, " "));
+  return areas.length ? areas : ["Keep practising your completed skills"];
 }
 
 export function joinedSessionsToProgressLessons(
@@ -190,14 +222,14 @@ export function computeProgressSummary(
 
   const completedSessions = joinedSessions.filter((item) => {
     const session = readSession(item);
-    return session?.status === "completed";
+    return session?.status === "completed" && item.status === "present";
   });
 
   const drivingMinutes = completedSessions.reduce((total, item) => {
     const session = readSession(item);
     if (!session) return total;
-    const start = session.actualStartTime ?? session.scheduledStartTime;
-    const end = session.actualEndTime ?? session.scheduledEndTime;
+    const start = session.actualStartTime;
+    const end = session.actualEndTime;
     if (!start || !end) return total;
     return (
       total +
@@ -227,13 +259,13 @@ export function computeProgressSummary(
   };
 }
 
-const skillDefinitions: Array<{
+const skillDefinitions: {
   id: string;
   name: string;
   icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
   sessionTypes: EnrichedTrainingSession["sessionType"][];
   note: string;
-}> = [
+}[] = [
   {
     id: "vehicle-control",
     name: "Vehicle control",
@@ -322,7 +354,7 @@ export function groupAvailableSessionsByDate(
 
   for (const session of sessions) {
     const date = new Date(session.scheduledStartTime);
-    const id = date.toISOString().slice(0, 10);
+    const id = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const label = new Intl.DateTimeFormat("en-NG", {
       weekday: "short",
       day: "numeric",
@@ -349,6 +381,22 @@ export function availableSessionInstructorLabel(
   session: AvailableTrainingSession,
 ) {
   return readRefName(session.instructorId, "Assigned instructor");
+}
+
+export function availableSessionVehicleLabel(
+  session: AvailableTrainingSession,
+) {
+  if (!session.vehicleId || typeof session.vehicleId === "string") {
+    return "Vehicle assigned by school";
+  }
+
+  const vehicleName = [session.vehicleId.make, session.vehicleId.model]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    [vehicleName, session.vehicleId.plateNumber].filter(Boolean).join(" · ") ||
+    "Vehicle assigned by school"
+  );
 }
 
 export function sessionsAndParticipantsFromJoined(

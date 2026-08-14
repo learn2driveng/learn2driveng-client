@@ -33,7 +33,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and learner-approved sharing during active lessons."
+          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and to share the instructor's location during active lessons."
         }
       ],
       [

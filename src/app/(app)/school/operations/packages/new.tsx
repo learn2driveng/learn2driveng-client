@@ -9,6 +9,7 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { borderRadius } from "@/constants/theme";
 import { formatTransmissionLabel } from "@/lib/school/format";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { createSchoolPackage } from "@/lib/api";
@@ -240,12 +241,13 @@ export default function NewSchoolPackageScreen() {
         accessibilityState={{ disabled: !canSavePackage || isSubmitting }}
         disabled={!canSavePackage || isSubmitting}
         onPress={savePackage}
-        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{
           backgroundColor:
             canSavePackage && !isSubmitting
               ? colors.primary
               : colors.surfaceStrong,
+          borderRadius: borderRadius.button,
         }}
       >
         {isSubmitting ? (

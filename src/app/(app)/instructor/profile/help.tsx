@@ -43,7 +43,7 @@ export default function InstructorHelpScreen() {
         />
         <FaqItem
           question="What happens after a lesson?"
-          answer="End the active session, then complete the attendance and learner report."
+          answer="End the active session, then mark each learner present or absent and save attendance once."
         />
         <View
           className="mx-5 h-px"

@@ -17,6 +17,7 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { borderRadius } from "@/constants/theme";
 import { formatTransmissionLabel } from "@/lib/school/format";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -323,12 +324,13 @@ export default function SchoolPackageDetailScreen() {
         accessibilityState={{ disabled: !canSave || saved || isUpdating }}
         disabled={!canSave || saved || isUpdating}
         onPress={() => void savePackage()}
-        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{
           backgroundColor:
             canSave && !saved && !isUpdating
               ? colors.primary
               : colors.surfaceStrong,
+          borderRadius: borderRadius.button,
         }}
       >
         {isUpdating && saved ? (

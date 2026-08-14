@@ -1,11 +1,21 @@
 import { api } from "@/lib/api/client";
 import type { ApiSuccessResponse } from "@/types";
-import type { Payment } from "@/types/payment";
+import type { Payment, PaymentChannel } from "@/types/payment";
 
-export async function initializePayment(bookingId: string) {
+export async function initializePayment(
+  bookingId: string,
+  channel: PaymentChannel,
+) {
   const { data } = await api.post<ApiSuccessResponse<Payment>>(
     "/payments/initialize",
-    { bookingId },
+    { bookingId, channel },
+  );
+  return data.data;
+}
+
+export async function verifyPaymentByReference(reference: string) {
+  const { data } = await api.post<ApiSuccessResponse<Payment>>(
+    `/payments/reference/${encodeURIComponent(reference)}/verify`,
   );
   return data.data;
 }

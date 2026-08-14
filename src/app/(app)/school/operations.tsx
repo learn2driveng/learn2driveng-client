@@ -5,6 +5,7 @@ import { Pressable, Text, View } from "react-native";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { DashboardPageHeader, DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
+import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -139,9 +140,10 @@ export default function SchoolOperationsScreen() {
         <SectionHeader title="Quick add" />
         <View className="mt-4 flex-row gap-3">
           <Pressable
+            accessibilityRole="button"
             onPress={() => router.push("/school/operations/vehicles/new")}
-            className="h-14 flex-1 flex-row items-center justify-center gap-2 active:opacity-80"
-            style={{ backgroundColor: colors.primary, borderRadius: 18, paddingHorizontal: 16 }}
+            className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
+            style={{ backgroundColor: colors.primary, borderRadius: borderRadius.button, paddingHorizontal: 16 }}
           >
             <MaterialCommunityIcons name="car" size={20} color={colors.onPrimary} />
             <Text className="text-[13px]" style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>
@@ -149,9 +151,10 @@ export default function SchoolOperationsScreen() {
             </Text>
           </Pressable>
           <Pressable
+            accessibilityRole="button"
             onPress={() => router.push("/school/operations/packages/new")}
-            className="h-14 flex-1 flex-row items-center justify-center gap-2 border active:opacity-80"
-            style={{ backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, paddingHorizontal: 16 }}
+            className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full border active:opacity-80"
+            style={{ backgroundColor: colors.surface, borderColor: colors.border, borderRadius: borderRadius.button, paddingHorizontal: 16 }}
           >
             <MaterialCommunityIcons name="package-variant-closed" size={20} color={colors.text} />
             <Text className="text-[13px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>

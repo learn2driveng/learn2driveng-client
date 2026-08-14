@@ -165,6 +165,9 @@ export interface VehicleSummary {
   transmissionType: VehicleTransmissionType;
   /** Convenience display label, e.g. "Toyota Corolla". */
   name: string;
+  plateNumber?: string;
+  color?: string | null;
+  photoUrl?: string | null;
 }
 
 export interface SchoolDetail extends SchoolSummary {
@@ -180,6 +183,8 @@ export interface SchoolDetail extends SchoolSummary {
   latitude?: number | null;
   longitude?: number | null;
   reviewCount: number;
+  totalInstructors: number;
+  totalVehicles: number;
   instructors: InstructorSummary[];
   vehicles: VehicleSummary[];
   packages: TrainingPackage[];
@@ -244,6 +249,7 @@ export type PublicDrivingSchoolVehicle = Pick<
   | "year"
   | "plateNumber"
   | "color"
+  | "photoUrl"
   | "transmissionType"
   | "isActive"
 >;
@@ -253,6 +259,7 @@ export type PublicDrivingSchoolDetail = PublicDrivingSchoolListItem & {
   email: string;
   phone: string;
   totalInstructors: number;
+  totalVehicles: number;
   totalStudents: number;
   totalLessons: number;
   packages: TrainingPackage[];

@@ -104,6 +104,7 @@ export function mergeVerificationDocuments(
       size: match.sizeInBytes ?? null,
       uploadedAt: match.uploadedAt,
       status: match.status,
+      reviewNotes: match.reviewNotes ?? null,
     };
   });
 }

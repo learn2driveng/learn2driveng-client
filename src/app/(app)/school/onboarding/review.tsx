@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
-import { AppLogo } from "@/components/common/app-logo";
 import {
   DashboardPageHeader,
   DashboardScreen,
@@ -31,7 +30,6 @@ export default function SchoolOnboardingReviewScreen() {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Verification status" />
-        <AppLogo height={52} className="mt-6" />
         <View className="flex-1 items-center justify-center py-20">
           <View
             className="h-20 w-20 items-center justify-center rounded-[26px]"

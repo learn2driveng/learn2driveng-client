@@ -18,8 +18,12 @@ export default function ProgressLessonDetailScreen() {
   if (!lesson) {
     return (
       <DashboardScreen>
-        <View className="items-center rounded-3xl border p-6"
-          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+        <View
+          className="items-center rounded-3xl border p-6"
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="file-search-outline"
@@ -117,18 +121,14 @@ export default function ProgressLessonDetailScreen() {
             </Text>
           </View>
           <View
-            className="h-16 w-16 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: colors.primary }}
+            className="h-12 w-12 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.successSoft }}
           >
-            <Text
-              className="text-[18px]"
-              style={{
-                color: colors.onPrimary,
-                fontFamily: fontFamily.figtreeBold,
-              }}
-            >
-              {lesson.score}%
-            </Text>
+            <MaterialCommunityIcons
+              name="check"
+              size={24}
+              color={colors.success}
+            />
           </View>
         </View>
 
@@ -159,7 +159,7 @@ export default function ProgressLessonDetailScreen() {
           className="text-[18px]"
           style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
         >
-          Focus areas
+          Practise next
         </Text>
         <View className="mt-3 gap-3">
           {lesson.focusAreas.map((area) => (
@@ -172,7 +172,7 @@ export default function ProgressLessonDetailScreen() {
               }}
             >
               <MaterialCommunityIcons
-                name="check-circle"
+                name="arrow-right-circle-outline"
                 size={20}
                 color={colors.primary}
               />
