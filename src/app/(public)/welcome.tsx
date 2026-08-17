@@ -21,19 +21,8 @@ export default function StudentEntryChoiceScreen() {
         paddingBottom: Math.max(insets.bottom, 24),
       }}
     >
-      <AppLogo height={58} />
-
       <View className="flex-1 justify-center">
-        <View
-          className="justify-center items-center rounded-[24px] w-20 h-20"
-          style={{ backgroundColor: colors.primary }}
-        >
-          <MaterialCommunityIcons
-            name="steering"
-            size={39}
-            color={colors.onPrimary}
-          />
-        </View>
+        <AppLogo height={58} />
         <Text
           className="mt-8 text-[10px] uppercase tracking-[2px]"
           style={{

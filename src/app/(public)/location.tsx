@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
+import { getPreferredArea } from "@/constants/preferred-areas";
 import { LocationPermissionGate, useUserLocation } from "@/features/location";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSettingsStore } from "@/store/settings.store";
@@ -27,6 +28,11 @@ export default function PublicLocationConsentScreen() {
   const setLocationPromptDismissed = useSettingsStore(
     (state) => state.setLocationPromptDismissed,
   );
+  const preferredAreaId = useSettingsStore((state) => state.preferredAreaId);
+  const setDiscoveryLocationMode = useSettingsStore(
+    (state) => state.setDiscoveryLocationMode,
+  );
+  const preferredArea = getPreferredArea(preferredAreaId);
 
   const continueWithCurrentLocation = useCallback(async () => {
     if (navigationHandled.current) return;
@@ -37,9 +43,16 @@ export default function PublicLocationConsentScreen() {
     if (!currentCoordinates || navigationHandled.current) return;
 
     navigationHandled.current = true;
+    setDiscoveryLocationMode("current");
     setLocationPromptDismissed(false);
     router.replace("/welcome");
-  }, [coordinates, requestLocation, router, setLocationPromptDismissed]);
+  }, [
+    coordinates,
+    requestLocation,
+    router,
+    setDiscoveryLocationMode,
+    setLocationPromptDismissed,
+  ]);
 
   useEffect(() => {
     if (
@@ -80,12 +93,14 @@ export default function PublicLocationConsentScreen() {
         canAskAgain={canAskAgain}
         isLocating={isLocating}
         error={error}
+        fallbackAreaLabel={preferredArea.label}
         onAllow={() => {
           void continueWithCurrentLocation();
         }}
         onContinueWithoutLocation={() => {
           navigationHandled.current = true;
           clearLocation();
+          setDiscoveryLocationMode("area");
           setLocationPromptDismissed(true);
           router.replace("/welcome");
         }}

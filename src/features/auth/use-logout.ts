@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 
 import { logOutSession } from "@/lib/api";
+import { unregisterCurrentPushDevice } from "@/features/notifications/push-notifications";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useLogout() {
@@ -13,6 +14,7 @@ export function useLogout() {
     setIsLoggingOut(true);
 
     try {
+      await unregisterCurrentPushDevice().catch(() => undefined);
       await logOutSession();
     } catch {
       // Local session removal must still succeed when the API is unavailable.

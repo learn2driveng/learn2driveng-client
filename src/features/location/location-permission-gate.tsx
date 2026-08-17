@@ -18,6 +18,7 @@ type LocationPermissionGateProps = {
   error: string | null;
   onAllow: () => void;
   onContinueWithoutLocation: () => void;
+  fallbackAreaLabel: string;
 };
 
 export function LocationPermissionGate({
@@ -27,6 +28,7 @@ export function LocationPermissionGate({
   error,
   onAllow,
   onContinueWithoutLocation,
+  fallbackAreaLabel,
 }: LocationPermissionGateProps) {
   const { colors } = useAppTheme();
   const deniedPermanently = !isGranted && !canAskAgain;
@@ -173,7 +175,7 @@ export function LocationPermissionGate({
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            Use Lagos as my default
+            Use {fallbackAreaLabel} as my default
           </Text>
         </Pressable>
       </View>

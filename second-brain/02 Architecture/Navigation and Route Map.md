@@ -1,7 +1,7 @@
 ---
 type: architecture
 status: active
-updated: 2026-06-30
+updated: 2026-08-16
 tags:
   - navigation
   - expo-router
@@ -20,7 +20,7 @@ flowchart TD
   App --> Checkout[checkout stack]
   App --> Student[student tabs]
   App --> Instructor[instructor tabs]
-  App --> Guardian[guardian tabs]
+  App --> Unsupported[unsupported legacy roles]
   Student --> Home
   Student --> Explore
   Student --> Sessions
@@ -30,25 +30,25 @@ flowchart TD
   Instructor --> Schedule
   Instructor --> Availability
   Instructor --> InstructorProfile[Profile]
-  Guardian --> GuardianHome[Home]
-  Guardian --> GuardianActivity[Activity]
-  Guardian --> GuardianProfile[Profile]
 ```
 
 ## Ownership rules
 
 1. Route groups do not add URL segments.
 2. Public and authenticated Explore routes reuse the same screens from
-   `src/features/school-discovery/screens`.
+   `src/features/school-discovery/screens`; their layouts provide the correct
+   marketplace navigation context.
 3. Checkout is a sibling of student tabs, never a child of Explore.
 4. Session booking belongs to the Sessions stack.
 5. Profile detail pages belong to the Profile stack.
 6. Future role trees should mount beside `student`, not inside it.
 
-## Authentication handoff
+## Authentication and role handoff
 
-The protected `(app)` layout builds a `returnTo` path from pathname and string
-query parameters, then redirects unauthenticated users to `/login`.
+The root stack makes `(auth)` unavailable after authentication. Each top-level
+protected tree uses the same `RoleRouteGuard`, placed where Expo Router exposes
+the complete child URL. The guard preserves that URL as `returnTo`, redirects
+signed-out users to `/login`, and sends wrong-role users to their own home.
 
 Security note: only validated internal destinations should be honored when the
 login flow resumes.
@@ -69,26 +69,22 @@ login flow resumes.
 | ------------ | -------------------------- | -------------------------------------------- |
 | Home         | `/instructor`              | Availability, next lesson, daily summary     |
 | Schedule     | `/instructor/schedule`     | Assigned lessons and future lesson details   |
+| Attendance   | `/instructor/attendance`   | Attendance and outstanding lesson reports    |
 | Availability | `/instructor/availability` | Teaching hours and unavailable dates         |
 | Profile      | `/instructor/profile`      | School affiliation, verification and account |
 
-## Guardian tabs
+## Unsupported legacy roles
 
-| Tab      | URL                  | Purpose                                      |
-| -------- | -------------------- | -------------------------------------------- |
-| Home     | `/guardian`          | Linked learners and active-session status    |
-| Activity | `/guardian/activity` | Shared session history and progress activity |
-| Profile  | `/guardian/profile`  | Guardian account and preferences             |
-
-Linked-learner detail lives at `/guardian/learners/:learnerId` and is hidden
-from the tab bar. Active-session tracking lives at
-`/guardian/sessions/:sessionId` and is also hidden from the tab bar.
+Guardian and platform-admin accounts do not have client route trees. They land
+on `/unsupported-role` instead of being routed to public `/welcome` while still
+authenticated. Public live-location sharing remains at `/track/:shareToken`
+and does not require a guardian account.
 
 ## School routes
 
 `/school-signup` creates a draft administrator application. Draft,
 pending-review, and suspended schools are confined to `/school/onboarding/*`;
-the operational routes below require `verified` status.
+the operational routes below require `approved` status.
 
 | Route                 | Purpose                                             | Tab visibility |
 | --------------------- | --------------------------------------------------- | -------------- |

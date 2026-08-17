@@ -1,24 +1,36 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Redirect, Tabs } from "expo-router";
+import { Tabs, useRouter, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { fontFamily } from "@/constants/fonts";
-import { useRoleRouteAccess } from "@/features/auth";
+import { RoleRouteGuard } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
+import { useAuthStore } from "@/store/auth.store";
 import { InstructorLocationPublisher } from "@/features/location";
 
+const instructorTabRoots: Readonly<Record<string, Href>> = {
+  index: "/instructor",
+  schedule: "/instructor/schedule",
+  attendance: "/instructor/attendance",
+  availability: "/instructor/availability",
+  profile: "/instructor/profile",
+};
+
 export default function InstructorLayout() {
+  const router = useRouter();
   const { colors } = useAppTheme();
-  const access = useRoleRouteAccess("instructor", "/instructor");
+  const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.role);
+  const hasAccess = status === "authenticated" && role === "instructor";
   const [hydrated, setHydrated] = useState(false);
   const outstandingReports = useInstructorOperationsStore(
     (state) => state.profile.outstandingReports ?? 0,
   );
 
   useEffect(() => {
-    if (access.status !== "allowed") return;
+    if (!hasAccess) return;
 
     let active = true;
 
@@ -33,18 +45,36 @@ export default function InstructorLayout() {
     return () => {
       active = false;
     };
-  }, [access.status]);
+  }, [hasAccess]);
 
-  if (access.status === "checking") return null;
-  if (access.status === "redirect") return <Redirect href={access.href} />;
+  if (!hasAccess) {
+    return (
+      <RoleRouteGuard
+        allowedRoles={["instructor"]}
+        fallbackReturnTo="/instructor"
+      >
+        {null}
+      </RoleRouteGuard>
+    );
+  }
   if (!hydrated) return null;
 
   return (
     <>
       <InstructorLocationPublisher />
       <Tabs
+        screenListeners={({ route }) => ({
+          tabPress: (event) => {
+            const tabRoot = instructorTabRoots[route.name];
+            if (!tabRoot) return;
+
+            event.preventDefault();
+            router.replace(tabRoot);
+          },
+        })}
         screenOptions={{
           headerShown: false,
+          popToTopOnBlur: true,
           tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textSubtle,

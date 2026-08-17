@@ -14,6 +14,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/api/notifications";
+import { useNotificationStore } from "@/store/notification.store";
 import type { ApiError } from "@/types";
 import type { AppNotification } from "@/types/notification";
 
@@ -32,12 +33,19 @@ export default function NotificationInboxScreen() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const setUnreadCount = useNotificationStore(
+    (state) => state.setUnreadCount,
+  );
+  const decrementUnreadCount = useNotificationStore(
+    (state) => state.decrementUnreadCount,
+  );
 
   const load = useCallback(async () => {
     setError(null);
     try {
       const result = await fetchNotifications();
       setItems(result.items);
+      setUnreadCount(result.unreadCount);
     } catch (caught) {
       setError(
         (caught as ApiError).message || "We could not load your notifications.",
@@ -45,7 +53,7 @@ export default function NotificationInboxScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setUnreadCount]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -61,7 +69,8 @@ export default function NotificationInboxScreen() {
             : entry,
         ),
       );
-      await markNotificationRead(item.id).catch(() => undefined);
+      decrementUnreadCount();
+      await markNotificationRead(item.id).catch(() => void load());
     }
     if (item.data?.participantId) {
       router.push({
@@ -75,6 +84,7 @@ export default function NotificationInboxScreen() {
     setItems((current) =>
       current.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })),
     );
+    setUnreadCount(0);
     await markAllNotificationsRead().catch(() => void load());
   };
 
