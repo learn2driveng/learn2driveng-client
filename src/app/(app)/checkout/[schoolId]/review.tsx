@@ -1,7 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,20 +12,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
 import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
+import {
+  openPaystackCheckout,
+  paystackReturnUrlPrefix,
+} from "@/features/checkout/open-paystack-checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   createLearnerBooking,
   initializePayment,
-  verifyPayment,
 } from "@/lib/api";
 import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import type { ApiError } from "@/types";
-import {
-  parsePaymentChannel,
-  type PaymentChannel,
-  type PaymentStatus,
-} from "@/types/payment";
+import type { PaymentChannel } from "@/types/payment";
 
 const methodLabels: Record<PaymentChannel, string> = {
   card: "Debit or credit card",
@@ -121,32 +118,21 @@ export default function PurchaseReviewScreen() {
         );
       }
 
-      const returnUrl = Linking.createURL("checkout/payment-return", {
-        scheme: "learn2driveng",
+      const returnUrlPrefix = paystackReturnUrlPrefix();
+      const { paymentStatus } = await openPaystackCheckout({
+        authorizationUrl: payment.authorizationUrl,
+        paymentId: payment.id,
+        returnUrlPrefix,
       });
-      const browserResult = await WebBrowser.openAuthSessionAsync(
-        payment.authorizationUrl,
-        returnUrl,
-        { preferEphemeralSession: true },
-      );
-
-      let paymentStatus: PaymentStatus = "pending";
-      try {
-        const verified = await verifyPayment(payment.id);
-        paymentStatus = verified.status;
-      } catch {
-        paymentStatus = "pending";
-      }
 
       const resultStatus =
         paymentStatus === "success"
           ? "success"
           : paymentStatus === "failed"
             ? "failed"
-            : browserResult.type === "cancel" ||
-                browserResult.type === "dismiss"
-              ? "cancelled"
-              : "pending";
+            : method === "bank_transfer"
+              ? "pending"
+              : "cancelled";
 
       await refreshLearnerBookings().catch(() => undefined);
 
