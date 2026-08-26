@@ -12,6 +12,7 @@ import { ToastProvider } from "@/components/common/toast";
 import { useAppFonts } from "@/hooks/use-app-fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSessionBootstrap } from "@/features/auth";
+import { PushNotificationManager } from "@/features/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,6 +20,7 @@ export default function RootLayout() {
   const { isDark, colors } = useAppTheme();
   const [fontsLoaded, fontError] = useAppFonts();
   const authStatus = useSessionBootstrap();
+  const isAuthenticated = authStatus === "authenticated";
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && authStatus !== "checking") {
@@ -37,13 +39,23 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ToastProvider>
+        <PushNotificationManager />
         <StatusBar style={isDark ? "light" : "dark"} />
         <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.background },
           }}
-        />
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(public)" />
+          <Stack.Protected guard={!isAuthenticated}>
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
+          <Stack.Screen name="(app)" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
       </ToastProvider>
     </SafeAreaProvider>
   );

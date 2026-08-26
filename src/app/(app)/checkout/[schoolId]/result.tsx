@@ -344,7 +344,9 @@ export default function CheckoutResultScreen() {
             <ResultButton
               secondary
               label="Get payment help"
-              onPress={() => router.push("/student/profile/support")}
+              onPress={() =>
+                router.push({ pathname: "/support", params: { mode: "contact" } })
+              }
             />
           </>
         ) : null}

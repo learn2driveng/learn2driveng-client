@@ -13,6 +13,7 @@
     },
     "android": {
       "usesCleartextTraffic": true,
+      "googleServicesFile": "./google-services.json",
       "permissions": ["android.permission.CAMERA"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -61,7 +62,14 @@
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#F4B323",
+          "defaultChannel": "updates-v2"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

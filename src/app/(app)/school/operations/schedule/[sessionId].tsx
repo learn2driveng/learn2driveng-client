@@ -158,7 +158,7 @@ export default function SchoolLessonDetailScreen() {
         <SectionHeader title="Instructor" />
         <Pressable
           disabled={!instructor}
-          onPress={() => instructor && router.push({ pathname: "/school/instructor/[instructorId]", params: { instructorId: instructor.id } })}
+          onPress={() => instructor && router.push({ pathname: "/school/instructors/[instructorId]", params: { instructorId: instructor.id } })}
           className="mt-4 flex-row items-center gap-4 border active:opacity-80"
           style={[surfaces.card, { borderRadius: 24, padding: 16 }]}
         >

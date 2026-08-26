@@ -228,8 +228,8 @@ export function useUserLocation() {
           ? providerStatus?.networkAvailable === false
             ? "Network location is unavailable. Turn on Wi-Fi or mobile data and device location accuracy, then try again."
             : permission?.android?.accuracy === "coarse"
-              ? "Your device did not return an approximate location. You can continue with Lagos or try again."
-              : "Your device has not returned a location yet. You can continue with Lagos or try again."
+              ? "Your device did not return an approximate location. You can use your preferred area or try again."
+              : "Your device has not returned a location yet. You can use your preferred area or try again."
           : "We couldn't get your current location. Check that location services are enabled and try again.",
       );
       return null;
@@ -239,7 +239,10 @@ export function useUserLocation() {
   }, [permission, requestLocationPermission, resolvePlaceName, setCoordinates]);
 
   const requestLocationRef = useRef(requestLocation);
-  requestLocationRef.current = requestLocation;
+
+  useEffect(() => {
+    requestLocationRef.current = requestLocation;
+  }, [requestLocation]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {

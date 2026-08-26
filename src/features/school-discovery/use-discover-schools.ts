@@ -72,6 +72,8 @@ export function useDiscoverSchools(
   }, [
     reloadToken,
     query.search,
+    query.city,
+    query.state,
     query.minRating,
     query.latitude,
     query.longitude,

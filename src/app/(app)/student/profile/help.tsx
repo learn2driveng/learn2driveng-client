@@ -43,7 +43,7 @@ export default function HelpSupportScreen() {
         />
         <FaqItem
           question="Can I reschedule or cancel a lesson?"
-          answer="Open an upcoming booking from Sessions. Rescheduling and cancellation remain subject to the school’s policy."
+          answer="Open an upcoming booking from Sessions. You can reschedule or cancel until 3 hours before the lesson starts."
         />
         <View
           className="mx-5 h-px"
@@ -51,7 +51,7 @@ export default function HelpSupportScreen() {
         />
         <FaqItem
           question="Why does Learn2Drive request my location?"
-          answer="Location helps sort nearby verified schools. You can continue with Lagos as your default instead."
+          answer="Location helps sort nearby verified schools. You can choose a preferred area instead."
         />
       </View>
 

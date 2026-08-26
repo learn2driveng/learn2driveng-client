@@ -8,7 +8,7 @@ import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 type SupportRequestScreenProps = {
-  backHref: "/student/profile/help" | "/instructor/profile/help";
+  backHref?: "/student/profile/help" | "/instructor/profile/help";
 };
 
 export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
@@ -54,7 +54,9 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace(backHref)}
+          onPress={() =>
+            backHref ? router.replace(backHref) : router.back()
+          }
           className="mt-10 h-14 items-center justify-center rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
@@ -62,7 +64,7 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
             className="font-figtree-bold text-[15px]"
             style={{ color: colors.onPrimary }}
           >
-            Back to help
+            {backHref ? "Back to help" : "Go back"}
           </Text>
         </Pressable>
       </DashboardScreen>

@@ -150,7 +150,7 @@ export default function SchoolInstructorDetailScreen() {
         accessibilityRole="button"
         onPress={() =>
           router.push({
-            pathname: "/school/instructor/[instructorId]/edit",
+            pathname: "/school/instructors/[instructorId]/edit",
             params: { instructorId: instructor.id },
           })
         }

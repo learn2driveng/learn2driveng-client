@@ -68,7 +68,7 @@ export default function SchoolInstructorsScreen() {
 
   const openInstructor = (instructorId: string) => {
     router.push({
-      pathname: "/school/instructor/[instructorId]",
+      pathname: "/school/instructors/[instructorId]",
       params: { instructorId },
     });
   };

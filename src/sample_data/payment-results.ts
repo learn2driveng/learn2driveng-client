@@ -2,8 +2,7 @@ export type SamplePaymentResult = "success" | "pending" | "failed";
 
 const paymentResultByMethod: Record<string, SamplePaymentResult> = {
   card: "success",
-  transfer: "pending",
-  ussd: "failed",
+  bank_transfer: "pending",
 };
 
 /** Presentation fixture used to preview checkout result states. */

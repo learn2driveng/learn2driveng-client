@@ -11,22 +11,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
+import { getPreferredArea } from "@/constants/preferred-areas";
 import { useUserLocation } from "@/features/location";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
+import { useMarketplaceNavigation } from "@/features/school-discovery/marketplace-navigation";
 import { useDiscoverSchools } from "@/features/school-discovery/use-discover-schools";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSettingsStore } from "@/store/settings.store";
 
-type ExploreScreenProps = {
-  publicMarketplace?: boolean;
-};
-
-export function ExploreScreen({
-  publicMarketplace = false,
-}: ExploreScreenProps) {
+export function ExploreScreen() {
   const router = useRouter();
+  const marketplaceNavigation = useMarketplaceNavigation();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const {
@@ -42,15 +39,31 @@ export function ExploreScreen({
   const [ratingFilter, setRatingFilter] = useState(false);
   const [priceFilter, setPriceFilter] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(false);
+  const discoveryLocationMode = useSettingsStore(
+    (state) => state.discoveryLocationMode,
+  );
+  const preferredAreaId = useSettingsStore((state) => state.preferredAreaId);
+  const preferredArea = getPreferredArea(preferredAreaId);
+  const hasCurrentLocation =
+    discoveryLocationMode === "current" && Boolean(coordinates);
 
   useFocusEffect(
     useCallback(() => {
-      if (isCheckingLocation || !isLocationGranted) {
+      if (
+        discoveryLocationMode !== "current" ||
+        isCheckingLocation ||
+        !isLocationGranted
+      ) {
         return;
       }
 
       void requestLocation();
-    }, [isCheckingLocation, isLocationGranted, requestLocation]),
+    }, [
+      discoveryLocationMode,
+      isCheckingLocation,
+      isLocationGranted,
+      requestLocation,
+    ]),
   );
 
   const discoverQuery = useMemo(() => {
@@ -61,28 +74,41 @@ export function ExploreScreen({
       minRating: ratingFilter ? 4.5 : undefined,
     };
 
-    if (coordinates) {
+    if (discoveryLocationMode === "current" && coordinates) {
       return {
         ...base,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
-        radiusKm: 50,
+        radiusKm: 5,
         sort: "distance" as const,
       };
     }
 
     return {
       ...base,
+      city: preferredArea.city,
+      state: preferredArea.state,
       sort: "rating" as const,
     };
-  }, [coordinates, query, ratingFilter]);
+  }, [
+    coordinates,
+    discoveryLocationMode,
+    preferredArea.city,
+    preferredArea.state,
+    query,
+    ratingFilter,
+  ]);
 
   const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
 
   const filteredSchools = useMemo(() => {
     let result = schools;
 
-    if (distanceFilter && coordinates) {
+    if (
+      distanceFilter &&
+      discoveryLocationMode === "current" &&
+      coordinates
+    ) {
       result = result.filter(
         (school) => school.distanceKm > 0 && school.distanceKm <= 5,
       );
@@ -93,7 +119,13 @@ export function ExploreScreen({
     }
 
     return result;
-  }, [coordinates, distanceFilter, priceFilter, schools]);
+  }, [
+    coordinates,
+    discoveryLocationMode,
+    distanceFilter,
+    priceFilter,
+    schools,
+  ]);
 
   const resetFilters = () => {
     setQuery("");
@@ -108,31 +140,8 @@ export function ExploreScreen({
       style={{ backgroundColor: colors.background, paddingTop: insets.top }}
     >
       <View className="px-6 pb-2 pt-4">
-        <View className="mb-4 flex-row items-center justify-between">
-          <AppLogo height={44} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={publicMarketplace ? "Sign in" : "Open profile"}
-            onPress={() =>
-              publicMarketplace
-                ? router.push("/login")
-                : router.push("/student/profile")
-            }
-            className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="account-circle-outline"
-              size={24}
-              color={colors.text}
-            />
-          </Pressable>
-        </View>
-        <View className="mb-6">
-          <View className="pr-3">
+        <View className="mb-6 flex-row items-start justify-between gap-3">
+          <View className="flex-1 pr-3">
             <Text
               className="mb-1 text-[10px] uppercase tracking-[2px]"
               style={{
@@ -151,9 +160,57 @@ export function ExploreScreen({
               <Text style={{ color: colors.primary }}>Near You</Text>
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              marketplaceNavigation.requiresSignIn ? "Sign in" : "Open profile"
+            }
+            onPress={() => router.push(marketplaceNavigation.accountHref)}
+            className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="account-circle-outline"
+              size={24}
+              color={colors.text}
+            />
+          </Pressable>
         </View>
 
-        {coordinates ? (
+        {discoveryLocationMode === "area" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(marketplaceNavigation.locationHref)}
+            className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={22}
+              color={colors.primary}
+            />
+            <Text
+              className="flex-1 text-[12px] leading-5"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              Showing schools in {preferredArea.label}
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={colors.textSubtle}
+            />
+          </Pressable>
+        ) : coordinates ? (
           <Pressable
             accessibilityRole="button"
             disabled={isLocating}
@@ -179,8 +236,8 @@ export function ExploreScreen({
               {isLocating
                 ? "Updating your current location…"
                 : placeName
-                  ? `Showing schools within 50 km of ${placeName}`
-                  : "Showing schools within 50 km of your current location"}
+                  ? `Showing schools within 5 km of ${placeName}`
+                  : "Showing schools within 5 km of your current location"}
             </Text>
             <MaterialCommunityIcons
               name="refresh"
@@ -198,9 +255,7 @@ export function ExploreScreen({
                 return;
               }
 
-              router.push(
-                publicMarketplace ? "/location" : "/student/profile/location",
-              );
+              router.push(marketplaceNavigation.locationHref);
             }}
             className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
             style={{
@@ -281,8 +336,8 @@ export function ExploreScreen({
           <FilterChip
             icon="map-marker-distance"
             label="Within 5km"
-            selected={distanceFilter}
-            disabled={!coordinates}
+            selected={distanceFilter && hasCurrentLocation}
+            disabled={!hasCurrentLocation}
             onPress={() => setDistanceFilter((current) => !current)}
           />
           <FilterChip
@@ -310,7 +365,7 @@ export function ExploreScreen({
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Loading schools near you...
+              Loading driving schools...
             </Text>
           </View>
         ) : null}
@@ -337,18 +392,18 @@ export function ExploreScreen({
             }
             description={
               schools.length === 0
-                ? coordinates
-                  ? "No verified schools within 50 km of this location. If you're testing on a simulator, set a custom location near Lagos (or Basky), then refresh GPS."
-                  : "There are no verified schools listed yet, or enable location for distance-based results."
+                ? hasCurrentLocation
+                  ? "No verified schools within 5 km of this location. If you're testing on a simulator, set a custom location near Lagos (or Basky), then refresh GPS."
+                  : `No verified schools are listed in ${preferredArea.label} yet.`
                 : "Try another search or clear your current filters."
             }
             actionLabel={
-              schools.length === 0 && coordinates
+              schools.length === 0 && hasCurrentLocation
                 ? "Refresh location"
                 : "Clear filters"
             }
             onActionPress={
-              schools.length === 0 && coordinates
+              schools.length === 0 && hasCurrentLocation
                 ? () => void requestLocation()
                 : resetFilters
             }
@@ -361,15 +416,12 @@ export function ExploreScreen({
                 key={school.id}
                 school={school}
                 onPress={() =>
-                  router.push({
-                    pathname: publicMarketplace
-                      ? "/explore/[schoolId]"
-                      : "/student/explore/[schoolId]",
-                    params: {
-                      schoolId: school.id,
-                      distanceKm: String(school.distanceKm),
-                    },
-                  })
+                  router.push(
+                    marketplaceNavigation.schoolHref(
+                      school.id,
+                      school.distanceKm,
+                    ),
+                  )
                 }
               />
             ))
