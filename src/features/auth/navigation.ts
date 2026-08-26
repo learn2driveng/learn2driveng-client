@@ -6,13 +6,13 @@ const homeRoutes = {
   learner: "/student",
   instructor: "/instructor",
   driving_school: "/school",
-  guardian: "/welcome",
-  admin: "/welcome",
+  guardian: "/unsupported-role",
+  admin: "/unsupported-role",
 } as const satisfies Record<UserRole, Href>;
 
 const allowedReturnPrefixes: Partial<Record<UserRole, readonly string[]>> = {
-  learner: ["/student", "/checkout"],
-  instructor: ["/instructor"],
+  learner: ["/student", "/checkout", "/support"],
+  instructor: ["/instructor", "/support"],
   driving_school: ["/school"],
 };
 

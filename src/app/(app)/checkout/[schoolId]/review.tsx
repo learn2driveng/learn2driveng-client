@@ -26,10 +26,9 @@ import { packageDurationLabel } from "@/lib/school/mappers";
 import type { ApiError } from "@/types";
 import type { PaymentChannel } from "@/types/payment";
 
-const methodLabels: Record<string, string> = {
+const methodLabels: Record<PaymentChannel, string> = {
   card: "Debit or credit card",
   bank_transfer: "Bank transfer",
-  ussd: "USSD",
 };
 
 export default function PurchaseReviewScreen() {
@@ -47,6 +46,7 @@ export default function PurchaseReviewScreen() {
   }>();
   const { school, selectedPackage, loading, error, refetch } =
     useCheckoutPackage(schoolId, packageId);
+  const paymentChannel = parsePaymentChannel(method);
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -97,7 +97,7 @@ export default function PurchaseReviewScreen() {
     ["Training package", selectedPackage.name],
     ["Duration", packageDurationLabel(selectedPackage)],
     ["Sessions", `${selectedPackage.numberOfLessons} lessons`],
-    ["Payment method", methodLabels[method] ?? methodLabels.card],
+    ["Payment method", methodLabels[paymentChannel]],
   ];
 
   const handlePay = async () => {
@@ -110,10 +110,7 @@ export default function PurchaseReviewScreen() {
       const booking = await createLearnerBooking({
         packageId: selectedPackage.id,
       });
-      const channel = (
-        method in methodLabels ? method : "card"
-      ) as PaymentChannel;
-      const payment = await initializePayment(booking.id, channel);
+      const payment = await initializePayment(booking.id, paymentChannel);
 
       if (!payment.authorizationUrl) {
         throw new Error(
@@ -144,7 +141,7 @@ export default function PurchaseReviewScreen() {
         params: {
           schoolId: school.id,
           packageId: selectedPackage.id,
-          method,
+          method: paymentChannel,
           status: resultStatus,
           bookingId: booking.id,
           paymentId: payment.id,

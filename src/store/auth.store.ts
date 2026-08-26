@@ -87,16 +87,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         { useLearnerOperationsStore },
         { useLearnerSessionsStore },
         { useInstructorOperationsStore },
+        { useNotificationStore },
       ] = await Promise.all([
         import("@/store/learner-operations.store"),
         import("@/store/learner-sessions.store"),
         import("@/store/instructor-operations.store"),
+        import("@/store/notification.store"),
       ]);
       useSchoolOperationsStore.getState().resetSchoolOperations();
       useReadinessAssessmentStore.getState().resetLearners();
       useLearnerOperationsStore.getState().resetLearnerOperations();
       useLearnerSessionsStore.getState().resetLearnerSessions();
       useInstructorOperationsStore.getState().resetInstructorOperations();
+      useNotificationStore.getState().resetNotifications();
       set({
         status: "unauthenticated",
         isAuthenticated: false,

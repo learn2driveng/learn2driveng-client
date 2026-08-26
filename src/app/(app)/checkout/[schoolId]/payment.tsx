@@ -1,6 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fontFamily } from "@/constants/fonts";
 import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import type { PaymentChannel } from "@/types/payment";
+import { parsePaymentChannel } from "@/types/payment";
 
 const paymentMethods = [
   {
@@ -27,12 +26,6 @@ const paymentMethods = [
     icon: "bank-transfer" as const,
     title: "Bank transfer",
     description: "Pay securely from your bank app",
-  },
-  {
-    id: "ussd",
-    icon: "cellphone-key" as const,
-    title: "USSD",
-    description: "Pay with a code from any phone",
   },
 ] as const;
 
@@ -51,11 +44,7 @@ export default function PaymentMethodScreen() {
   }>();
   const { school, selectedPackage, loading, error, refetch } =
     useCheckoutPackage(schoolId, packageId);
-  const [method, setMethod] = useState<PaymentChannel>(() =>
-    paymentMethods.some((item) => item.id === initialMethod)
-      ? (initialMethod as PaymentChannel)
-      : "card",
-  );
+  const method = parsePaymentChannel(initialMethod);
 
   if (loading) {
     return (
@@ -131,7 +120,7 @@ export default function PaymentMethodScreen() {
                 key={item.id}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                onPress={() => setMethod(item.id)}
+                onPress={() => router.setParams({ method: item.id })}
                 className="flex-row items-center rounded-3xl border-2 p-4 active:opacity-75"
                 style={{
                   backgroundColor: colors.surface,

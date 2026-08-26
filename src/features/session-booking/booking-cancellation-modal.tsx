@@ -113,7 +113,8 @@ export function BookingCancellationModal({
               className="flex-1 font-figtree text-[12px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              One lesson will return to your package after cancellation.
+              Cancel at least 3 hours before the lesson starts. One lesson will
+              return to your package after cancellation.
             </Text>
           </View>
 

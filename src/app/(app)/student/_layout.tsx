@@ -1,20 +1,32 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Redirect, Tabs } from "expo-router";
+import { Tabs, useRouter, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { fontFamily } from "@/constants/fonts";
-import { useRoleRouteAccess } from "@/features/auth";
+import { RoleRouteGuard } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import { useAuthStore } from "@/store/auth.store";
+
+const studentTabRoots: Readonly<Record<string, Href>> = {
+  index: "/student",
+  explore: "/student/explore",
+  sessions: "/student/sessions",
+  progress: "/student/progress",
+  profile: "/student/profile",
+};
 
 export default function StudentLayout() {
+  const router = useRouter();
   const { colors } = useAppTheme();
-  const access = useRoleRouteAccess("learner", "/student");
+  const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.role);
+  const hasAccess = status === "authenticated" && role === "learner";
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (access.status !== "allowed") return;
+    if (!hasAccess) return;
 
     let active = true;
 
@@ -29,16 +41,31 @@ export default function StudentLayout() {
     return () => {
       active = false;
     };
-  }, [access.status]);
+  }, [hasAccess]);
 
-  if (access.status === "checking") return null;
-  if (access.status === "redirect") return <Redirect href={access.href} />;
+  if (!hasAccess) {
+    return (
+      <RoleRouteGuard allowedRoles={["learner"]} fallbackReturnTo="/student">
+        {null}
+      </RoleRouteGuard>
+    );
+  }
   if (!hydrated) return null;
 
   return (
     <Tabs
+      screenListeners={({ route }) => ({
+        tabPress: (event) => {
+          const tabRoot = studentTabRoots[route.name];
+          if (!tabRoot) return;
+
+          event.preventDefault();
+          router.replace(tabRoot);
+        },
+      })}
       screenOptions={{
         headerShown: false,
+        popToTopOnBlur: true,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,

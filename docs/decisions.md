@@ -58,7 +58,9 @@ React Navigation (`Stack`, `Tabs`) is used **inside** `_layout.tsx` files as Exp
 
 - Routes live in `src/app/`; no `src/screens/` or `src/navigation/` folders
 - Reusable UI in `src/components/`; hooks in `src/hooks/`; API in `src/api/`
-- RBAC enforced in root `src/app/_layout.tsx` via redirects (authenticated role → correct route group)
+- Authentication availability is declared in `src/app/_layout.tsx`; every
+  protected top-level route tree uses one shared role guard that preserves
+  `returnTo` and rejects wrong-role navigation
 - Typed routes via Expo Router experiments (`typedRoutes: true`)
 - Deep linking is automatic from file paths
 

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SchoolAvatar } from "@/components/school/school-avatar";
 import { fontFamily } from "@/constants/fonts";
 import { MarketplaceImage } from "@/features/school-discovery/marketplace-image";
+import { useMarketplaceNavigation } from "@/features/school-discovery/marketplace-navigation";
 import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { transmissionSummaryLabel } from "@/lib/school/mappers";
@@ -97,14 +98,9 @@ function SectionHeading({
   );
 }
 
-type SchoolDetailScreenProps = {
-  publicMarketplace?: boolean;
-};
-
-export function SchoolDetailScreen({
-  publicMarketplace = false,
-}: SchoolDetailScreenProps) {
+export function SchoolDetailScreen() {
   const router = useRouter();
+  const marketplaceNavigation = useMarketplaceNavigation();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { schoolId, distanceKm: distanceKmParam } = useLocalSearchParams<{
@@ -182,36 +178,19 @@ export function SchoolDetailScreen({
   }
 
   const openPackages = () => {
-    const params = {
-      schoolId: school.id,
-      distanceKm: String(school.distanceKm),
-    };
-    if (publicMarketplace) {
-      router.push({ pathname: "/explore/[schoolId]/packages", params });
-      return;
-    }
-    router.push({ pathname: "/student/explore/[schoolId]/packages", params });
+    router.push(
+      marketplaceNavigation.packagesHref(school.id, school.distanceKm),
+    );
   };
 
   const openCollection = (collection: "instructors" | "vehicles") => {
-    const params = { schoolId: school.id, schoolName: school.name };
-    if (publicMarketplace) {
-      router.push({
-        pathname:
-          collection === "instructors"
-            ? "/explore/[schoolId]/instructors"
-            : "/explore/[schoolId]/vehicles",
-        params,
-      });
-      return;
-    }
-    router.push({
-      pathname:
-        collection === "instructors"
-          ? "/student/explore/[schoolId]/instructors"
-          : "/student/explore/[schoolId]/vehicles",
-      params,
-    });
+    router.push(
+      marketplaceNavigation.collectionHref(
+        school.id,
+        school.name,
+        collection,
+      ),
+    );
   };
 
   return (
@@ -238,7 +217,13 @@ export function SchoolDetailScreen({
         <IconButton
           icon="bookmark-outline"
           label="Save school"
-          onPress={publicMarketplace ? () => router.push("/login") : undefined}
+          onPress={() => {
+            const href = marketplaceNavigation.saveSchoolHref(
+              school.id,
+              school.distanceKm,
+            );
+            if (href) router.push(href);
+          }}
         />
       </View>
 

@@ -1,5 +1,1 @@
-import { PackageSelectionScreen } from "@/features/school-discovery/screens/package-selection-screen";
-
-export default function PublicPackageSelectionScreen() {
-  return <PackageSelectionScreen publicMarketplace />;
-}
+export { PackageSelectionScreen as default } from "@/features/school-discovery/screens/package-selection-screen";
