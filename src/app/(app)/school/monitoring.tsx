@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -11,12 +12,21 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
+  fetchSchoolLocationShare,
+  fetchSchoolTrainingSessions,
+  revokeSchoolLocationShare,
+} from "@/lib/api/training-sessions";
+import {
   readInstructorNameFromSession,
   readLearnerLabelFromParticipant,
   sessionDisplayLocation,
 } from "@/lib/instructor/map-sessions";
-import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import { useTrainingSessionStore } from "@/store/training-session.store";
+import {
+  copyTrackingLink,
+  openTrackingLinkInBrowser,
+  shareTrackingLinkViaWhatsApp,
+} from "@/lib/share/tracking-link";
+import type { EnrichedTrainingSession, TrainingSession } from "@/types";
 
 function elapsedLabel(value: string | null) {
   if (!value) return "Not started";
@@ -37,31 +47,90 @@ function scheduleLabel(value: string) {
   }).format(new Date(value));
 }
 
+type SessionShareState = {
+  shareUrl: string;
+  expiresAt: string;
+};
+
 export default function SchoolSessionMonitoringScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
-  const schoolId = useSchoolOperationsStore((state) => state.profile.id);
-  const sessionsById = useTrainingSessionStore((state) => state.sessions);
-  const locationShares = useTrainingSessionStore(
-    (state) => state.locationShares,
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [shareBySessionId, setShareBySessionId] = useState<
+    Record<string, SessionShareState>
+  >({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(
+    null,
   );
-  const participantsBySessionId = useTrainingSessionStore(
-    (state) => state.participantsBySessionId,
-  );
-  const sessions = Object.values(sessionsById);
-  const schoolSessions = sessions.filter((session) => {
-    const sessionSchoolId =
-      typeof session.schoolId === "object" && session.schoolId
-        ? session.schoolId.id
-        : session.schoolId;
-    return sessionSchoolId === schoolId;
-  });
-  const activeSessions = schoolSessions.filter(
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMonitoring = useCallback(async () => {
+    setError(null);
+    try {
+      const nextSessions = await fetchSchoolTrainingSessions();
+      setSessions(nextSessions);
+
+      const active = nextSessions.filter(
+        (session) => session.status === "in_progress",
+      );
+      const shares = await Promise.all(
+        active.map(async (session) => {
+          try {
+            const share = await fetchSchoolLocationShare(session.id);
+            return [session.id, share] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      setShareBySessionId(
+        Object.fromEntries(
+          shares.filter(Boolean).map((entry) => [
+            entry![0],
+            {
+              shareUrl: entry![1].shareUrl,
+              expiresAt: entry![1].expiresAt,
+            },
+          ]),
+        ),
+      );
+    } catch {
+      setError("We could not load live session monitoring.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadMonitoring();
+    const timer = setInterval(() => {
+      void loadMonitoring();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [loadMonitoring]);
+
+  const activeSessions = sessions.filter(
     (session) => session.status === "in_progress",
   );
-  const scheduledSessions = schoolSessions.filter(
+  const scheduledSessions = sessions.filter(
     (session) => session.status === "scheduled",
   );
+
+  const revokeShare = async (sessionId: string) => {
+    setRevokingSessionId(sessionId);
+    try {
+      await revokeSchoolLocationShare(sessionId);
+      setShareBySessionId((current) => {
+        const next = { ...current };
+        delete next[sessionId];
+        return next;
+      });
+    } finally {
+      setRevokingSessionId(null);
+    }
+  };
 
   return (
     <DashboardScreen>
@@ -73,8 +142,9 @@ export default function SchoolSessionMonitoringScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Operational visibility for lessons being delivered by your school.
-        Location appears only when the learner has enabled session sharing.
+        Operational visibility for lessons being delivered by your school. Each
+        active lesson has one guardian tracking link created when the instructor
+        starts the session.
       </Text>
 
       <View className="mt-7 flex-row gap-3">
@@ -143,134 +213,252 @@ export default function SchoolSessionMonitoringScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          Monitoring shows operational session state. Learner location is
-          visible only when session-bound sharing is active.
+          The same tracking link is available to learners, guardians, and your
+          school staff while the lesson is active.
         </Text>
       </View>
 
       <View className="mt-8">
         <SectionHeader title="Active lessons" />
-        <View className="mt-4 gap-3">
-          {activeSessions.length ? (
-            activeSessions.map((session) => {
-              const share = locationShares[session.id];
-              const participant = participantsBySessionId[session.id];
-              return (
-                <View
-                  key={session.id}
-                  className="rounded-3xl border p-4"
-                  style={surfaces.card}
-                >
-                  <View className="flex-row items-start gap-3">
-                    <View
-                      className="h-12 w-12 items-center justify-center rounded-2xl"
-                      style={{ backgroundColor: colors.successSoft }}
-                    >
-                      <MaterialCommunityIcons
-                        name="steering"
-                        size={24}
-                        color={colors.success}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className="text-[15px]"
-                        style={{
-                          color: colors.text,
-                          fontFamily: fontFamily.figtreeBold,
-                        }}
-                      >
-                        {session.title ||
-                          readLearnerLabelFromParticipant(participant)}
-                      </Text>
-                      <Text
-                        className="mt-1 text-[11px]"
-                        style={{
-                          color: colors.textMuted,
-                          fontFamily: fontFamily.figtreeMedium,
-                        }}
-                      >
-                        {readInstructorNameFromSession(session)} ·{" "}
-                        {sessionDisplayLocation(session)}
-                      </Text>
-                    </View>
-                    <View
-                      className="rounded-full px-2.5 py-1.5"
-                      style={{ backgroundColor: colors.successSoft }}
-                    >
-                      <Text
-                        className="text-[10px]"
-                        style={{
-                          color: colors.success,
-                          fontFamily: fontFamily.figtreeBold,
-                        }}
-                      >
-                        LIVE
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="mt-4 flex-row gap-3">
-                    <View
-                      className="flex-1 rounded-2xl p-3"
-                      style={{ backgroundColor: colors.surfaceStrong }}
-                    >
-                      <Text
-                        className="text-[10px]"
-                        style={{
-                          color: colors.textMuted,
-                          fontFamily: fontFamily.figtreeMedium,
-                        }}
-                      >
-                        Duration
-                      </Text>
-                      <Text
-                        className="mt-1 text-[12px]"
-                        style={{
-                          color: colors.text,
-                          fontFamily: fontFamily.figtreeBold,
-                        }}
-                      >
-                        {elapsedLabel(session.actualStartTime ?? null)}
-                      </Text>
-                    </View>
-                    <View
-                      className="flex-1 rounded-2xl p-3"
-                      style={{ backgroundColor: colors.surfaceStrong }}
-                    >
-                      <Text
-                        className="text-[10px]"
-                        style={{
-                          color: colors.textMuted,
-                          fontFamily: fontFamily.figtreeMedium,
-                        }}
-                      >
-                        Location sharing
-                      </Text>
-                      <Text
-                        className="mt-1 text-[12px] capitalize"
-                        style={{
-                          color:
-                            share?.status === "sharing"
-                              ? colors.success
-                              : colors.text,
-                          fontFamily: fontFamily.figtreeBold,
-                        }}
-                      >
-                        {share?.status.replace("_", " ") ?? "Not enabled"}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })
-          ) : (
+        {isLoading ? (
+          <View className="mt-8 items-center">
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : error ? (
+          <View className="mt-4">
             <ContentEmptyState
-              icon="steering-off"
-              title="No active lessons"
-              description="Lessons appear here when an instructor starts a scheduled session."
+              icon="cloud-alert-outline"
+              title="Monitoring unavailable"
+              description={error}
+              actionLabel="Try again"
+              onActionPress={() => void loadMonitoring()}
             />
-          )}
-        </View>
+          </View>
+        ) : (
+          <View className="mt-4 gap-3">
+            {activeSessions.length ? (
+              activeSessions.map((session) => {
+                const enriched = session as EnrichedTrainingSession;
+                const share = shareBySessionId[session.id];
+                return (
+                  <View
+                    key={session.id}
+                    className="rounded-3xl border p-4"
+                    style={surfaces.card}
+                  >
+                    <View className="flex-row items-start gap-3">
+                      <View
+                        className="h-12 w-12 items-center justify-center rounded-2xl"
+                        style={{ backgroundColor: colors.successSoft }}
+                      >
+                        <MaterialCommunityIcons
+                          name="steering"
+                          size={24}
+                          color={colors.success}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="text-[15px]"
+                          style={{
+                            color: colors.text,
+                            fontFamily: fontFamily.figtreeBold,
+                          }}
+                        >
+                          {session.title ||
+                            readLearnerLabelFromParticipant(undefined)}
+                        </Text>
+                        <Text
+                          className="mt-1 text-[11px]"
+                          style={{
+                            color: colors.textMuted,
+                            fontFamily: fontFamily.figtreeMedium,
+                          }}
+                        >
+                          {readInstructorNameFromSession(enriched)} ·{" "}
+                          {sessionDisplayLocation(enriched)}
+                        </Text>
+                      </View>
+                      <View
+                        className="rounded-full px-2.5 py-1.5"
+                        style={{ backgroundColor: colors.successSoft }}
+                      >
+                        <Text
+                          className="text-[10px]"
+                          style={{
+                            color: colors.success,
+                            fontFamily: fontFamily.figtreeBold,
+                          }}
+                        >
+                          LIVE
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="mt-4 flex-row gap-3">
+                      <View
+                        className="flex-1 rounded-2xl p-3"
+                        style={{ backgroundColor: colors.surfaceStrong }}
+                      >
+                        <Text
+                          className="text-[10px]"
+                          style={{
+                            color: colors.textMuted,
+                            fontFamily: fontFamily.figtreeMedium,
+                          }}
+                        >
+                          Duration
+                        </Text>
+                        <Text
+                          className="mt-1 text-[12px]"
+                          style={{
+                            color: colors.text,
+                            fontFamily: fontFamily.figtreeBold,
+                          }}
+                        >
+                          {elapsedLabel(session.actualStartTime ?? null)}
+                        </Text>
+                      </View>
+                      <View
+                        className="flex-1 rounded-2xl p-3"
+                        style={{ backgroundColor: colors.surfaceStrong }}
+                      >
+                        <Text
+                          className="text-[10px]"
+                          style={{
+                            color: colors.textMuted,
+                            fontFamily: fontFamily.figtreeMedium,
+                          }}
+                        >
+                          Tracking link
+                        </Text>
+                        <Text
+                          className="mt-1 text-[12px]"
+                          style={{
+                            color: share ? colors.success : colors.text,
+                            fontFamily: fontFamily.figtreeBold,
+                          }}
+                        >
+                          {share ? "Active" : "Unavailable"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {share ? (
+                      <View className="mt-4 gap-3">
+                        <View
+                          className="rounded-2xl border px-4 py-3"
+                          style={{
+                            backgroundColor: colors.surfaceStrong,
+                            borderColor: colors.border,
+                          }}
+                        >
+                          <Text
+                            className="font-figtree-medium text-[10px] uppercase"
+                            style={{ color: colors.textSubtle }}
+                          >
+                            Guardian link
+                          </Text>
+                          <Text
+                            selectable
+                            className="mt-1 font-figtree text-[12px] leading-5"
+                            style={{ color: colors.text }}
+                          >
+                            {share.shareUrl}
+                          </Text>
+                        </View>
+
+                        <View className="flex-row flex-wrap gap-2">
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => void copyTrackingLink(share.shareUrl)}
+                            className="h-10 flex-row items-center gap-2 rounded-full px-4 active:opacity-80"
+                            style={{ backgroundColor: colors.surfaceStrong }}
+                          >
+                            <MaterialCommunityIcons
+                              name="content-copy"
+                              size={15}
+                              color={colors.text}
+                            />
+                            <Text
+                              className="font-figtree-bold text-[11px]"
+                              style={{ color: colors.text }}
+                            >
+                              Copy
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() =>
+                              void shareTrackingLinkViaWhatsApp(share.shareUrl)
+                            }
+                            className="h-10 flex-row items-center gap-2 rounded-full px-4 active:opacity-80"
+                            style={{ backgroundColor: "#DCFCE7" }}
+                          >
+                            <MaterialCommunityIcons
+                              name="whatsapp"
+                              size={15}
+                              color="#15803D"
+                            />
+                            <Text
+                              className="font-figtree-bold text-[11px]"
+                              style={{ color: "#15803D" }}
+                            >
+                              WhatsApp
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() =>
+                              void openTrackingLinkInBrowser(share.shareUrl)
+                            }
+                            className="h-10 flex-row items-center gap-2 rounded-full px-4 active:opacity-80"
+                            style={{ backgroundColor: colors.primary }}
+                          >
+                            <MaterialCommunityIcons
+                              name="open-in-new"
+                              size={15}
+                              color={colors.onPrimary}
+                            />
+                            <Text
+                              className="font-figtree-bold text-[11px]"
+                              style={{ color: colors.onPrimary }}
+                            >
+                              Open
+                            </Text>
+                          </Pressable>
+                        </View>
+
+                        <Pressable
+                          accessibilityRole="button"
+                          disabled={revokingSessionId === session.id}
+                          onPress={() => void revokeShare(session.id)}
+                          className="h-10 items-center justify-center rounded-full border active:opacity-75"
+                          style={{ borderColor: colors.error }}
+                        >
+                          <Text
+                            className="font-figtree-bold text-[11px]"
+                            style={{ color: colors.error }}
+                          >
+                            {revokingSessionId === session.id
+                              ? "Revoking…"
+                              : "Revoke link"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                  </View>
+                );
+              })
+            ) : (
+              <ContentEmptyState
+                icon="steering-off"
+                title="No active lessons"
+                description="Lessons appear here when an instructor starts a scheduled session."
+              />
+            )}
+          </View>
+        )}
       </View>
 
       <View className="mt-8">
@@ -284,11 +472,11 @@ export default function SchoolSessionMonitoringScreen() {
             )
             .slice(0, 4)
             .map((session) => {
-              const participant = participantsBySessionId[session.id];
+              const enriched = session as EnrichedTrainingSession;
               const transmission =
-                typeof session.vehicleId === "object" &&
-                session.vehicleId?.transmissionType
-                  ? session.vehicleId.transmissionType
+                typeof enriched.vehicleId === "object" &&
+                enriched.vehicleId?.transmissionType
+                  ? enriched.vehicleId.transmissionType
                   : "Lesson";
               return (
                 <View
@@ -314,8 +502,7 @@ export default function SchoolSessionMonitoringScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {session.title ||
-                        readLearnerLabelFromParticipant(participant)}
+                      {session.title}
                     </Text>
                     <Text
                       className="mt-1 text-[11px]"

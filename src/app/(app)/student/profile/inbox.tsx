@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
@@ -14,6 +14,12 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/api/notifications";
+import {
+  readNotificationShareUrl,
+  resolveNotificationRoute,
+} from "@/lib/notifications/route-notification";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import { useLiveLocationStore } from "@/store/live-location.store";
 import type { ApiError } from "@/types";
 import type { AppNotification } from "@/types/notification";
 
@@ -52,6 +58,10 @@ export default function NotificationInboxScreen() {
     return () => clearTimeout(timer);
   }, [load]);
 
+  const setPendingShareUrl = useLiveLocationStore(
+    (state) => state.setPendingShareUrl,
+  );
+
   const openNotification = async (item: AppNotification) => {
     if (!item.readAt) {
       setItems((current) =>
@@ -63,11 +73,21 @@ export default function NotificationInboxScreen() {
       );
       await markNotificationRead(item.id).catch(() => undefined);
     }
-    if (item.data?.participantId) {
+
+    if (item.type === "lesson_started") {
+      await refreshLearnerSessions().catch(() => undefined);
+      const shareUrl = readNotificationShareUrl(item);
+      if (shareUrl) {
+        setPendingShareUrl(shareUrl);
+      }
+    }
+
+    const route = resolveNotificationRoute(item);
+    if (route) {
       router.push({
-        pathname: "/student/sessions/[bookingId]",
-        params: { bookingId: item.data.participantId },
-      });
+        pathname: route.pathname,
+        params: route.params,
+      } as Href);
     }
   };
 
@@ -145,7 +165,13 @@ export default function NotificationInboxScreen() {
                   style={{ backgroundColor: item.readAt ? colors.surfaceStrong : colors.primary }}
                 >
                   <MaterialCommunityIcons
-                    name={item.type === "lesson_completed" ? "clipboard-check-outline" : "calendar-clock-outline"}
+                    name={
+                      item.type === "lesson_completed"
+                        ? "clipboard-check-outline"
+                        : item.type === "lesson_started"
+                          ? "map-marker-radius"
+                          : "calendar-clock-outline"
+                    }
                     size={21}
                     color={item.readAt ? colors.textMuted : colors.onPrimary}
                   />

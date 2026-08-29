@@ -4,6 +4,7 @@ import type {
   AvailableTrainingSession,
   InstructorAssignedSession,
   LearnerJoinedSession,
+  PublicLocationShare,
   TrainingSession,
   TrainingSessionParticipant,
   TrainingSessionType,
@@ -162,14 +163,18 @@ export async function startInstructorTrainingSession(sessionId: string) {
   return data.data;
 }
 
+export type SessionLocationPingInput = {
+  latitude: number;
+  longitude: number;
+  accuracyInMeters?: number;
+  heading?: number;
+  speed?: number;
+  recordedAt: string;
+};
+
 export async function recordInstructorSessionLocation(
   sessionId: string,
-  location: {
-    latitude: number;
-    longitude: number;
-    accuracyInMeters?: number;
-    recordedAt: string;
-  },
+  location: SessionLocationPingInput,
 ) {
   const { data } = await api.post<
     ApiSuccessResponse<SessionCoordinates & { sessionId: string }>
@@ -250,16 +255,41 @@ export async function rescheduleLearnerTrainingSession(
   return data.data;
 }
 
-export type LearnerLocationShare = {
-  token: string;
+export type SessionLocationShareResponse = {
+  shareUrl: string;
   sessionId: string;
   expiresAt: string;
 };
 
+/** @deprecated Use fetchLearnerLocationShare */
+export type LearnerLocationShare = SessionLocationShareResponse & {
+  token?: string;
+};
+
+export async function fetchLearnerLocationShare(participantId: string) {
+  const { data } = await api.get<ApiSuccessResponse<SessionLocationShareResponse>>(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-share`,
+  );
+  return data.data;
+}
+
 export async function createLearnerLocationShare(participantId: string) {
-  const { data } = await api.post<ApiSuccessResponse<LearnerLocationShare>>(
+  const { data } = await api.post<ApiSuccessResponse<SessionLocationShareResponse>>(
     `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-share`,
     {},
+  );
+  return data.data;
+}
+
+export async function recordLearnerSessionLocation(
+  participantId: string,
+  location: SessionLocationPingInput,
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<SessionCoordinates & { sessionId: string; sourceRole: string }>
+  >(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-pings`,
+    location,
   );
   return data.data;
 }
@@ -271,15 +301,21 @@ export async function revokeLearnerLocationShare(participantId: string) {
   );
 }
 
-export type PublicLessonLocationShare = {
-  sessionId: string;
-  title: string;
-  status: "in_progress";
-  expiresAt: string;
-  location:
-    | (SessionCoordinates & { sessionId: string; recordedAt: string })
-    | null;
-};
+export async function fetchSchoolLocationShare(sessionId: string) {
+  const { data } = await api.get<ApiSuccessResponse<SessionLocationShareResponse>>(
+    `/training-sessions/school/${encodeURIComponent(sessionId)}/location-share`,
+  );
+  return data.data;
+}
+
+export async function revokeSchoolLocationShare(sessionId: string) {
+  await api.post(
+    `/training-sessions/school/${encodeURIComponent(sessionId)}/location-share/revoke`,
+    {},
+  );
+}
+
+export type PublicLessonLocationShare = PublicLocationShare;
 
 export async function fetchPublicLessonLocationShare(token: string) {
   const { data } = await api.get<ApiSuccessResponse<PublicLessonLocationShare>>(

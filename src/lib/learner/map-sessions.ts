@@ -408,24 +408,24 @@ export function sessionsAndParticipantsFromJoined(
   for (const item of joinedSessions) {
     if (typeof item.sessionId === "object") {
       sessions[item.sessionId.id] = item.sessionId;
+      participantsBySessionId[item.sessionId.id] = {
+        id: item.id,
+        sessionId:
+          typeof item.sessionId === "object"
+            ? item.sessionId.id
+            : item.sessionId,
+        learnerId: item.learnerId,
+        bookingId:
+          typeof item.bookingId === "object" ? item.bookingId.id : item.bookingId,
+        packageId:
+          typeof item.packageId === "object" ? item.packageId.id : item.packageId,
+        status: item.status,
+        joinedAt: item.joinedAt,
+        attendanceMarkedAt: item.attendanceMarkedAt,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      };
     }
-    participantsBySessionId[item.sessionId.toString()] = {
-      id: item.id,
-      sessionId:
-        typeof item.sessionId === "object"
-          ? item.sessionId.id
-          : item.sessionId,
-      learnerId: item.learnerId,
-      bookingId:
-        typeof item.bookingId === "object" ? item.bookingId.id : item.bookingId,
-      packageId:
-        typeof item.packageId === "object" ? item.packageId.id : item.packageId,
-      status: item.status,
-      joinedAt: item.joinedAt,
-      attendanceMarkedAt: item.attendanceMarkedAt,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    };
   }
 
   const activeSessionId =

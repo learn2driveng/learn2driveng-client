@@ -1,16 +1,15 @@
 import * as Location from "expo-location";
 import { useEffect } from "react";
 
+import { toLocationPingPayload } from "@/features/location/location-utils";
 import { recordInstructorSessionLocation } from "@/lib/api/training-sessions";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
 function publishLocation(sessionId: string, location: Location.LocationObject) {
-  return recordInstructorSessionLocation(sessionId, {
-    latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-    accuracyInMeters: location.coords.accuracy ?? undefined,
-    recordedAt: new Date(location.timestamp).toISOString(),
-  });
+  return recordInstructorSessionLocation(
+    sessionId,
+    toLocationPingPayload(location),
+  );
 }
 
 export function InstructorLocationPublisher() {

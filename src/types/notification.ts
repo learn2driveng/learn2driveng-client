@@ -6,6 +6,10 @@ export type AppNotification = {
   data?: {
     participantId?: string;
     sessionId?: string;
+    shareUrl?: string;
+    url?: string;
+    instructorName?: string;
+    learnerCount?: number;
   } | null;
   readAt?: string | null;
   createdAt: string;

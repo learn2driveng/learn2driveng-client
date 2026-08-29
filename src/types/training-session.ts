@@ -16,15 +16,83 @@ export type TrainingSessionParticipantStatus =
   | "absent"
   | "cancelled";
 
+export type LocationSourceRole = "instructor" | "learner";
+
 export type SessionCoordinates = {
   latitude: number;
   longitude: number;
   accuracy?: number | null;
   accuracyInMeters?: number | null;
+  heading?: number | null;
+  speed?: number | null;
   recordedAt?: string;
 };
 
-/** Canonical training session (server TrainingSession). */
+/** GPS ping emitted during an active session (server entity). */
+export type TrainingSessionLocationPing = {
+  id: string;
+  sessionId: string;
+  sourceRole: LocationSourceRole;
+  instructorId?: string | null;
+  learnerId?: string | null;
+  latitude: number;
+  longitude: number;
+  accuracyInMeters?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  recordedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SessionLocationSnapshot = Pick<
+  TrainingSessionLocationPing,
+  | "sessionId"
+  | "sourceRole"
+  | "instructorId"
+  | "learnerId"
+  | "latitude"
+  | "longitude"
+  | "heading"
+  | "speed"
+  | "accuracyInMeters"
+  | "recordedAt"
+>;
+
+export type DualSessionLocations = {
+  instructor: SessionLocationSnapshot | null;
+  learner: SessionLocationSnapshot | null;
+};
+
+export type SessionLocationShare = {
+  shareUrl: string;
+  expiresAt: string;
+  sessionId: string;
+};
+
+export type PublicLocationShare = {
+  sessionId: string;
+  title: string;
+  status: TrainingSessionStatus;
+  expiresAt: string;
+  instructorFirstName?: string | null;
+  learnerFirstNames?: string[];
+  locations: DualSessionLocations;
+  proximityMeters?: number | null;
+};
+
+/** Local presentation state for a learner-controlled public session link. */
+export type LocationSharingStatus =
+  | "inactive"
+  | "requesting_permission"
+  | "sharing"
+  | "stopped"
+  | "failed";
+
+export type LocationSharingFailureReason =
+  | "permission_denied"
+  | "location_unavailable";
+
 export type TrainingSession = {
   id: string;
   schoolId: string;
@@ -85,43 +153,16 @@ export type RecurringTrainingSchedule = {
   updatedAt?: string;
 };
 
-/** Instructor-emitted GPS ping during an active session (server entity). */
-export type TrainingSessionLocationPing = {
-  id: string;
-  sessionId: string;
-  instructorId: string;
-  latitude: number;
-  longitude: number;
-  accuracyInMeters?: number | null;
-  recordedAt: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-/** Local presentation state for a learner-controlled public session link. */
-export type LocationSharingStatus =
-  | "inactive"
-  | "requesting_permission"
-  | "sharing"
-  | "stopped"
-  | "failed";
-
-export type LocationSharingFailureReason =
-  | "permission_denied"
-  | "location_unavailable";
-
-export type LiveLocationShare = {
-  sessionId: string;
-  learnerId: string;
-  shareToken: string;
-  shareUrl: string;
-  expiresAt: string;
-  status: LocationSharingStatus;
-  lastLocation: SessionCoordinates | null;
-  lastUpdatedAt: string | null;
-  startedAt: string | null;
-  endedAt: string | null;
-  failureReason: LocationSharingFailureReason | null;
+/** @deprecated Use SessionLocationShare */
+export type LiveLocationShare = SessionLocationShare & {
+  learnerId?: string;
+  shareToken?: string;
+  status?: LocationSharingStatus;
+  lastLocation?: SessionCoordinates | null;
+  lastUpdatedAt?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  failureReason?: LocationSharingFailureReason | null;
 };
 
 type EnrichedNameRef = {

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { fontFamily } from "@/constants/fonts";
 import { useRoleRouteAccess } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { LearnerLocationPublisher } from "@/features/location";
 import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 
@@ -36,7 +37,9 @@ export default function StudentLayout() {
   if (!hydrated) return null;
 
   return (
-    <Tabs
+    <>
+      <LearnerLocationPublisher />
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -114,5 +117,6 @@ export default function StudentLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }

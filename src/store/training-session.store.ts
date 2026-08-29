@@ -38,22 +38,6 @@ type TrainingSessionState = {
   stopLocationSharing: (sessionId: string) => void;
 };
 
-const PUBLIC_APP_URL = (
-  process.env.EXPO_PUBLIC_WEB_APP_URL ?? "https://learn2drive.ng"
-).replace(/\/+$/, "");
-
-function createPreviewShareToken() {
-  return [
-    Date.now().toString(36),
-    Math.random().toString(36).slice(2),
-    Math.random().toString(36).slice(2),
-  ].join("-");
-}
-
-function createShareUrl(token: string) {
-  return `${PUBLIC_APP_URL}/track/${encodeURIComponent(token)}`;
-}
-
 export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
   sessions: {},
   participantsBySessionId: {},
@@ -153,20 +137,24 @@ export const useTrainingSessionStore = create<TrainingSessionState>((set) => ({
         return state;
       }
 
-      const shareToken = createPreviewShareToken();
+      const existing = state.locationShares[sessionId];
+      if (existing?.status === "sharing") {
+        return state;
+      }
+
       return {
         locationShares: {
           ...state.locationShares,
           [sessionId]: {
             sessionId,
-            learnerId,
-            shareToken,
-            shareUrl: createShareUrl(shareToken),
-            expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+            shareUrl: existing?.shareUrl ?? "",
+            expiresAt:
+              existing?.expiresAt ??
+              new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
             status: "requesting_permission",
-            lastLocation: null,
-            lastUpdatedAt: null,
-            startedAt: null,
+            lastLocation: existing?.lastLocation ?? null,
+            lastUpdatedAt: existing?.lastUpdatedAt ?? null,
+            startedAt: existing?.startedAt ?? null,
             endedAt: null,
             failureReason: null,
           },

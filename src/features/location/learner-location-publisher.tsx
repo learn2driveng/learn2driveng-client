@@ -1,25 +1,41 @@
 import * as Location from "expo-location";
 import { useEffect } from "react";
 
+import { toLocationPingPayload } from "@/features/location/location-utils";
+import { recordLearnerSessionLocation } from "@/lib/api/training-sessions";
+import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
-function toSessionCoordinates(location: Location.LocationObject) {
+function findActiveLearnerParticipant(
+  joinedSessions: ReturnType<
+    typeof useLearnerSessionsStore.getState
+  >["joinedSessions"],
+) {
+  const active = joinedSessions.find(
+    (item) =>
+      typeof item.sessionId === "object" &&
+      item.sessionId.status === "in_progress" &&
+      (item.status === "scheduled" || item.status === "present"),
+  );
+  if (!active || typeof active.sessionId !== "object") return null;
   return {
-    latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-    accuracy: location.coords.accuracy,
+    participantId: active.id,
+    sessionId: active.sessionId.id,
+    learnerId: active.learnerId,
   };
 }
 
+function publishLocation(participantId: string, location: Location.LocationObject) {
+  return recordLearnerSessionLocation(
+    participantId,
+    toLocationPingPayload(location),
+  );
+}
+
 export function LearnerLocationPublisher() {
-  const requestingSessionId = useTrainingSessionStore((state) => {
-    const share = Object.values(state.locationShares).find(
-      (item) => item.status === "requesting_permission",
-    );
-    return share?.sessionId ?? null;
-  });
-  const sharingSessionId = useTrainingSessionStore(
-    (state) => state.devicePublishingSessionId,
+  const joinedSessions = useLearnerSessionsStore((state) => state.joinedSessions);
+  const requestLocationSharing = useTrainingSessionStore(
+    (state) => state.requestLocationSharing,
   );
   const startLocationSharing = useTrainingSessionStore(
     (state) => state.startLocationSharing,
@@ -30,57 +46,61 @@ export function LearnerLocationPublisher() {
   const failLocationSharing = useTrainingSessionStore(
     (state) => state.failLocationSharing,
   );
+  const stopLocationSharing = useTrainingSessionStore(
+    (state) => state.stopLocationSharing,
+  );
+
+  const activeParticipant = findActiveLearnerParticipant(joinedSessions);
+  const participantId = activeParticipant?.participantId ?? null;
+  const sessionId = activeParticipant?.sessionId ?? null;
+  const learnerId = activeParticipant?.learnerId ?? null;
 
   useEffect(() => {
-    if (!requestingSessionId) return;
+    if (!participantId || !sessionId || !learnerId) return;
+
+    requestLocationSharing(sessionId, learnerId);
 
     let cancelled = false;
+    let subscription: Location.LocationSubscription | null = null;
 
-    const requestAndStart = async () => {
+    const startPublishing = async () => {
       try {
         const permission = await Location.requestForegroundPermissionsAsync();
         if (cancelled) return;
         if (!permission.granted) {
-          failLocationSharing(requestingSessionId, "permission_denied");
+          failLocationSharing(sessionId, "permission_denied");
           return;
         }
 
         const servicesEnabled = await Location.hasServicesEnabledAsync();
         if (cancelled) return;
         if (!servicesEnabled) {
-          failLocationSharing(requestingSessionId, "location_unavailable");
+          failLocationSharing(sessionId, "location_unavailable");
           return;
         }
 
-        const currentLocation = await Location.getCurrentPositionAsync({
+        const current = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
         });
         if (cancelled) return;
-        startLocationSharing(
-          requestingSessionId,
-          toSessionCoordinates(currentLocation),
-        );
-      } catch {
-        if (!cancelled) {
-          failLocationSharing(requestingSessionId, "location_unavailable");
-        }
-      }
-    };
 
-    void requestAndStart();
-    return () => {
-      cancelled = true;
-    };
-  }, [failLocationSharing, requestingSessionId, startLocationSharing]);
+        startLocationSharing(sessionId, {
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+          accuracy: current.coords.accuracy ?? null,
+          accuracyInMeters: current.coords.accuracy ?? null,
+          heading:
+            current.coords.heading != null && current.coords.heading >= 0
+              ? current.coords.heading
+              : null,
+          speed:
+            current.coords.speed != null && current.coords.speed >= 0
+              ? current.coords.speed
+              : null,
+          recordedAt: new Date(current.timestamp).toISOString(),
+        });
+        await publishLocation(participantId, current).catch(() => undefined);
 
-  useEffect(() => {
-    if (!sharingSessionId) return;
-
-    let subscription: Location.LocationSubscription | null = null;
-    let cancelled = false;
-
-    const subscribe = async () => {
-      try {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
@@ -88,30 +108,53 @@ export function LearnerLocationPublisher() {
             timeInterval: 5000,
           },
           (location) => {
-            updateSharedLocation(
-              sharingSessionId,
-              toSessionCoordinates(location),
+            updateSharedLocation(sessionId, {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              accuracy: location.coords.accuracy ?? null,
+              accuracyInMeters: location.coords.accuracy ?? null,
+              heading:
+                location.coords.heading != null && location.coords.heading >= 0
+                  ? location.coords.heading
+                  : null,
+              speed:
+                location.coords.speed != null && location.coords.speed >= 0
+                  ? location.coords.speed
+                  : null,
+              recordedAt: new Date(location.timestamp).toISOString(),
+            });
+            void publishLocation(participantId, location).catch(
+              () => undefined,
             );
           },
           () => {
-            failLocationSharing(sharingSessionId, "location_unavailable");
+            failLocationSharing(sessionId, "location_unavailable");
           },
         );
-
         if (cancelled) subscription.remove();
       } catch {
         if (!cancelled) {
-          failLocationSharing(sharingSessionId, "location_unavailable");
+          failLocationSharing(sessionId, "location_unavailable");
         }
       }
     };
 
-    void subscribe();
+    void startPublishing();
     return () => {
       cancelled = true;
       subscription?.remove();
+      stopLocationSharing(sessionId);
     };
-  }, [failLocationSharing, sharingSessionId, updateSharedLocation]);
+  }, [
+    participantId,
+    sessionId,
+    learnerId,
+    failLocationSharing,
+    requestLocationSharing,
+    startLocationSharing,
+    stopLocationSharing,
+    updateSharedLocation,
+  ]);
 
   return null;
 }
