@@ -9,11 +9,22 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.learn2drive.ng"
+      "bundleIdentifier": "com.learn2drive.ng",
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "remote-notification"]
+      }
     },
     "android": {
       "usesCleartextTraffic": true,
-      "permissions": ["android.permission.CAMERA"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,7 +44,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and to share the instructor's location during active lessons."
+          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and to share the instructor's location during active lessons.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Learn2Drive to continue sharing lesson GPS while the app is in the background during an active session.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ],
       [
@@ -61,7 +75,15 @@
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#FFB800",
+          "defaultChannel": "updates-v2"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

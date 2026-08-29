@@ -2,6 +2,11 @@ import * as Location from "expo-location";
 import { useEffect } from "react";
 
 import { toLocationPingPayload } from "@/features/location/location-utils";
+import {
+  startSessionBackgroundLocationUpdates,
+  stopSessionBackgroundLocationUpdates,
+} from "@/features/location/session-background-location";
+import { setActiveLocationTaskTarget } from "@/features/location/session-location-task-state";
 import { recordInstructorSessionLocation } from "@/lib/api/training-sessions";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 
@@ -23,6 +28,8 @@ export function InstructorLocationPublisher() {
     let cancelled = false;
     let subscription: Location.LocationSubscription | null = null;
 
+    setActiveLocationTaskTarget({ role: "instructor", sessionId: activeSessionId });
+
     const startPublishing = async () => {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted || cancelled) return;
@@ -32,6 +39,7 @@ export function InstructorLocationPublisher() {
       });
       if (cancelled) return;
       await publishLocation(activeSessionId, current).catch(() => undefined);
+      await startSessionBackgroundLocationUpdates().catch(() => undefined);
 
       subscription = await Location.watchPositionAsync(
         {
@@ -52,6 +60,7 @@ export function InstructorLocationPublisher() {
     return () => {
       cancelled = true;
       subscription?.remove();
+      void stopSessionBackgroundLocationUpdates();
     };
   }, [activeSessionId]);
 

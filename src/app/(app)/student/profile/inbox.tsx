@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter, type Href } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
@@ -12,13 +12,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   fetchNotifications,
   markAllNotificationsRead,
-  markNotificationRead,
 } from "@/lib/api/notifications";
-import {
-  readNotificationShareUrl,
-  resolveNotificationRoute,
-} from "@/lib/notifications/route-notification";
-import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import { openNotification } from "@/lib/notifications/open-notification";
 import { useLiveLocationStore } from "@/store/live-location.store";
 import type { ApiError } from "@/types";
 import type { AppNotification } from "@/types/notification";
@@ -62,7 +57,7 @@ export default function NotificationInboxScreen() {
     (state) => state.setPendingShareUrl,
   );
 
-  const openNotification = async (item: AppNotification) => {
+  const handleOpenNotification = async (item: AppNotification) => {
     if (!item.readAt) {
       setItems((current) =>
         current.map((entry) =>
@@ -71,24 +66,12 @@ export default function NotificationInboxScreen() {
             : entry,
         ),
       );
-      await markNotificationRead(item.id).catch(() => undefined);
     }
 
-    if (item.type === "lesson_started") {
-      await refreshLearnerSessions().catch(() => undefined);
-      const shareUrl = readNotificationShareUrl(item);
-      if (shareUrl) {
-        setPendingShareUrl(shareUrl);
-      }
-    }
-
-    const route = resolveNotificationRoute(item);
-    if (route) {
-      router.push({
-        pathname: route.pathname,
-        params: route.params,
-      } as Href);
-    }
+    await openNotification(item, {
+      router,
+      setPendingShareUrl,
+    });
   };
 
   const markAllRead = async () => {
@@ -153,7 +136,7 @@ export default function NotificationInboxScreen() {
               <Pressable
                 key={item.id}
                 accessibilityRole="button"
-                onPress={() => void openNotification(item)}
+                onPress={() => void handleOpenNotification(item)}
                 className="flex-row gap-3 rounded-3xl border p-4 active:opacity-75"
                 style={{
                   borderColor: item.readAt ? colors.border : colors.primary,

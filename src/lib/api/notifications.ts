@@ -21,3 +21,17 @@ export async function markNotificationRead(notificationId: string) {
 export async function markAllNotificationsRead() {
   await api.post("/notifications/read-all", {});
 }
+
+export type RegisterPushTokenInput = {
+  token: string;
+  platform: "android" | "ios";
+  deviceName?: string;
+};
+
+export async function registerPushToken(input: RegisterPushTokenInput) {
+  await api.post("/notifications/push-tokens", input);
+}
+
+export async function unregisterPushToken(token: string) {
+  await api.delete("/notifications/push-tokens", { data: { token } });
+}

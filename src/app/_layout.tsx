@@ -1,5 +1,6 @@
 import "../../global.css";
 import "@/lib/nativewind";
+import "@/features/location/session-background-location";
 
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
