@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, Pressable, Text, View } from "react-native";
 
@@ -200,6 +200,25 @@ export default function SchoolLessonDetailScreen() {
 
       {session.notes ? <View className="mt-8"><SectionHeader title="Notes" /><Text className="mt-3 text-[13px] leading-5" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>{session.notes}</Text></View> : null}
       {error ? <Text className="mt-6 text-[13px]" style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}>{error}</Text> : null}
+
+      {session.status === "completed" || session.status === "in_progress" ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: "/school/operations/schedule/[sessionId]/route-history",
+              params: { sessionId: session.id },
+            } as unknown as Href)
+          }
+          className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-80"
+          style={{ borderColor: colors.primary, backgroundColor: colors.surface }}
+        >
+          <MaterialCommunityIcons name="map-marker-path" size={20} color={colors.primary} />
+          <Text className="text-[14px]" style={{ color: colors.primary, fontFamily: fontFamily.figtreeBold }}>
+            View stored route
+          </Text>
+        </Pressable>
+      ) : null}
 
       {session.status === "scheduled" ? (
         <View className="mt-8">

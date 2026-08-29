@@ -81,6 +81,35 @@ export type PublicLocationShare = {
   proximityMeters?: number | null;
 };
 
+export type SessionLocationHistoryPoint = {
+  latitude: number;
+  longitude: number;
+  accuracyInMeters?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  recordedAt: string;
+};
+
+export type SessionLocationAuditSummary = {
+  instructorPingCount: number;
+  learnerPingCount: number;
+  pairedSampleCount: number;
+  maxProximityMeters: number | null;
+  averageProximityMeters: number | null;
+  divergentSampleCount: number;
+  withinThresholdPercent: number | null;
+  proximityThresholdMeters: number;
+};
+
+export type SessionLocationHistory = {
+  sessionId: string;
+  status: TrainingSessionStatus;
+  instructor: SessionLocationHistoryPoint[];
+  learner: SessionLocationHistoryPoint[];
+  totalPingCount: number;
+  audit: SessionLocationAuditSummary;
+};
+
 /** Local presentation state for a learner-controlled public session link. */
 export type LocationSharingStatus =
   | "inactive"

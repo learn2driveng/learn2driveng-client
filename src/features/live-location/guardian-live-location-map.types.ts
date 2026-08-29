@@ -6,9 +6,9 @@ export type GuardianMapLocation = {
 };
 
 export type GuardianLiveLocationMapProps = {
-  instructor: GuardianMapLocation | null;
-  learner: GuardianMapLocation | null;
-  instructorLabel?: string;
-  learnerLabel?: string;
+  /** Latest training-vehicle position (instructor GPS preferred). */
+  vehicle: GuardianMapLocation | null;
+  vehicleLabel?: string;
+  /** Vehicle route polyline. */
   path?: GuardianMapLocation[];
 };

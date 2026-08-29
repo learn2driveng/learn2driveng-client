@@ -7,8 +7,13 @@ import { io } from "socket.io-client";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
-import { LiveLocationMap } from "@/features/live-location";
-import { TrackingLinkPanel } from "@/features/live-location/tracking-link-panel";
+import {
+  GuardianLiveLocationMap,
+  TrackingLinkPanel,
+  PROXIMITY_WARNING_METERS,
+} from "@/features/live-location";
+import { haversineMeters } from "@/features/live-location/geo-utils";
+import type { GuardianMapLocation } from "@/features/live-location/guardian-live-location-map.types";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getRealtimeBaseUrl } from "@/lib/api/config";
 import {
@@ -38,23 +43,45 @@ type SubscribeResponse = {
   proximityMeters?: number | null;
 };
 
-function snapshotToMapCoordinates(
+function snapshotToMapLocation(
   snapshot: SessionLocationSnapshot | null | undefined,
-): RealtimeLocation | null {
+): GuardianMapLocation | null {
   if (!snapshot) return null;
   return {
-    sessionId: snapshot.sessionId,
-    sourceRole: snapshot.sourceRole,
     latitude: snapshot.latitude,
     longitude: snapshot.longitude,
     accuracyInMeters: snapshot.accuracyInMeters,
     heading: snapshot.heading,
-    speed: snapshot.speed,
-    recordedAt:
-      typeof snapshot.recordedAt === "string"
-        ? snapshot.recordedAt
-        : new Date(snapshot.recordedAt).toISOString(),
   };
+}
+
+function appendPathPoint(
+  path: GuardianMapLocation[],
+  point: GuardianMapLocation,
+  maxPoints = 200,
+) {
+  const last = path[path.length - 1];
+  if (
+    last &&
+    last.latitude === point.latitude &&
+    last.longitude === point.longitude
+  ) {
+    return path;
+  }
+  return [...path, point].slice(-maxPoints);
+}
+
+function computeProximity(
+  instructor: GuardianMapLocation | null,
+  learner: GuardianMapLocation | null,
+) {
+  if (!instructor || !learner) return null;
+  return haversineMeters(
+    instructor.latitude,
+    instructor.longitude,
+    learner.latitude,
+    learner.longitude,
+  );
 }
 
 export default function LearnerLiveLocationScreen() {
@@ -84,7 +111,10 @@ export default function LearnerLiveLocationScreen() {
       ? joinedSession.sessionId
       : null;
   const [instructorLocation, setInstructorLocation] =
-    useState<RealtimeLocation | null>(null);
+    useState<GuardianMapLocation | null>(null);
+  const [instructorPath, setInstructorPath] = useState<GuardianMapLocation[]>(
+    [],
+  );
   const [proximityMeters, setProximityMeters] = useState<number | null>(null);
   const [status, setStatus] = useState<
     "connecting" | "waiting" | "live" | "ended" | "unavailable"
@@ -146,32 +176,59 @@ export default function LearnerLiveLocationScreen() {
       transports: ["websocket"],
     });
 
+    let latestInstructorLocation: GuardianMapLocation | null = null;
+    let latestLearnerLocation: GuardianMapLocation | null = null;
+
+    const applySnapshot = (response: SubscribeResponse) => {
+      if (!response.success) {
+        setStatus("unavailable");
+        return;
+      }
+
+      latestInstructorLocation = snapshotToMapLocation(
+        response.locations?.instructor,
+      );
+      latestLearnerLocation = snapshotToMapLocation(response.locations?.learner);
+      setInstructorLocation(latestInstructorLocation);
+      if (latestInstructorLocation) {
+        setInstructorPath([latestInstructorLocation]);
+        setStatus("live");
+      } else {
+        setStatus("waiting");
+      }
+      setProximityMeters(
+        response.proximityMeters ??
+          computeProximity(latestInstructorLocation, latestLearnerLocation),
+      );
+    };
+
     socket.on("connect", () => {
       socket.emit(
         "session:subscribe",
         { sessionId: session.id },
-        (response: SubscribeResponse) => {
-          if (!response.success) {
-            setStatus("unavailable");
-            return;
-          }
-          const instructor = snapshotToMapCoordinates(
-            response.locations?.instructor,
-          );
-          if (instructor) {
-            setInstructorLocation(instructor);
-            setStatus("live");
-          } else {
-            setStatus("waiting");
-          }
-          setProximityMeters(response.proximityMeters ?? null);
-        },
+        applySnapshot,
       );
     });
     socket.on("location:updated", (nextLocation: RealtimeLocation) => {
       if (nextLocation.sessionId !== session.id) return;
-      if (nextLocation.sourceRole === "learner") return;
-      setInstructorLocation(nextLocation);
+
+      const point = snapshotToMapLocation(nextLocation as SessionLocationSnapshot);
+      if (!point) return;
+
+      if (nextLocation.sourceRole === "learner") {
+        latestLearnerLocation = point;
+        setProximityMeters(
+          computeProximity(latestInstructorLocation, latestLearnerLocation),
+        );
+        return;
+      }
+
+      latestInstructorLocation = point;
+      setInstructorLocation(point);
+      setInstructorPath((current) => appendPathPoint(current, point));
+      setProximityMeters(
+        computeProximity(latestInstructorLocation, latestLearnerLocation),
+      );
       setStatus("live");
     });
     socket.on("session:ended", () => setStatus("ended"));
@@ -199,6 +256,10 @@ export default function LearnerLiveLocationScreen() {
     }
     return null;
   })();
+
+  const hasMapData = Boolean(instructorLocation);
+  const showProximityWarning =
+    proximityMeters != null && proximityMeters > PROXIMITY_WARNING_METERS;
 
   if (!lesson || !session) {
     return (
@@ -252,8 +313,8 @@ export default function LearnerLiveLocationScreen() {
           style={{ color: colors.success }}
         >
           {status === "live"
-            ? "Instructor location is live"
-            : "Waiting for the instructor’s location"}
+            ? "Training vehicle location is live"
+            : "Waiting for the training vehicle GPS"}
         </Text>
       </View>
 
@@ -308,11 +369,37 @@ export default function LearnerLiveLocationScreen() {
         </View>
       ) : null}
 
+      {showProximityWarning ? (
+        <View
+          className="mt-4 rounded-3xl border p-4"
+          style={{
+            backgroundColor: "#FFF7ED",
+            borderColor: "#FB923C",
+          }}
+        >
+          <Text
+            className="font-figtree-bold text-[13px]"
+            style={{ color: "#9A3412" }}
+          >
+            GPS trails do not tally
+          </Text>
+          <Text
+            className="mt-2 font-figtree text-[12px] leading-5"
+            style={{ color: "#C2410C" }}
+          >
+            Your phone and the instructor device are about{" "}
+            {Math.round(proximityMeters!)} m apart. Both should track the same
+            vehicle during the lesson.
+          </Text>
+        </View>
+      ) : null}
+
       <View className="mt-6">
-        {instructorLocation ? (
-          <LiveLocationMap
-            coordinates={instructorLocation}
-            learnerName="Training vehicle"
+        {hasMapData ? (
+          <GuardianLiveLocationMap
+            vehicle={instructorLocation}
+            vehicleLabel="Training vehicle"
+            path={instructorPath}
           />
         ) : (
           <View
@@ -361,26 +448,22 @@ export default function LearnerLiveLocationScreen() {
         >
           {lesson.instructor} · {lesson.school}
         </Text>
-        {proximityMeters != null ? (
+        {proximityMeters != null && !showProximityWarning ? (
           <Text
             className="mt-3 font-figtree-medium text-[11px]"
             style={{ color: colors.textSubtle }}
           >
-            You and your instructor are about {Math.round(proximityMeters)} m
-            apart
+            Your GPS and the instructor device tally — about{" "}
+            {Math.round(proximityMeters)} m apart
           </Text>
         ) : null}
-        {instructorLocation?.recordedAt ? (
+        {instructorLocation ? (
           <Text
             className="mt-3 font-figtree-medium text-[11px]"
             style={{ color: colors.textSubtle }}
           >
-            Last updated{" "}
-            {new Intl.DateTimeFormat("en-NG", {
-              hour: "numeric",
-              minute: "2-digit",
-              second: "2-digit",
-            }).format(new Date(instructorLocation.recordedAt))}
+            Map shows the training vehicle. Learner GPS is still recorded for
+            audit.
           </Text>
         ) : null}
       </View>

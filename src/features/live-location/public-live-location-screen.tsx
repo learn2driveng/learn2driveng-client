@@ -65,6 +65,7 @@ export function PublicLiveLocationScreen({
 
   const instructorLocation = mapSnapshot(share?.locations.instructor ?? null);
   const learnerLocation = mapSnapshot(share?.locations.learner ?? null);
+  const vehicleLocation = instructorLocation ?? learnerLocation;
 
   const proximityMeters = useMemo(() => {
     if (share?.proximityMeters != null) return share.proximityMeters;
@@ -279,27 +280,25 @@ export function PublicLiveLocationScreen({
               className="font-figtree-bold text-[13px]"
               style={{ color: "#9A3412" }}
             >
-              Positions look far apart
+              Positions do not tally
             </Text>
             <Text
               className="mt-1 font-figtree text-[12px] leading-5"
               style={{ color: "#C2410C" }}
             >
-              The learner and instructor are about {Math.round(proximityMeters!)}{" "}
-              m apart. Confirm both devices are in the same vehicle before
-              relying on this view.
+              Instructor and learner GPS are about {Math.round(proximityMeters!)}{" "}
+              m apart. During an active lesson both devices should track the
+              same vehicle.
             </Text>
           </View>
         </View>
       ) : null}
 
       <View className="mt-6">
-        {instructorLocation || learnerLocation ? (
+        {vehicleLocation ? (
           <GuardianLiveLocationMap
-            instructor={instructorLocation}
-            learner={learnerLocation}
-            instructorLabel={`${instructorDisplayName} (vehicle)`}
-            learnerLabel={learnerDisplayName}
+            vehicle={vehicleLocation}
+            vehicleLabel="Training vehicle"
             path={instructorPath}
           />
         ) : (
@@ -325,14 +324,13 @@ export function PublicLiveLocationScreen({
               className="mt-2 px-8 text-center font-figtree text-[12px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              The map will appear once the instructor or learner shares a GPS
-              update.
+              The map will appear once the training vehicle shares a GPS update.
             </Text>
           </View>
         )}
       </View>
 
-      <View className="mt-4 flex-row items-center justify-center gap-5">
+      <View className="mt-4 flex-row items-center justify-center">
         <View className="flex-row items-center gap-2">
           <View
             className="h-3 w-3 rounded-full"
@@ -342,19 +340,7 @@ export function PublicLiveLocationScreen({
             className="font-figtree-medium text-[11px]"
             style={{ color: colors.textMuted }}
           >
-            Instructor
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2">
-          <View
-            className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: "#059669" }}
-          />
-          <Text
-            className="font-figtree-medium text-[11px]"
-            style={{ color: colors.textMuted }}
-          >
-            Learner
+            Training vehicle
           </Text>
         </View>
       </View>
@@ -384,7 +370,7 @@ export function PublicLiveLocationScreen({
               className="mt-2 font-figtree text-[11px]"
               style={{ color: colors.textMuted }}
             >
-              Learner and instructor are about {Math.round(proximityMeters)} m
+              Instructor and learner GPS tally — about {Math.round(proximityMeters)} m
               apart
             </Text>
           ) : null}

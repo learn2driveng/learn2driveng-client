@@ -4,12 +4,8 @@ import { Text, View } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { GuardianLiveLocationMapProps } from "./guardian-live-location-map.types";
 
-export function GuardianLiveLocationMap({
-  instructor,
-  learner,
-}: GuardianLiveLocationMapProps) {
+export function GuardianLiveLocationMap({ vehicle }: GuardianLiveLocationMapProps) {
   const { colors } = useAppTheme();
-  const point = instructor ?? learner;
 
   return (
     <View
@@ -17,7 +13,7 @@ export function GuardianLiveLocationMap({
       style={{ backgroundColor: colors.surface, borderColor: colors.border }}
     >
       <MaterialCommunityIcons
-        name="map-marker-radius-outline"
+        name="car-side"
         size={38}
         color={colors.primary}
       />
@@ -25,16 +21,14 @@ export function GuardianLiveLocationMap({
         className="mt-4 font-figtree-bold text-[15px]"
         style={{ color: colors.text }}
       >
-        {point
-          ? "Live location received"
-          : "Waiting for the first location update"}
+        {vehicle ? "Vehicle location received" : "Waiting for the training vehicle"}
       </Text>
-      {point ? (
+      {vehicle ? (
         <Text
           className="mt-2 text-center font-figtree text-[12px]"
           style={{ color: colors.textMuted }}
         >
-          {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
+          {vehicle.latitude.toFixed(5)}, {vehicle.longitude.toFixed(5)}
         </Text>
       ) : null}
       <Text

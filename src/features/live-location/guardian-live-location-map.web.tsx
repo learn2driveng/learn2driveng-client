@@ -11,7 +11,11 @@ function toLatLng(location: { latitude: number; longitude: number }) {
   return { lat: location.latitude, lng: location.longitude };
 }
 
-function headingIcon(maps: typeof google.maps, color: string, heading?: number | null) {
+function headingIcon(
+  maps: typeof google.maps,
+  color: string,
+  heading?: number | null,
+) {
   return {
     path: maps.SymbolPath.FORWARD_CLOSED_ARROW,
     scale: 5,
@@ -23,29 +27,15 @@ function headingIcon(maps: typeof google.maps, color: string, heading?: number |
   };
 }
 
-function circleIcon(color: string) {
-  return {
-    path: "M 0,0 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0",
-    fillColor: color,
-    fillOpacity: 1,
-    strokeColor: "#FFFFFF",
-    strokeWeight: 2,
-    scale: 1.2,
-  };
-}
-
 export function GuardianLiveLocationMap({
-  instructor,
-  learner,
-  instructorLabel = "Instructor",
-  learnerLabel = "Learner",
+  vehicle,
+  vehicleLabel = "Training vehicle",
   path = [],
 }: GuardianLiveLocationMapProps) {
   const { colors } = useAppTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const instructorMarkerRef = useRef<google.maps.Marker | null>(null);
-  const learnerMarkerRef = useRef<google.maps.Marker | null>(null);
+  const vehicleMarkerRef = useRef<google.maps.Marker | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -89,8 +79,7 @@ export function GuardianLiveLocationMap({
 
     return () => {
       cancelled = true;
-      instructorMarkerRef.current?.setMap(null);
-      learnerMarkerRef.current?.setMap(null);
+      vehicleMarkerRef.current?.setMap(null);
       polylineRef.current?.setMap(null);
       mapRef.current = null;
     };
@@ -103,10 +92,8 @@ export function GuardianLiveLocationMap({
 
     const upsertMarker = (
       markerRef: MutableRefObject<google.maps.Marker | null>,
-      location: GuardianLiveLocationMapProps["instructor"],
+      location: GuardianLiveLocationMapProps["vehicle"],
       label: string,
-      color: string,
-      useHeading: boolean,
     ) => {
       if (!location) {
         markerRef.current?.setMap(null);
@@ -115,9 +102,7 @@ export function GuardianLiveLocationMap({
       }
 
       const position = toLatLng(location);
-      const icon = useHeading
-        ? headingIcon(mapsApi, color, location.heading)
-        : circleIcon(color);
+      const icon = headingIcon(mapsApi, "#FFB800", location.heading);
 
       if (!markerRef.current) {
         markerRef.current = new mapsApi.Marker({
@@ -125,7 +110,7 @@ export function GuardianLiveLocationMap({
           position,
           title: label,
           icon,
-          zIndex: useHeading ? 2 : 3,
+          zIndex: 2,
         });
         return;
       }
@@ -134,15 +119,7 @@ export function GuardianLiveLocationMap({
       markerRef.current.setIcon(icon);
     };
 
-    upsertMarker(
-      instructorMarkerRef,
-      instructor,
-      instructorLabel,
-      "#FFB800",
-      true,
-    );
-    upsertMarker(learnerMarkerRef, learner, learnerLabel, "#059669", false);
-
+    upsertMarker(vehicleMarkerRef, vehicle, vehicleLabel);
     polylineRef.current?.setPath(path.map(toLatLng));
 
     const bounds = new mapsApi.LatLngBounds();
@@ -152,19 +129,15 @@ export function GuardianLiveLocationMap({
       bounds.extend(toLatLng(point));
       hasPoint = true;
     }
-    if (instructor) {
-      bounds.extend(toLatLng(instructor));
-      hasPoint = true;
-    }
-    if (learner) {
-      bounds.extend(toLatLng(learner));
+    if (vehicle) {
+      bounds.extend(toLatLng(vehicle));
       hasPoint = true;
     }
 
     if (hasPoint) {
       map.fitBounds(bounds, 56);
     }
-  }, [instructor, instructorLabel, learner, learnerLabel, path]);
+  }, [path, vehicle, vehicleLabel]);
 
   if (mapError) {
     return (
@@ -196,7 +169,7 @@ export function GuardianLiveLocationMap({
       <div
         ref={containerRef}
         style={{ width: "100%", height: "100%" }}
-        aria-label="Live lesson map showing instructor and learner locations"
+        aria-label="Live lesson map showing the training vehicle"
       />
     </View>
   );

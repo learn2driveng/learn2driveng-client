@@ -10,6 +10,7 @@ import type {
   TrainingSessionType,
   RecurringTrainingSchedule,
   SessionCoordinates,
+  SessionLocationHistory,
 } from "@/types/training-session";
 
 export type CreateRecurringTrainingScheduleInput = {
@@ -313,6 +314,20 @@ export async function revokeSchoolLocationShare(sessionId: string) {
     `/training-sessions/school/${encodeURIComponent(sessionId)}/location-share/revoke`,
     {},
   );
+}
+
+export async function fetchSchoolLocationHistory(sessionId: string) {
+  const { data } = await api.get<ApiSuccessResponse<SessionLocationHistory>>(
+    `/training-sessions/school/${encodeURIComponent(sessionId)}/location-history`,
+  );
+  return data.data;
+}
+
+export async function fetchLearnerLocationHistory(participantId: string) {
+  const { data } = await api.get<ApiSuccessResponse<SessionLocationHistory>>(
+    `/training-sessions/learner/me/${encodeURIComponent(participantId)}/location-history`,
+  );
+  return data.data;
 }
 
 export type PublicLessonLocationShare = PublicLocationShare;

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -204,6 +204,38 @@ export default function BookingDetailScreen() {
             }}
           >
             View live location
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {status === "completed" ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: "/student/sessions/[bookingId]/route-history",
+              params: { bookingId: booking.id },
+            } as unknown as Href)
+          }
+          className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full border active:opacity-80"
+          style={{
+            borderColor: colors.primary,
+            backgroundColor: colors.surface,
+          }}
+        >
+          <MaterialCommunityIcons
+            name="map-marker-path"
+            size={20}
+            color={colors.primary}
+          />
+          <Text
+            className="text-[15px]"
+            style={{
+              color: colors.primary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            View lesson route
           </Text>
         </Pressable>
       ) : null}

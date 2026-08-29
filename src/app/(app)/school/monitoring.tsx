@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { io } from "socket.io-client";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import {
@@ -11,6 +12,7 @@ import {
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { getRealtimeBaseUrl } from "@/lib/api/config";
 import {
   fetchSchoolLocationShare,
   fetchSchoolTrainingSessions,
@@ -26,7 +28,8 @@ import {
   openTrackingLinkInBrowser,
   shareTrackingLinkViaWhatsApp,
 } from "@/lib/share/tracking-link";
-import type { EnrichedTrainingSession, TrainingSession } from "@/types";
+import { useAuthStore } from "@/store/auth.store";
+import type { EnrichedTrainingSession, SessionLocationSnapshot, TrainingSession } from "@/types";
 
 function elapsedLabel(value: string | null) {
   if (!value) return "Not started";
@@ -52,12 +55,40 @@ type SessionShareState = {
   expiresAt: string;
 };
 
+type LiveSessionLocationState = {
+  proximityMeters: number | null;
+  instructorUpdatedAt: string | null;
+  learnerUpdatedAt: string | null;
+};
+
+type SubscribeResponse = {
+  success: boolean;
+  locations?: {
+    instructor: SessionLocationSnapshot | null;
+    learner: SessionLocationSnapshot | null;
+  };
+  proximityMeters?: number | null;
+};
+
+function snapshotTimestamp(
+  snapshot: SessionLocationSnapshot | null | undefined,
+) {
+  if (!snapshot?.recordedAt) return null;
+  return typeof snapshot.recordedAt === "string"
+    ? snapshot.recordedAt
+    : new Date(snapshot.recordedAt).toISOString();
+}
+
 export default function SchoolSessionMonitoringScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
+  const accessToken = useAuthStore((state) => state.accessToken);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [shareBySessionId, setShareBySessionId] = useState<
     Record<string, SessionShareState>
+  >({});
+  const [liveBySessionId, setLiveBySessionId] = useState<
+    Record<string, LiveSessionLocationState>
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(
@@ -114,9 +145,92 @@ export default function SchoolSessionMonitoringScreen() {
   const activeSessions = sessions.filter(
     (session) => session.status === "in_progress",
   );
+  const activeSessionIds = useMemo(
+    () => activeSessions.map((session) => session.id).sort().join(","),
+    [activeSessions],
+  );
   const scheduledSessions = sessions.filter(
     (session) => session.status === "scheduled",
   );
+
+  useEffect(() => {
+    if (!accessToken || !activeSessionIds) return;
+
+    const sessionIds = activeSessionIds.split(",").filter(Boolean);
+    const socket = io(`${getRealtimeBaseUrl()}/session-location`, {
+      auth: { token: accessToken },
+      transports: ["websocket"],
+    });
+
+    const applySnapshot = (sessionId: string, response: SubscribeResponse) => {
+      if (!response.success) return;
+      setLiveBySessionId((current) => ({
+        ...current,
+        [sessionId]: {
+          proximityMeters: response.proximityMeters ?? null,
+          instructorUpdatedAt: snapshotTimestamp(
+            response.locations?.instructor,
+          ),
+          learnerUpdatedAt: snapshotTimestamp(response.locations?.learner),
+        },
+      }));
+    };
+
+    socket.on("connect", () => {
+      for (const sessionId of sessionIds) {
+        socket.emit(
+          "session:subscribe",
+          { sessionId },
+          (response: SubscribeResponse) => applySnapshot(sessionId, response),
+        );
+      }
+    });
+
+    socket.on("location:updated", (location: SessionLocationSnapshot) => {
+      if (!location.sessionId) return;
+      setLiveBySessionId((current) => {
+        const previous = current[location.sessionId] ?? {
+          proximityMeters: null,
+          instructorUpdatedAt: null,
+          learnerUpdatedAt: null,
+        };
+        const recordedAt =
+          typeof location.recordedAt === "string"
+            ? location.recordedAt
+            : new Date(location.recordedAt).toISOString();
+
+        if (location.sourceRole === "learner") {
+          return {
+            ...current,
+            [location.sessionId]: {
+              ...previous,
+              learnerUpdatedAt: recordedAt,
+            },
+          };
+        }
+
+        return {
+          ...current,
+          [location.sessionId]: {
+            ...previous,
+            instructorUpdatedAt: recordedAt,
+          },
+        };
+      });
+    });
+
+    socket.on("session:ended", ({ sessionId }: { sessionId: string }) => {
+      setLiveBySessionId((current) => {
+        const next = { ...current };
+        delete next[sessionId];
+        return next;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [accessToken, activeSessionIds]);
 
   const revokeShare = async (sessionId: string) => {
     setRevokingSessionId(sessionId);
@@ -240,6 +354,7 @@ export default function SchoolSessionMonitoringScreen() {
               activeSessions.map((session) => {
                 const enriched = session as EnrichedTrainingSession;
                 const share = shareBySessionId[session.id];
+                const live = liveBySessionId[session.id];
                 return (
                   <View
                     key={session.id}
@@ -343,6 +458,43 @@ export default function SchoolSessionMonitoringScreen() {
                         </Text>
                       </View>
                     </View>
+
+                    {live ? (
+                      <View
+                        className="mt-4 rounded-2xl border px-4 py-3"
+                        style={{
+                          backgroundColor: colors.surfaceStrong,
+                          borderColor: colors.border,
+                        }}
+                      >
+                        <Text
+                          className="font-figtree-medium text-[10px] uppercase"
+                          style={{ color: colors.textSubtle }}
+                        >
+                          Live GPS
+                        </Text>
+                        <Text
+                          className="mt-2 font-figtree text-[12px] leading-5"
+                          style={{ color: colors.text }}
+                        >
+                          {live.proximityMeters != null
+                            ? `Instructor and learner GPS tally — about ${Math.round(live.proximityMeters)} m apart`
+                            : "Waiting for paired GPS from the same vehicle"}
+                        </Text>
+                        <Text
+                          className="mt-2 font-figtree text-[11px]"
+                          style={{ color: colors.textMuted }}
+                        >
+                          Instructor:{" "}
+                          {live.instructorUpdatedAt
+                            ? "updated"
+                            : "no signal yet"}
+                          {" · "}
+                          Learner:{" "}
+                          {live.learnerUpdatedAt ? "updated" : "no signal yet"}
+                        </Text>
+                      </View>
+                    ) : null}
 
                     {share ? (
                       <View className="mt-4 gap-3">
