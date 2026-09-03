@@ -1,7 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import {
   DashboardPageHeader,
@@ -22,7 +28,9 @@ const transmissionOptions: VehicleTransmissionType[] = ["automatic", "manual"];
 export default function NewSchoolPackageScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const upsertPackage = useSchoolOperationsStore((state) => state.upsertPackage);
+  const upsertPackage = useSchoolOperationsStore(
+    (state) => state.upsertPackage,
+  );
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -171,6 +179,7 @@ export default function NewSchoolPackageScreen() {
               {field.label}
             </Text>
             <TextInput
+              accessibilityLabel={field.label}
               value={field.value}
               onChangeText={field.onChangeText}
               placeholder={field.placeholder}
@@ -216,7 +225,9 @@ export default function NewSchoolPackageScreen() {
                   }}
                 >
                   <MaterialCommunityIcons
-                    name={selected ? "checkbox-marked" : "checkbox-blank-outline"}
+                    name={
+                      selected ? "checkbox-marked" : "checkbox-blank-outline"
+                    }
                     size={20}
                     color={selected ? colors.onPrimary : colors.textSubtle}
                   />

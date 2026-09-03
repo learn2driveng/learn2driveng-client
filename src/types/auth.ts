@@ -10,7 +10,7 @@ export type UserStatus = "active" | "pending" | "suspended";
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken: string | null;
 }
 
 /** Authenticated user profile returned by auth/user endpoints. */
@@ -52,7 +52,7 @@ export interface RegisterPayload {
 export interface AuthSessionResponse {
   user: AuthUser;
   accessToken: string;
-  refreshToken: string;
+  refreshToken: string | null;
 }
 
 export interface GoogleRegistrationProfile {

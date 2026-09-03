@@ -43,7 +43,9 @@ export default function SchoolInstructorsScreen() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("all");
 
-  const activeCount = instructors.filter((item) => item.status === "active").length;
+  const activeCount = instructors.filter(
+    (item) => item.status === "active",
+  ).length;
   const awaitingCount = instructors.filter(
     (item) => item.status === "invited" || item.status === "pending",
   ).length;
@@ -192,6 +194,7 @@ export default function SchoolInstructorsScreen() {
             color={colors.textSubtle}
           />
           <TextInput
+            accessibilityLabel="Search instructors"
             value={query}
             onChangeText={setQuery}
             placeholder="Search instructors"
@@ -413,7 +416,11 @@ export default function SchoolInstructorsScreen() {
           <View className="mt-5">
             <ContentEmptyState
               icon="account-search-outline"
-              title={instructors.length ? "No instructors found" : "No instructors yet"}
+              title={
+                instructors.length
+                  ? "No instructors found"
+                  : "No instructors yet"
+              }
               description={
                 instructors.length
                   ? "Try another name or status."

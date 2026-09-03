@@ -75,8 +75,8 @@ export function LocationPermissionGate({
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          Allow location access to sort FRSC-verified driving schools by
-          distance. Your location is not shared with schools during discovery.
+          Allow location access to sort approved driving schools by distance.
+          Your location is not shared with schools during discovery.
         </Text>
 
         <View

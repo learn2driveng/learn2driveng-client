@@ -2,13 +2,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, Share, Text, View } from "react-native";
-import { io } from "socket.io-client";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { LiveLocationMap } from "@/features/live-location";
+import { createSessionLocationSocket } from "@/features/live-location/session-location-socket";
+import { formatLiveLocation } from "@/features/live-location/format-live-location";
+import {
+  formatTrackedVehicle,
+  formatTrackedVehicleMarker,
+} from "@/features/live-location/tracked-vehicle";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getRealtimeBaseUrl } from "@/lib/api/config";
 import {
   createLearnerLocationShare,
   revokeLearnerLocationShare,
@@ -38,10 +42,18 @@ export default function LearnerLiveLocationScreen() {
     joinedSession && typeof joinedSession.sessionId === "object"
       ? joinedSession.sessionId
       : null;
+  const vehicle =
+    session?.vehicleId && typeof session.vehicleId === "object"
+      ? session.vehicleId
+      : null;
+  const vehicleLabel = formatTrackedVehicle(vehicle);
+  const vehicleMarkerLabel = formatTrackedVehicleMarker(vehicle);
   const [location, setLocation] = useState<RealtimeLocation | null>(null);
   const [status, setStatus] = useState<
-    "connecting" | "waiting" | "live" | "ended" | "unavailable"
+    "connecting" | "waiting" | "live" | "reconnecting" | "ended" | "unavailable"
   >("connecting");
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -86,21 +98,35 @@ export default function LearnerLiveLocationScreen() {
     if (!session?.id || session.status !== "in_progress" || !accessToken)
       return;
 
-    const socket = io(`${getRealtimeBaseUrl()}/session-location`, {
-      auth: { token: accessToken },
-      transports: ["websocket"],
-    });
+    const socket = createSessionLocationSocket({ token: accessToken });
 
     socket.on("connect", () => {
-      socket.emit(
+      setConnectionError(null);
+      socket.timeout(10_000).emit(
         "session:subscribe",
         { sessionId: session.id },
-        (response: {
-          success: boolean;
-          location?: RealtimeLocation | null;
-        }) => {
-          if (!response.success) {
+        (
+          error: Error | null,
+          response?: {
+            success: boolean;
+            message?: string;
+            location?: RealtimeLocation | null;
+          },
+        ) => {
+          if (error || !response) {
+            setConnectionError(
+              "The live session did not respond. Check your connection and try again.",
+            );
             setStatus("unavailable");
+            return;
+          }
+          if (!response.success) {
+            setConnectionError(
+              response.message ??
+                "This live lesson cannot be opened right now.",
+            );
+            setStatus("unavailable");
+            socket.disconnect();
             return;
           }
           if (response.location) {
@@ -115,15 +141,32 @@ export default function LearnerLiveLocationScreen() {
     socket.on("location:updated", (nextLocation: RealtimeLocation) => {
       if (nextLocation.sessionId !== session.id) return;
       setLocation(nextLocation);
+      setConnectionError(null);
       setStatus("live");
     });
     socket.on("session:ended", () => setStatus("ended"));
-    socket.on("connect_error", () => setStatus("unavailable"));
+    socket.on("connect_error", (error) => {
+      setConnectionError(error.message || "The realtime service is offline.");
+      setStatus("reconnecting");
+    });
+    socket.on("disconnect", (reason) => {
+      if (reason === "io client disconnect") return;
+      setStatus(
+        reason === "io server disconnect" ? "unavailable" : "reconnecting",
+      );
+    });
+    socket.io.on("reconnect_attempt", () => setStatus("reconnecting"));
+    socket.io.on("reconnect_failed", () => {
+      setConnectionError(
+        "Learn2Drive could not reconnect to this live lesson.",
+      );
+      setStatus("unavailable");
+    });
 
     return () => {
       socket.disconnect();
     };
-  }, [accessToken, session?.id, session?.status]);
+  }, [accessToken, connectionAttempt, session?.id, session?.status]);
 
   if (!lesson || !session) {
     return (
@@ -174,11 +217,17 @@ export default function LearnerLiveLocationScreen() {
         />
         <Text
           className="flex-1 font-figtree-bold text-[12px]"
-          style={{ color: colors.success }}
+          style={{
+            color: status === "unavailable" ? colors.error : colors.success,
+          }}
         >
           {status === "live"
             ? "Instructor location is live"
-            : "Waiting for the instructor’s location"}
+            : status === "reconnecting"
+              ? "Reconnecting to live tracking"
+              : status === "unavailable"
+                ? "Live connection needs attention"
+                : "Waiting for the instructor’s location"}
         </Text>
       </View>
 
@@ -186,7 +235,7 @@ export default function LearnerLiveLocationScreen() {
         {location ? (
           <LiveLocationMap
             coordinates={location}
-            learnerName="Training vehicle"
+            vehicleLabel={vehicleMarkerLabel}
           />
         ) : (
           <View
@@ -207,14 +256,36 @@ export default function LearnerLiveLocationScreen() {
             >
               {status === "unavailable"
                 ? "Live tracking unavailable"
-                : "Getting the first location update"}
+                : status === "reconnecting"
+                  ? "Reconnecting to live tracking"
+                  : "Getting the first location update"}
             </Text>
             <Text
               className="mt-2 text-center font-figtree text-[12px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              The map will update automatically while the lesson is active.
+              {connectionError ??
+                "The map will update automatically while the lesson is active."}
             </Text>
+            {status === "unavailable" ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setStatus("connecting");
+                  setConnectionError(null);
+                  setConnectionAttempt((attempt) => attempt + 1);
+                }}
+                className="mt-5 rounded-full px-5 py-3 active:opacity-75"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <Text
+                  className="font-figtree-bold text-[12px]"
+                  style={{ color: colors.onPrimary }}
+                >
+                  Try again
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
       </View>
@@ -235,6 +306,40 @@ export default function LearnerLiveLocationScreen() {
         >
           {lesson.instructor} · {lesson.school}
         </Text>
+        <Text
+          className="mt-2 font-figtree-medium text-[11px]"
+          style={{ color: colors.textMuted }}
+        >
+          Vehicle: {vehicleLabel}
+        </Text>
+        <View className="mt-4 flex-row items-start gap-3">
+          <View
+            className="h-9 w-9 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.surfaceStrong }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={19}
+              color={colors.primary}
+            />
+          </View>
+          <View className="flex-1">
+            <Text
+              className="font-figtree-bold text-[10px] uppercase tracking-wide"
+              style={{ color: colors.textSubtle }}
+            >
+              Current location
+            </Text>
+            <Text
+              className="mt-1 font-figtree-medium text-[12px] leading-5"
+              style={{ color: colors.text }}
+            >
+              {location
+                ? formatLiveLocation(location)
+                : "Waiting for the instructor’s location…"}
+            </Text>
+          </View>
+        </View>
         {location?.recordedAt ? (
           <Text
             className="mt-3 font-figtree-medium text-[11px]"

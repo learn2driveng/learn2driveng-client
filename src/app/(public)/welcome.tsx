@@ -47,8 +47,8 @@ export default function StudentEntryChoiceScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          Browse FRSC-verified schools freely, or log in to manage your
-          packages, lessons, and progress.
+          Compare approved schools freely, or log in to manage your packages,
+          lessons, and progress.
         </Text>
 
         <View className="flex-row gap-3 mt-8">

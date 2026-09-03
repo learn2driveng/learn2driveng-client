@@ -6,16 +6,17 @@ Local development setup for the Learn2Drive mobile application.
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | 20 LTS or 22 | `node -v` |
-| npm | 10+ | Bundled with Node |
-| Git | Latest | |
-| Xcode | 15+ | macOS only, for iOS Simulator |
-| Android Studio | Latest | Android SDK, emulator |
-| Expo Go or dev build | SDK 56 | Match `package.json` Expo version |
+| Tool                 | Version      | Notes                             |
+| -------------------- | ------------ | --------------------------------- |
+| Node.js              | 20 LTS or 22 | `node -v`                         |
+| npm                  | 10+          | Bundled with Node                 |
+| Git                  | Latest       |                                   |
+| Xcode                | 15+          | macOS only, for iOS Simulator     |
+| Android Studio       | Latest       | Android SDK, emulator             |
+| Expo Go or dev build | SDK 56       | Match `package.json` Expo version |
 
 Optional:
+
 - [EAS CLI](https://docs.expo.dev/build/setup/) — `npm install -g eas-cli`
 - Watchman (macOS) — `brew install watchman`
 
@@ -37,12 +38,15 @@ npm install
 cp .env.example .env
 ```
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `EXPO_PUBLIC_API_URL` | Yes | REST API base URL |
-| `EXPO_PUBLIC_SOCKET_URL` | Yes | Socket.IO server URL |
-| `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Android maps | Google Maps API key |
-| `EXPO_PUBLIC_APP_ENV` | No | `development` \| `staging` \| `production` |
+| Variable                              | Required        | Description                                           |
+| ------------------------------------- | --------------- | ----------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`                 | Yes             | REST API base URL                                     |
+| `EXPO_PUBLIC_SOCKET_URL`              | No              | Socket.IO server URL; defaults to the REST API origin |
+| `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` | Web maps        | Browser/referrer-restricted Maps JavaScript API key   |
+| `EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID`      | No              | Google Cloud map ID for the web marker style          |
+| `GOOGLE_MAPS_ANDROID_API_KEY`         | Android maps    | Android app-restricted Maps SDK key                   |
+| `GOOGLE_MAPS_IOS_API_KEY`             | iOS Google maps | iOS app-restricted Maps SDK key                       |
+| `EXPO_PUBLIC_APP_ENV`                 | No              | `development` \| `staging` \| `production`            |
 
 Access in code:
 
@@ -99,16 +103,16 @@ npx tailwindcss init
 ```javascript
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.{js,jsx,ts,tsx}'],
-  presets: [require('nativewind/preset')],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {
-        primary: '#208AEF',
-        secondary: '#6366F1',
-        success: '#22C55E',
-        warning: '#F59E0B',
-        error: '#EF4444',
+        primary: "#208AEF",
+        secondary: "#6366F1",
+        success: "#22C55E",
+        warning: "#F59E0B",
+        error: "#EF4444",
       },
     },
   },
@@ -126,15 +130,30 @@ Refer to Expo SDK 56 + NativeWind v4 docs for exact steps at install time.
 
 ## 5. Google Maps Setup
 
+Use separate Google Cloud keys so each platform can enforce the correct
+application restriction. Enable Maps JavaScript API, Maps SDK for Android, and
+Maps SDK for iOS in the Google Cloud project.
+
+### Web
+
+Set `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` and restrict it to the production web
+domain plus the local origins used for development. The key is loaded with
+Google's `@googlemaps/js-api-loader`; it is intentionally present in the web
+bundle, so HTTP referrer restrictions are required.
+
 ### Android
 
-Add to `app.json` under `expo.android.config.googleMaps.apiKey` or use `expo-build-properties` plugin.
+Set `GOOGLE_MAPS_ANDROID_API_KEY`. Restrict the key to package
+`com.learn2drive.ng` and every signing certificate SHA-1 used by development,
+preview, and Play builds.
 
-Set `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` in `.env`.
+`app.config.ts` passes the key to the Expo SDK 56 `react-native-maps` config
+plugin at build time.
 
 ### iOS
 
-Enable Maps in Apple Developer account. Configure API key in `app.json` ios config per Expo maps guide.
+Set `GOOGLE_MAPS_IOS_API_KEY` and restrict it to bundle identifier
+`com.learn2drive.ng`. `app.config.ts` configures the native Google map provider.
 
 ### Development build
 
@@ -198,21 +217,23 @@ Import example: `import { Button } from '@/components/common/Button'`.
 
 ## 9. Push Notifications (Local Dev)
 
-1. Physical device recommended for push testing
+1. Use a physical device or a compatible Android emulator with Google Play services
 2. Configure `expo-notifications` in `app.json`
 3. Request permissions on first relevant screen
 4. Register token with backend after login
 
-Simulator: local notifications only; remote push requires device.
+Remote push must be tested in an updated development build. Expo Go does not
+provide this project's native push configuration.
 
 ---
 
 ## 10. Socket.IO Local Development
 
-Point `EXPO_PUBLIC_SOCKET_URL` to local backend:
+If realtime traffic uses a different origin from the REST API, point
+`EXPO_PUBLIC_SOCKET_URL` to the local backend:
 
 ```
-EXPO_PUBLIC_SOCKET_URL=http://localhost:3001
+EXPO_PUBLIC_SOCKET_URL=http://localhost:7777
 ```
 
 For Android emulator, use `10.0.2.2` instead of `localhost` for host machine.
@@ -229,13 +250,13 @@ Test auth token persistence across app restarts during auth milestone.
 
 ## 12. Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| Metro cache stale | `npx expo start -c` |
-| iOS pod errors | `cd ios && pod install` after prebuild |
-| Maps blank | Verify API key, use dev build |
+| Issue                 | Fix                                       |
+| --------------------- | ----------------------------------------- |
+| Metro cache stale     | `npx expo start -c`                       |
+| iOS pod errors        | `cd ios && pod install` after prebuild    |
+| Maps blank            | Verify API key, use dev build             |
 | Module not found `@/` | Restart TS server; check `tsconfig paths` |
-| Reanimated errors | Ensure babel plugin per Expo 56 docs |
+| Reanimated errors     | Ensure babel plugin per Expo 56 docs      |
 
 ---
 

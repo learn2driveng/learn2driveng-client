@@ -57,7 +57,12 @@ export interface LearnerLessonCard {
   time: string;
   location: string;
   instructor: string;
-  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  status:
+    | "scheduled"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "missed";
 }
 
 /** @deprecated Use LearnerLessonCard for session UI, Booking for API. */

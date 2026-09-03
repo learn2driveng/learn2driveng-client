@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -24,6 +24,7 @@ const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "Upcoming", value: "scheduled" },
   { label: "In progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Missed", value: "missed" },
 ];
 
 export default function InstructorScheduleScreen() {
@@ -40,14 +41,6 @@ export default function InstructorScheduleScreen() {
   const selectedDay =
     scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
 
-  useEffect(() => {
-    if (scheduleDays.length === 0) return;
-    setSelectedDayId((current) =>
-      scheduleDays.some((day) => day.id === current)
-        ? current
-        : (scheduleDays[0]?.id ?? ""),
-    );
-  }, [scheduleDays]);
   const lessonsWithStatus =
     selectedDay?.lessons.map((lesson) => ({
       lesson,
@@ -77,7 +70,7 @@ export default function InstructorScheduleScreen() {
         contentContainerClassName="gap-2 py-6"
       >
         {scheduleDays.map((day) => {
-          const selected = selectedDayId === day.id;
+          const selected = selectedDay?.id === day.id;
 
           return (
             <Pressable

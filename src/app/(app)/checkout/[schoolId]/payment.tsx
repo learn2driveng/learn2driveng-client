@@ -84,12 +84,36 @@ export default function PaymentMethodScreen() {
             {error ? "Try again" : "Go back"}
           </Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.replace("/student")}
+          className="mt-3 px-6 py-3 active:opacity-70"
+        >
+          <Text
+            style={{
+              color: colors.primary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Go to dashboard
+          </Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <CheckoutShell title="Payment method" step={1} onBack={() => router.back()}>
+    <CheckoutShell
+      title="Payment method"
+      step={1}
+      onBack={() =>
+        router.replace({
+          pathname: "/student/explore/[schoolId]/packages",
+          params: { schoolId: school.id },
+        })
+      }
+      onExit={() => router.replace("/student")}
+    >
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}

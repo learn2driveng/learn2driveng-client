@@ -3,6 +3,7 @@ import {
   type AxiosError,
   type InternalAxiosRequestConfig,
 } from "axios";
+import { Platform } from "react-native";
 
 import { getApiBaseUrl } from "@/lib/api/config";
 import { useAuthStore } from "@/store/auth.store";
@@ -16,12 +17,14 @@ type ErrorPayload = Partial<ApiError> & {
 
 export const api = create({
   baseURL: getApiBaseUrl(),
-  headers: { Accept: "application/json" },
+  headers: { Accept: "application/json", "X-Client-Platform": Platform.OS },
+  withCredentials: Platform.OS === "web",
 });
 
 const refreshApi = create({
   baseURL: getApiBaseUrl(),
-  headers: { Accept: "application/json" },
+  headers: { Accept: "application/json", "X-Client-Platform": Platform.OS },
+  withCredentials: Platform.OS === "web",
 });
 
 type RetryableRequest = InternalAxiosRequestConfig & {
@@ -48,12 +51,16 @@ function normalizeApiError(error: AxiosError<ErrorPayload>): ApiError {
 
 async function refreshAccessToken() {
   const { refreshToken, updateTokens } = useAuthStore.getState();
-  if (!refreshToken) throw new Error("Refresh token is unavailable.");
+  if (!refreshToken && Platform.OS !== "web") {
+    throw new Error("Refresh token is unavailable.");
+  }
 
   const { data } = await refreshApi.post<ApiSuccessResponse<AuthTokens>>(
     "/auth/refresh",
     undefined,
-    { headers: { Authorization: `Bearer ${refreshToken}` } },
+    refreshToken
+      ? { headers: { Authorization: `Bearer ${refreshToken}` } }
+      : undefined,
   );
 
   await updateTokens(data.data);
@@ -89,7 +96,7 @@ api.interceptors.response.use(
       request &&
       !request._retry &&
       !isAuthenticationRequest &&
-      refreshToken
+      (refreshToken || Platform.OS === "web")
     ) {
       request._retry = true;
 

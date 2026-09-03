@@ -1,10 +1,11 @@
-import { type Href, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
 import {
   getNotificationsModule,
   syncPushRegistration,
 } from "@/features/notifications/push-notifications";
+import { destinationForRole } from "@/features/auth";
 import { markNotificationRead } from "@/lib/api/notifications";
 import { useAuthStore } from "@/store/auth.store";
 import { refreshNotificationUnreadCount } from "@/store/notification.store";
@@ -37,8 +38,8 @@ export function PushNotificationManager() {
 
         notifications.setNotificationHandler({
           handleNotification: async () => ({
-            shouldPlaySound: false,
-            shouldSetBadge: false,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
             shouldShowBanner: true,
             shouldShowList: true,
           }),
@@ -50,14 +51,17 @@ export function PushNotificationManager() {
           const data = notification.request.content.data;
           const url = data?.url;
           const notificationId = data?.notificationId;
+          const role = useAuthStore.getState().role;
 
-          if (useAuthStore.getState().isAuthenticated) {
+          if (useAuthStore.getState().isAuthenticated && role) {
             if (typeof notificationId === "string") {
               void markNotificationRead(notificationId)
                 .then(() => refreshNotificationUnreadCount())
                 .catch(() => undefined);
             }
-            if (isSafeNotificationPath(url)) router.push(url as Href);
+            if (isSafeNotificationPath(url)) {
+              router.push(destinationForRole(role, url));
+            }
           } else if (isSafeNotificationPath(url)) {
             router.push({ pathname: "/login", params: { returnTo: url } });
           }
@@ -66,6 +70,7 @@ export function PushNotificationManager() {
         const lastResponse = notifications.getLastNotificationResponse();
         if (lastResponse?.notification) {
           openNotification(lastResponse.notification);
+          notifications.clearLastNotificationResponse();
         }
 
         const responseSubscription =

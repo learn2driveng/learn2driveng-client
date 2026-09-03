@@ -57,6 +57,26 @@ requireText(
   'pathname: "/support"',
   "Payment help must open outside every tab navigator",
 );
+[
+  "src/app/(app)/checkout/[schoolId]/payment.tsx",
+  "src/app/(app)/checkout/[schoolId]/review.tsx",
+].forEach((path) =>
+  requireText(
+    path,
+    'onExit={() => router.replace("/student")}',
+    "Pre-payment screens must provide a direct dashboard exit",
+  ),
+);
+requireText(
+  "src/app/onboarding.tsx",
+  'router.replace("/location")',
+  "Completing onboarding must remove the intro from navigation history",
+);
+requireText(
+  "src/app/(public)/_layout.tsx",
+  '<Stack.Screen name="welcome" options={{ gestureEnabled: false }} />',
+  "Welcome must block the iOS back gesture into onboarding",
+);
 if (
   source("src/app/(app)/checkout/[schoolId]/result.tsx").includes(
     '"/student/profile/',

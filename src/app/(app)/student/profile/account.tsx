@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import {
@@ -23,15 +23,6 @@ export default function StudentAccountScreen() {
   const [saved, setSaved] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    setFirstName(user.firstName);
-    setLastName(user.lastName);
-    setPhone(user.phone);
-    setDateOfBirth(user.dateOfBirth ?? "");
-    setSaved(true);
-  }, [user]);
 
   if (!user) return null;
 

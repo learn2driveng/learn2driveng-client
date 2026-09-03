@@ -17,6 +17,7 @@ const filters: { label: string; value: HistoryFilter }[] = [
   { label: "Upcoming", value: "scheduled" },
   { label: "Live", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Missed", value: "missed" },
   { label: "Cancelled", value: "cancelled" },
 ];
 
