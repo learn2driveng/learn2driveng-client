@@ -83,6 +83,13 @@ export default function InstructorProfileScreen() {
         style={surfaces.card}
       >
         <SettingsRow
+          icon="inbox-outline"
+          title="Notification inbox"
+          description="Assignments, changes and report reminders"
+          onPress={() => router.push("/instructor/profile/inbox")}
+        />
+        <Divider />
+        <SettingsRow
           icon="account-outline"
           title="View account"
           description="Personal details and instructor information"

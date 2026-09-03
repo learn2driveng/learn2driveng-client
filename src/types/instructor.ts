@@ -6,7 +6,8 @@ export type InstructorLessonStatus =
   | "scheduled"
   | "in_progress"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "missed";
 
 export type InstructorLessonSummary = {
   id: string;

@@ -64,8 +64,14 @@ export default function InstructorLessonDetailScreen() {
       color: colors.error,
       background: colors.surfaceStrong,
     },
+    missed: {
+      label: "Lesson missed",
+      color: colors.error,
+      background: colors.surfaceStrong,
+    },
   }[lessonStatus];
-  const canOpenSession = lessonStatus !== "completed";
+  const canOpenSession =
+    lessonStatus === "scheduled" || lessonStatus === "in_progress";
 
   return (
     <DashboardScreen>

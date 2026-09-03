@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Linking, Text, View } from "react-native";
+import { Alert, Linking, Text, View } from "react-native";
 
 import {
   DashboardPageHeader,
@@ -7,13 +6,70 @@ import {
   SettingsRow,
   ToggleSettingRow,
 } from "@/components/dashboard";
-import { useUserLocation } from "@/features/location";
+import {
+  requestInstructorLocationPermissions,
+  useUserLocation,
+} from "@/features/location";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useLocationStore } from "@/store/location.store";
+import { useSettingsStore } from "@/store/settings.store";
 
 export default function InstructorLocationSettingsScreen() {
   const { colors } = useAppTheme();
   const location = useUserLocation();
-  const [useDuringLessons, setUseDuringLessons] = useState(true);
+  const useDuringLessons = useSettingsStore(
+    (state) => state.instructorLocationSharingEnabled,
+  );
+  const setUseDuringLessons = useSettingsStore(
+    (state) => state.setInstructorLocationSharingEnabled,
+  );
+  const publishingStatus = useLocationStore(
+    (state) => state.instructorPublishingStatus,
+  );
+  const publishingError = useLocationStore(
+    (state) => state.instructorPublishingError,
+  );
+  const setPublishingStatus = useLocationStore(
+    (state) => state.setInstructorPublishingStatus,
+  );
+
+  const changeLessonSharing = (enabled: boolean) => {
+    if (!enabled) {
+      setUseDuringLessons(false);
+      return;
+    }
+
+    Alert.alert(
+      "Enable live lesson tracking",
+      "During an active lesson, Learn2Drive shares the training vehicle’s location with booked learners and anyone using a private link. Background access keeps tracking active when you leave the app.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Continue",
+          onPress: () => {
+            void requestInstructorLocationPermissions().then((permission) => {
+              if (!permission.servicesEnabled) {
+                setPublishingStatus(
+                  "error",
+                  "Turn on device location services before enabling lesson sharing.",
+                );
+                return;
+              }
+              if (!permission.foregroundGranted) {
+                setPublishingStatus(
+                  "error",
+                  "Allow location access before enabling lesson sharing.",
+                );
+                return;
+              }
+              setUseDuringLessons(true);
+              setPublishingStatus("idle");
+            });
+          },
+        },
+      ],
+    );
+  };
   const locationValue = location.isChecking
     ? "Checking"
     : location.isGranted
@@ -53,10 +109,42 @@ export default function InstructorLocationSettingsScreen() {
         />
         <ToggleSettingRow
           title="Use during active lessons"
-          description="Record location only while a teaching session is active."
+          description="Keep sharing while an active lesson is open, including when the app is backgrounded."
           value={useDuringLessons}
-          onValueChange={setUseDuringLessons}
+          onValueChange={(enabled) => void changeLessonSharing(enabled)}
         />
+      </View>
+
+      <View
+        className="mt-5 rounded-2xl px-4 py-4"
+        style={{
+          backgroundColor: colors.surfaceStrong,
+        }}
+      >
+        <Text
+          className="font-figtree-bold text-[12px]"
+          style={{
+            color: publishingStatus === "error" ? colors.error : colors.text,
+          }}
+        >
+          {publishingStatus === "background"
+            ? "Background sharing active"
+            : publishingStatus === "foreground"
+              ? "Foreground sharing active"
+              : publishingStatus === "requesting"
+                ? "Starting location sharing…"
+                : publishingStatus === "error"
+                  ? "Location sharing needs attention"
+                  : "Location sharing is inactive"}
+        </Text>
+        {publishingError ? (
+          <Text
+            className="mt-1 font-figtree text-[11px] leading-4"
+            style={{ color: colors.error }}
+          >
+            {publishingError}
+          </Text>
+        ) : null}
       </View>
 
       <View

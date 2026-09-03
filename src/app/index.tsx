@@ -1,5 +1,3 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect } from "react";
@@ -18,9 +16,6 @@ import { Screen } from "@/components/common/screen";
 import { splashPalette } from "@/constants/theme";
 import { homeForRole } from "@/features/auth";
 import { useAuthStore } from "@/store/auth.store";
-
-const FRSC_SEAL_URI =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 const GRID_ROWS = 18;
 const GRID_COLS = 14;
@@ -181,34 +176,6 @@ export default function SplashScreen() {
             />
           </View>
         </View>
-      </View>
-
-      <View className="z-10 items-center gap-4 pb-4">
-        <View className="w-full max-w-sm flex-row items-center gap-4 rounded-xl border border-black/10 bg-black/5 px-6 py-3 dark:border-white/10 dark:bg-white/5">
-          <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-black/10 dark:bg-white/10">
-            <Image
-              source={{ uri: FRSC_SEAL_URI }}
-              className="h-full w-full"
-              contentFit="contain"
-            />
-          </View>
-          <View className="flex-1 gap-0.5">
-            <Text className="font-sans text-caption font-bold uppercase tracking-wide text-primary">
-              FRSC Verified Provider
-            </Text>
-            <Text className="font-sans max-w-[180px] text-footnote text-neutral-500 dark:text-neutral-400">
-              Certified safety and tracking standards compliant.
-            </Text>
-          </View>
-          <MaterialCommunityIcons
-            name="check-decagram"
-            size={16}
-            color={`${PRIMARY}CC`}
-          />
-        </View>
-        <Text className="font-sans text-caption font-light uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
-          Secure Fleet Connection Active
-        </Text>
       </View>
 
       <Scanline />

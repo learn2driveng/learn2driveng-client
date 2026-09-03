@@ -53,3 +53,11 @@ export async function registerPushToken(input: {
 export async function unregisterPushToken(token: string) {
   await api.delete("/notifications/push-tokens", { data: { token } });
 }
+
+export async function sendTestNotification() {
+  const { data } = await api.post<ApiSuccessResponse<AppNotification>>(
+    "/notifications/test",
+    {},
+  );
+  return data.data;
+}

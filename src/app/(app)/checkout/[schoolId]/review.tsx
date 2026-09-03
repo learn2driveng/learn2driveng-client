@@ -91,6 +91,20 @@ export default function PurchaseReviewScreen() {
             {error ? "Try again" : "Go back"}
           </Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.replace("/student")}
+          className="mt-3 px-6 py-3 active:opacity-70"
+        >
+          <Text
+            style={{
+              color: colors.primary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Go to dashboard
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -180,6 +194,7 @@ export default function PurchaseReviewScreen() {
       title="Review purchase"
       step={2}
       onBack={() => router.back()}
+      onExit={() => router.replace("/student")}
     >
       <ScrollView
         className="flex-1"

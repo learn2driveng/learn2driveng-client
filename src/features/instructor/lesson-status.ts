@@ -6,7 +6,10 @@ export function toInstructorLessonStatus(
 ): InstructorLessonStatus {
   if (sessionStatus === "completed") return "completed";
   if (sessionStatus === "in_progress") return "in_progress";
-  if (sessionStatus === "scheduled") return "scheduled";
+  if (sessionStatus === "missed") return "missed";
+  if (sessionStatus === "scheduled") {
+    return fallback === "missed" ? "missed" : "scheduled";
+  }
   if (sessionStatus === "cancelled") return "cancelled";
   return fallback;
 }

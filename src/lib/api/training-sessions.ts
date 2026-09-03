@@ -162,6 +162,13 @@ export async function startInstructorTrainingSession(sessionId: string) {
   return data.data;
 }
 
+export async function extendInstructorTrainingSession(sessionId: string) {
+  const { data } = await api.post<
+    ApiSuccessResponse<InstructorAssignedSession>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/extend`, {});
+  return data.data;
+}
+
 export async function recordInstructorSessionLocation(
   sessionId: string,
   location: {
@@ -276,6 +283,14 @@ export type PublicLessonLocationShare = {
   title: string;
   status: "in_progress";
   expiresAt: string;
+  vehicle: {
+    id: string;
+    make: string;
+    model: string;
+    year: number;
+    plateNumber: string;
+    color?: string | null;
+  } | null;
   location:
     | (SessionCoordinates & { sessionId: string; recordedAt: string })
     | null;

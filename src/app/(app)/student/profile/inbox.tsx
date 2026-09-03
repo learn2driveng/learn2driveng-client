@@ -14,7 +14,12 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/api/notifications";
-import { useNotificationStore } from "@/store/notification.store";
+import { destinationForRole } from "@/features/auth";
+import { useAuthStore } from "@/store/auth.store";
+import {
+  refreshNotificationUnreadCount,
+  useNotificationStore,
+} from "@/store/notification.store";
 import type { ApiError } from "@/types";
 import type { AppNotification } from "@/types/notification";
 
@@ -30,12 +35,12 @@ function formatNotificationTime(value: string) {
 export default function NotificationInboxScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const role = useAuthStore((state) => state.role);
+  const isInstructor = role === "instructor";
   const [items, setItems] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const setUnreadCount = useNotificationStore(
-    (state) => state.setUnreadCount,
-  );
+  const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
   const decrementUnreadCount = useNotificationStore(
     (state) => state.decrementUnreadCount,
   );
@@ -70,9 +75,13 @@ export default function NotificationInboxScreen() {
         ),
       );
       decrementUnreadCount();
-      await markNotificationRead(item.id).catch(() => void load());
+      await markNotificationRead(item.id)
+        .then(() => refreshNotificationUnreadCount())
+        .catch(() => void load());
     }
-    if (item.data?.participantId) {
+    if (typeof item.data?.url === "string" && role) {
+      router.push(destinationForRole(role, item.data.url));
+    } else if (item.data?.participantId && !isInstructor) {
       router.push({
         pathname: "/student/sessions/[bookingId]",
         params: { bookingId: item.data.participantId },
@@ -82,10 +91,15 @@ export default function NotificationInboxScreen() {
 
   const markAllRead = async () => {
     setItems((current) =>
-      current.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })),
+      current.map((item) => ({
+        ...item,
+        readAt: item.readAt ?? new Date().toISOString(),
+      })),
     );
     setUnreadCount(0);
-    await markAllNotificationsRead().catch(() => void load());
+    await markAllNotificationsRead()
+      .then(() => refreshNotificationUnreadCount())
+      .catch(() => void load());
   };
 
   const hasUnread = items.some((item) => !item.readAt);
@@ -97,7 +111,10 @@ export default function NotificationInboxScreen() {
       {isLoading ? (
         <View className="items-center py-20">
           <ActivityIndicator color={colors.primary} />
-          <Text className="mt-3 font-figtree text-[14px]" style={{ color: colors.textMuted }}>
+          <Text
+            className="mt-3 font-figtree text-[14px]"
+            style={{ color: colors.textMuted }}
+          >
             Loading updates…
           </Text>
         </View>
@@ -116,9 +133,19 @@ export default function NotificationInboxScreen() {
           <DashboardEmptyState
             icon="bell-check-outline"
             title="You’re all caught up"
-            description="Lesson changes and instructor feedback will appear here."
+            description={
+              isInstructor
+                ? "Assignments, schedule changes and report reminders will appear here."
+                : "Lesson changes and instructor feedback will appear here."
+            }
             actionLabel="Notification preferences"
-            onActionPress={() => router.push("/student/profile/notifications")}
+            onActionPress={() =>
+              router.push(
+                isInstructor
+                  ? "/instructor/profile/notifications"
+                  : "/student/profile/notifications",
+              )
+            }
           />
         </View>
       ) : (
@@ -128,9 +155,15 @@ export default function NotificationInboxScreen() {
               accessibilityRole="button"
               onPress={() => void markAllRead()}
               className="mb-4 mt-3 self-end rounded-full border px-5 py-3 active:opacity-70"
-              style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              }}
             >
-              <Text className="font-figtree-semibold text-[13px]" style={{ color: colors.text }}>
+              <Text
+                className="font-figtree-semibold text-[13px]"
+                style={{ color: colors.text }}
+              >
                 Mark all as read
               </Text>
             </Pressable>
@@ -152,27 +185,47 @@ export default function NotificationInboxScreen() {
               >
                 <View
                   className="h-11 w-11 items-center justify-center rounded-full"
-                  style={{ backgroundColor: item.readAt ? colors.surfaceStrong : colors.primary }}
+                  style={{
+                    backgroundColor: item.readAt
+                      ? colors.surfaceStrong
+                      : colors.primary,
+                  }}
                 >
                   <MaterialCommunityIcons
-                    name={item.type === "lesson_completed" ? "clipboard-check-outline" : "calendar-clock-outline"}
+                    name={
+                      item.type === "lesson_completed"
+                        ? "clipboard-check-outline"
+                        : "calendar-clock-outline"
+                    }
                     size={21}
                     color={item.readAt ? colors.textMuted : colors.onPrimary}
                   />
                 </View>
                 <View className="min-w-0 flex-1">
                   <View className="flex-row items-start gap-2">
-                    <Text className="flex-1 font-figtree-bold text-[15px]" style={{ color: colors.text }}>
+                    <Text
+                      className="flex-1 font-figtree-bold text-[15px]"
+                      style={{ color: colors.text }}
+                    >
                       {item.title}
                     </Text>
                     {!item.readAt ? (
-                      <View className="mt-1.5 h-2 w-2 rounded-full" style={{ backgroundColor: colors.primary }} />
+                      <View
+                        className="mt-1.5 h-2 w-2 rounded-full"
+                        style={{ backgroundColor: colors.primary }}
+                      />
                     ) : null}
                   </View>
-                  <Text className="mt-1 font-figtree text-[13px] leading-5" style={{ color: colors.textMuted }}>
+                  <Text
+                    className="mt-1 font-figtree text-[13px] leading-5"
+                    style={{ color: colors.textMuted }}
+                  >
                     {item.message}
                   </Text>
-                  <Text className="mt-2 font-figtree-medium text-[11px]" style={{ color: colors.textSubtle }}>
+                  <Text
+                    className="mt-2 font-figtree-medium text-[11px]"
+                    style={{ color: colors.textSubtle }}
+                  >
                     {formatNotificationTime(item.createdAt)}
                   </Text>
                 </View>

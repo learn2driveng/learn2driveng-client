@@ -12,9 +12,10 @@
       "bundleIdentifier": "com.learn2drive.ng"
     },
     "android": {
-      "usesCleartextTraffic": true,
       "googleServicesFile": "./google-services.json",
-      "permissions": ["android.permission.CAMERA"],
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -26,7 +27,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -34,7 +35,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and to share the instructor's location during active lessons."
+          "locationWhenInUsePermission": "Allow Learn2Drive to use your location for nearby schools and active driving lessons.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Learn2Drive to keep sharing an instructor's location while an active driving lesson is in progress.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [
@@ -69,7 +74,8 @@
           "color": "#F4B323",
           "defaultChannel": "updates-v2"
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

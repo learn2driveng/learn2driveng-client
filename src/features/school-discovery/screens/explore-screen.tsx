@@ -99,16 +99,13 @@ export function ExploreScreen() {
     ratingFilter,
   ]);
 
-  const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
+  const { schools, loading, error, refetch } =
+    useDiscoverSchools(discoverQuery);
 
   const filteredSchools = useMemo(() => {
     let result = schools;
 
-    if (
-      distanceFilter &&
-      discoveryLocationMode === "current" &&
-      coordinates
-    ) {
+    if (distanceFilter && discoveryLocationMode === "current" && coordinates) {
       result = result.filter(
         (school) => school.distanceKm > 0 && school.distanceKm <= 5,
       );
@@ -149,7 +146,7 @@ export function ExploreScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              FRSC Verified
+              Driving schools
             </Text>
             <Text
               accessibilityRole="header"
