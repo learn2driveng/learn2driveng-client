@@ -8,7 +8,8 @@ export type TrainingSessionStatus =
   | "scheduled"
   | "in_progress"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "missed";
 
 export type TrainingSessionParticipantStatus =
   | "scheduled"
@@ -22,6 +23,13 @@ export type SessionCoordinates = {
   accuracy?: number | null;
   accuracyInMeters?: number | null;
   recordedAt?: string;
+  address?: {
+    formattedAddress: string;
+    locality?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+  } | null;
 };
 
 /** Canonical training session (server TrainingSession). */
@@ -40,6 +48,9 @@ export type TrainingSession = {
   status: TrainingSessionStatus;
   actualStartTime?: string | null;
   actualEndTime?: string | null;
+  activeUntil?: string | null;
+  extensionCount?: number;
+  endedAutomatically?: boolean;
   startedByInstructorId?: string | null;
   endedByInstructorId?: string | null;
   startLocation?: SessionCoordinates | null;
@@ -96,32 +107,6 @@ export type TrainingSessionLocationPing = {
   recordedAt: string;
   createdAt?: string;
   updatedAt?: string;
-};
-
-/** Local presentation state for a learner-controlled public session link. */
-export type LocationSharingStatus =
-  | "inactive"
-  | "requesting_permission"
-  | "sharing"
-  | "stopped"
-  | "failed";
-
-export type LocationSharingFailureReason =
-  | "permission_denied"
-  | "location_unavailable";
-
-export type LiveLocationShare = {
-  sessionId: string;
-  learnerId: string;
-  shareToken: string;
-  shareUrl: string;
-  expiresAt: string;
-  status: LocationSharingStatus;
-  lastLocation: SessionCoordinates | null;
-  lastUpdatedAt: string | null;
-  startedAt: string | null;
-  endedAt: string | null;
-  failureReason: LocationSharingFailureReason | null;
 };
 
 type EnrichedNameRef = {

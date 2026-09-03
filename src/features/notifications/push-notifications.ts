@@ -69,7 +69,7 @@ async function ensureAndroidChannel(notifications: NotificationsModule) {
 
 export async function getPushPermissionState(): Promise<PushPermissionState> {
   const notifications = await loadNotifications();
-  if (!notifications || !Device.isDevice) {
+  if (!notifications) {
     return { status: "unavailable", canAskAgain: false };
   }
 
@@ -87,7 +87,7 @@ export async function getPushPermissionState(): Promise<PushPermissionState> {
 
 export async function syncPushRegistration(requestPermission: boolean) {
   const notifications = await loadNotifications();
-  if (!notifications || !Device.isDevice) return null;
+  if (!notifications) return null;
 
   await ensureAndroidChannel(notifications);
   let permission = await notifications.getPermissionsAsync();
@@ -97,7 +97,8 @@ export async function syncPushRegistration(requestPermission: boolean) {
   if (!permissionAllowed(notifications, permission)) return null;
 
   const projectId =
-    Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants.easConfig?.projectId;
   if (!projectId) throw new Error("EAS project ID is not configured.");
 
   const token = (
@@ -121,7 +122,14 @@ export async function unregisterCurrentPushDevice() {
     await unregisterPushToken(token);
   } finally {
     await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
+    await syncNotificationBadge(0).catch(() => undefined);
   }
+}
+
+export async function syncNotificationBadge(unreadCount: number) {
+  const notifications = await loadNotifications();
+  if (!notifications) return false;
+  return notifications.setBadgeCountAsync(Math.max(0, unreadCount));
 }
 
 export async function getNotificationsModule() {

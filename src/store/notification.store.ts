@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { fetchNotifications } from "@/lib/api/notifications";
+import { syncNotificationBadge } from "@/features/notifications/push-notifications";
 
 interface NotificationState {
   unreadCount: number;
@@ -21,5 +22,6 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 export async function refreshNotificationUnreadCount() {
   const result = await fetchNotifications();
   useNotificationStore.getState().setUnreadCount(result.unreadCount);
+  await syncNotificationBadge(result.unreadCount).catch(() => undefined);
   return result.unreadCount;
 }

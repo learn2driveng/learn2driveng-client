@@ -1,44 +1,177 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { useToast } from "@/components/common/toast";
-import { DashboardPageHeader, DashboardScreen, SectionHeader } from "@/components/dashboard";
+import {
+  DashboardPageHeader,
+  DashboardScreen,
+  SectionHeader,
+} from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { createRecurringTrainingSchedule } from "@/lib/api/training-sessions";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError, TrainingSessionType } from "@/types";
 
-const types: { value: TrainingSessionType; label: string; icon: "car" | "book-open-variant" | "clipboard-check-outline" }[] = [
+const types: {
+  value: TrainingSessionType;
+  label: string;
+  icon: "car" | "book-open-variant" | "clipboard-check-outline";
+}[] = [
   { value: "practical", label: "Practical", icon: "car" },
   { value: "theory", label: "Theory", icon: "book-open-variant" },
   { value: "mock_test", label: "Mock test", icon: "clipboard-check-outline" },
   { value: "assessment", label: "Assessment", icon: "clipboard-check-outline" },
 ];
-const weekdayOptions = [{ value: 1, label: "Mon" }, { value: 2, label: "Tue" }, { value: 3, label: "Wed" }, { value: 4, label: "Thu" }, { value: 5, label: "Fri" }, { value: 6, label: "Sat" }, { value: 7, label: "Sun" }];
+const weekdayOptions = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 7, label: "Sun" },
+];
 
-function Field({ label, value, onChangeText, placeholder, keyboardType = "default", icon }: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: "default" | "number-pad"; icon: keyof typeof MaterialCommunityIcons.glyphMap }) {
+function Field({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = "default",
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  keyboardType?: "default" | "number-pad";
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+}) {
   const { colors } = useAppTheme();
-  return <View className="gap-2"><Text className="text-[11px] uppercase tracking-[1px]" style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}>{label}</Text><View className="h-14 flex-row items-center rounded-2xl border" style={{ paddingHorizontal: 16, backgroundColor: colors.surface, borderColor: colors.border }}><MaterialCommunityIcons name={icon} size={19} color={colors.textSubtle} /><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.textSubtle} keyboardType={keyboardType} className="ml-3 flex-1 text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium }} /></View></View>;
+  return (
+    <View className="gap-2">
+      <Text
+        className="text-[11px] uppercase tracking-[1px]"
+        style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
+      >
+        {label}
+      </Text>
+      <View
+        className="h-14 flex-row items-center rounded-2xl border"
+        style={{
+          paddingHorizontal: 16,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        }}
+      >
+        <MaterialCommunityIcons
+          name={icon}
+          size={19}
+          color={colors.textSubtle}
+        />
+        <TextInput
+          accessibilityLabel={label}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSubtle}
+          keyboardType={keyboardType}
+          className="ml-3 flex-1 text-[14px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium }}
+        />
+      </View>
+    </View>
+  );
 }
 
-function SelectionRow({ icon, label, detail, onPress }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; detail: string; onPress: () => void }) {
+function SelectionRow({
+  icon,
+  label,
+  detail,
+  onPress,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  detail: string;
+  onPress: () => void;
+}) {
   const { colors } = useAppTheme();
-  return <Pressable onPress={onPress} className="mt-3 flex-row items-center gap-3 rounded-3xl border active:opacity-80" style={{ minHeight: 72, paddingHorizontal: 16, backgroundColor: colors.surface, borderColor: colors.border }}><View className="h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: colors.surfaceStrong }}><MaterialCommunityIcons name={icon} size={21} color={colors.primary} /></View><View className="flex-1"><Text className="text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>{label}</Text><Text numberOfLines={1} className="mt-1 text-[12px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>{detail}</Text></View><MaterialCommunityIcons name="chevron-right" size={21} color={colors.textSubtle} /></Pressable>;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${detail}`}
+      onPress={onPress}
+      className="mt-3 flex-row items-center gap-3 rounded-3xl border active:opacity-80"
+      style={{
+        minHeight: 72,
+        paddingHorizontal: 16,
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+      }}
+    >
+      <View
+        className="h-11 w-11 items-center justify-center rounded-2xl"
+        style={{ backgroundColor: colors.surfaceStrong }}
+      >
+        <MaterialCommunityIcons name={icon} size={21} color={colors.primary} />
+      </View>
+      <View className="flex-1">
+        <Text
+          className="text-[14px]"
+          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+        >
+          {label}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="mt-1 text-[12px]"
+          style={{
+            color: colors.textMuted,
+            fontFamily: fontFamily.figtreeMedium,
+          }}
+        >
+          {detail}
+        </Text>
+      </View>
+      <MaterialCommunityIcons
+        name="chevron-right"
+        size={21}
+        color={colors.textSubtle}
+      />
+    </Pressable>
+  );
 }
 
 export default function NewSchoolLessonScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { showToast } = useToast();
-  const instructors = useSchoolOperationsStore((state) => state.instructors).filter((item) => item.status === "active");
-  const vehicles = useSchoolOperationsStore((state) => state.vehicles).filter((item) => item.isActive);
-  const packages = useSchoolOperationsStore((state) => state.packages).filter((item) => item.isActive);
+  const instructors = useSchoolOperationsStore(
+    (state) => state.instructors,
+  ).filter((item) => item.status === "active");
+  const vehicles = useSchoolOperationsStore((state) => state.vehicles).filter(
+    (item) => item.isActive,
+  );
+  const packages = useSchoolOperationsStore((state) => state.packages).filter(
+    (item) => item.isActive,
+  );
   const [title, setTitle] = useState("");
-  const [sessionType, setSessionType] = useState<TrainingSessionType>("practical");
-  const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
+  const [sessionType, setSessionType] =
+    useState<TrainingSessionType>("practical");
+  const [startsOn, setStartsOn] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
   const [endsOn, setEndsOn] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 5]);
   const [startTime, setStartTime] = useState("09:00");
@@ -50,29 +183,712 @@ export default function NewSchoolLessonScreen() {
   const [packageIds, setPackageIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [picker, setPicker] = useState<"instructor" | "vehicle" | "package" | null>(null);
+  const [picker, setPicker] = useState<
+    "instructor" | "vehicle" | "package" | null
+  >(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const needsVehicle = sessionType !== "theory";
-  const selectedInstructor = instructors.find((item) => item.id === instructorId);
+  const selectedInstructor = instructors.find(
+    (item) => item.id === instructorId,
+  );
   const selectedVehicle = vehicles.find((item) => item.id === vehicleId);
-  const canSave = useMemo(() => title.trim().length >= 2 && weekdays.length > 0 && !!instructorId && packageIds.length > 0 && Number(capacity) > 0 && Number(durationMinutes) >= 15 && (!needsVehicle || !!vehicleId) && !Number.isNaN(new Date(`${startsOn}T${startTime}:00`).getTime()), [title, weekdays.length, instructorId, packageIds.length, capacity, durationMinutes, needsVehicle, vehicleId, startsOn, startTime]);
+  const canSave = useMemo(
+    () =>
+      title.trim().length >= 2 &&
+      weekdays.length > 0 &&
+      !!instructorId &&
+      packageIds.length > 0 &&
+      Number(capacity) > 0 &&
+      Number(durationMinutes) >= 15 &&
+      (!needsVehicle || !!vehicleId) &&
+      !Number.isNaN(new Date(`${startsOn}T${startTime}:00`).getTime()),
+    [
+      title,
+      weekdays.length,
+      instructorId,
+      packageIds.length,
+      capacity,
+      durationMinutes,
+      needsVehicle,
+      vehicleId,
+      startsOn,
+      startTime,
+    ],
+  );
 
   const save = async () => {
     if (!canSave || saving || !instructorId) return;
-    setError(null); setSaving(true);
+    setError(null);
+    setSaving(true);
     try {
-      await createRecurringTrainingSchedule({ title: title.trim(), sessionType, instructorId, vehicleId: needsVehicle ? vehicleId ?? undefined : undefined, eligiblePackageIds: packageIds, weekdays, startTime, durationMinutes: Number(durationMinutes), capacity: Number(capacity), startsOn, endsOn: endsOn.trim() || undefined, notes: notes.trim() || undefined });
-      showToast("Timetable created."); router.replace("/school/operations/schedule");
-    } catch (caught) { setError((caught as ApiError).message || "We could not create this timetable."); } finally { setSaving(false); }
+      await createRecurringTrainingSchedule({
+        title: title.trim(),
+        sessionType,
+        instructorId,
+        vehicleId: needsVehicle ? (vehicleId ?? undefined) : undefined,
+        eligiblePackageIds: packageIds,
+        weekdays,
+        startTime,
+        durationMinutes: Number(durationMinutes),
+        capacity: Number(capacity),
+        startsOn,
+        endsOn: endsOn.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      showToast("Timetable created.");
+      router.replace("/school/operations/schedule");
+    } catch (caught) {
+      setError(
+        (caught as ApiError).message || "We could not create this timetable.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  return <DashboardScreen><DashboardPageHeader title="Schedule a lesson" />
-    <View className="mt-6 p-5" style={{ backgroundColor: colors.contrastSurface, borderRadius: 30 }}><Text className="text-[11px] uppercase tracking-[1.3px]" style={{ color: colors.contrastMuted, fontFamily: fontFamily.figtreeBold }}>Timetable</Text><Text className="mt-2 text-[22px]" style={{ color: colors.contrastText, fontFamily: fontFamily.figtreeBold }}>{title || "A new driving timetable"}</Text><View className="mt-5 flex-row items-center gap-3"><View className="h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: colors.primary }}><MaterialCommunityIcons name="calendar-clock" size={22} color={colors.onPrimary} /></View><View><Text className="text-[13px]" style={{ color: colors.contrastText, fontFamily: fontFamily.figtreeBold }}>{weekdays.map((day) => weekdayOptions.find((item) => item.value === day)?.label).join(", ")} · {startTime}</Text><Text className="mt-1 text-[11px]" style={{ color: colors.contrastMuted, fontFamily: fontFamily.figtreeMedium }}>{selectedInstructor?.name ?? "Choose an instructor"}{needsVehicle ? ` · ${selectedVehicle?.name ?? "Choose a car"}` : ""}</Text></View></View></View>
-    <View className="mt-8"><SectionHeader title="Timetable" /><View className="mt-4 gap-5"><Field label="Name" value={title} onChangeText={setTitle} placeholder="e.g. Morning practical lessons" icon="format-title" /><View><Text className="mb-3 text-[11px] uppercase tracking-[1px]" style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}>Type</Text><View className="flex-row flex-wrap gap-2">{types.map((item) => { const selected = item.value === sessionType; return <Pressable key={item.value} onPress={() => setSessionType(item.value)} className="flex-row items-center gap-2 rounded-full border px-4 py-2.5" style={{ backgroundColor: selected ? colors.primary : colors.surface, borderColor: selected ? colors.primary : colors.border }}><MaterialCommunityIcons name={item.icon} size={16} color={selected ? colors.onPrimary : colors.textMuted} /><Text className="text-[12px]" style={{ color: selected ? colors.onPrimary : colors.text, fontFamily: fontFamily.figtreeBold }}>{item.label}</Text></Pressable>; })}</View></View><View><Text className="mb-3 text-[11px] uppercase tracking-[1px]" style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}>Days</Text><View className="flex-row flex-wrap gap-2">{weekdayOptions.map((item) => { const selected = weekdays.includes(item.value); return <Pressable key={item.value} onPress={() => setWeekdays((current) => selected ? current.filter((day) => day !== item.value) : [...current, item.value].sort())} className="h-11 items-center justify-center rounded-full border px-4" style={{ backgroundColor: selected ? colors.verifiedSoft : colors.surface, borderColor: selected ? colors.verified : colors.border }}><Text className="text-[12px]" style={{ color: selected ? colors.verified : colors.text, fontFamily: fontFamily.figtreeBold }}>{item.label}</Text></Pressable>; })}</View></View><View className="flex-row gap-3"><View className="flex-1"><Field label="Starts" value={startTime} onChangeText={setStartTime} placeholder="09:00" icon="clock-outline" /></View><View className="flex-1"><Field label="Minutes" value={durationMinutes} onChangeText={setDurationMinutes} placeholder="90" keyboardType="number-pad" icon="timer-outline" /></View></View><Field label="Starts on" value={startsOn} onChangeText={setStartsOn} placeholder="YYYY-MM-DD" icon="calendar-month-outline" /><Field label="Ends on" value={endsOn} onChangeText={setEndsOn} placeholder="Optional" icon="calendar-remove-outline" /><Field label="Learners" value={capacity} onChangeText={setCapacity} placeholder="1" keyboardType="number-pad" icon="account-group-outline" /></View></View>
-    <View className="mt-9"><SectionHeader title="Team" /><SelectionRow icon="account-search-outline" label="Instructor" detail={selectedInstructor?.name ?? "Choose an instructor"} onPress={() => { setPickerQuery(""); setPicker("instructor"); }} />{needsVehicle ? <SelectionRow icon="car-search" label="Training car" detail={selectedVehicle ? `${selectedVehicle.name} · ${selectedVehicle.plateNumber}` : "Choose a training car"} onPress={() => { setPickerQuery(""); setPicker("vehicle"); }} /> : null}</View>
-    <View className="mt-9"><SectionHeader title="Packages" /><SelectionRow icon="package-variant-closed" label="Available packages" detail={packageIds.length ? `${packageIds.length} package${packageIds.length === 1 ? "" : "s"} selected` : "Choose packages"} onPress={() => { setPickerQuery(""); setPicker("package"); }} /></View>
-    <View className="mt-9"><SectionHeader title="Notes" /><View className="mt-3 rounded-3xl border" style={{ minHeight: 112, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.surface, borderColor: colors.border }}><TextInput value={notes} onChangeText={setNotes} multiline placeholder="Optional note" placeholderTextColor={colors.textSubtle} className="flex-1 text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium, textAlignVertical: "top" }} /></View></View>
-    {error ? <Text className="mt-5 text-[13px]" style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}>{error}</Text> : null}<Pressable disabled={!canSave || saving} onPress={() => void save()} className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl" style={{ backgroundColor: canSave ? colors.primary : colors.surfaceStrong }}>{saving ? <ActivityIndicator color={colors.onPrimary} /> : <><MaterialCommunityIcons name="calendar-check" size={20} color={canSave ? colors.onPrimary : colors.textSubtle} /><Text className="text-[15px]" style={{ color: canSave ? colors.onPrimary : colors.textSubtle, fontFamily: fontFamily.figtreeBold }}>Create timetable</Text></>}</Pressable>
-    <Modal visible={picker !== null} transparent animationType="slide" onRequestClose={() => setPicker(null)}><View className="flex-1 justify-end" style={{ backgroundColor: "rgba(4,19,32,0.55)" }}><View className="rounded-t-[32px] p-5" style={{ minHeight: "55%", maxHeight: "82%", backgroundColor: colors.background }}><View className="flex-row items-center justify-between"><Text className="text-[20px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>{picker === "instructor" ? "Choose instructor" : picker === "vehicle" ? "Choose training car" : "Choose packages"}</Text><Pressable onPress={() => setPicker(null)} hitSlop={12}><MaterialCommunityIcons name="close" size={23} color={colors.text} /></Pressable></View><View className="mt-5 h-12 flex-row items-center rounded-2xl" style={{ paddingHorizontal: 16, backgroundColor: colors.surfaceStrong }}><MaterialCommunityIcons name="magnify" size={20} color={colors.textSubtle} /><TextInput value={pickerQuery} onChangeText={setPickerQuery} placeholder="Search" placeholderTextColor={colors.textSubtle} className="ml-3 flex-1 text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium }} /></View><ScrollView className="mt-4 flex-1" keyboardShouldPersistTaps="handled">{picker === "instructor" ? instructors.filter((item) => `${item.name} ${item.email}`.toLowerCase().includes(pickerQuery.toLowerCase())).map((item) => <Pressable key={item.id} onPress={() => { setInstructorId(item.id); setPicker(null); }} className="flex-row items-center gap-3 border-b py-4" style={{ borderBottomColor: colors.border }}><View className="h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: colors.verifiedSoft }}><Text className="text-[12px]" style={{ color: colors.verified, fontFamily: fontFamily.figtreeBold }}>{item.initials}</Text></View><View className="flex-1"><Text className="text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>{item.name}</Text><Text className="mt-1 text-[11px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}>{item.email}</Text></View><MaterialCommunityIcons name={item.id === instructorId ? "check-circle" : "chevron-right"} size={21} color={item.id === instructorId ? colors.verified : colors.textSubtle} /></Pressable>) : picker === "vehicle" ? vehicles.filter((item) => `${item.name} ${item.plateNumber}`.toLowerCase().includes(pickerQuery.toLowerCase())).map((item) => <Pressable key={item.id} onPress={() => { setVehicleId(item.id); setPicker(null); }} className="flex-row items-center gap-3 border-b py-4" style={{ borderBottomColor: colors.border }}><View className="h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: colors.surfaceStrong }}><MaterialCommunityIcons name="car" size={20} color={colors.primary} /></View><View className="flex-1"><Text className="text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>{item.name}</Text><Text className="mt-1 text-[11px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtree }}>{item.plateNumber} · {item.transmissionType}</Text></View><MaterialCommunityIcons name={item.id === vehicleId ? "check-circle" : "chevron-right"} size={21} color={item.id === vehicleId ? colors.verified : colors.textSubtle} /></Pressable>) : packages.filter((item) => item.name.toLowerCase().includes(pickerQuery.toLowerCase())).map((item) => { const selected = packageIds.includes(item.id); return <Pressable key={item.id} onPress={() => setPackageIds((current) => selected ? current.filter((id) => id !== item.id) : [...current, item.id])} className="flex-row items-center gap-3 border-b py-4" style={{ borderBottomColor: colors.border }}><View className="h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: colors.surfaceStrong }}><MaterialCommunityIcons name="package-variant-closed" size={19} color={colors.primary} /></View><Text className="flex-1 text-[14px]" style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}>{item.name}</Text><MaterialCommunityIcons name={selected ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} size={22} color={selected ? colors.success : colors.textSubtle} /></Pressable>; })}</ScrollView>{picker === "package" ? <View className="mt-4 flex-row items-center justify-between rounded-2xl" style={{ minHeight: 56, paddingLeft: 16, backgroundColor: colors.surfaceStrong }}><Text className="text-[13px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}>{packageIds.length} selected</Text><Pressable onPress={() => setPicker(null)} className="items-center justify-center rounded-2xl" style={{ minHeight: 48, paddingHorizontal: 20, marginRight: 4, backgroundColor: colors.primary }}><Text className="text-[14px]" style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>Apply</Text></Pressable></View> : null}</View></View></Modal>
-  </DashboardScreen>;
+  return (
+    <DashboardScreen>
+      <DashboardPageHeader title="Schedule a lesson" />
+      <View
+        className="mt-6 p-5"
+        style={{ backgroundColor: colors.contrastSurface, borderRadius: 30 }}
+      >
+        <Text
+          className="text-[11px] uppercase tracking-[1.3px]"
+          style={{
+            color: colors.contrastMuted,
+            fontFamily: fontFamily.figtreeBold,
+          }}
+        >
+          Timetable
+        </Text>
+        <Text
+          className="mt-2 text-[22px]"
+          style={{
+            color: colors.contrastText,
+            fontFamily: fontFamily.figtreeBold,
+          }}
+        >
+          {title || "A new driving timetable"}
+        </Text>
+        <View className="mt-5 flex-row items-center gap-3">
+          <View
+            className="h-11 w-11 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons
+              name="calendar-clock"
+              size={22}
+              color={colors.onPrimary}
+            />
+          </View>
+          <View>
+            <Text
+              className="text-[13px]"
+              style={{
+                color: colors.contrastText,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              {weekdays
+                .map(
+                  (day) =>
+                    weekdayOptions.find((item) => item.value === day)?.label,
+                )
+                .join(", ")}{" "}
+              · {startTime}
+            </Text>
+            <Text
+              className="mt-1 text-[11px]"
+              style={{
+                color: colors.contrastMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              {selectedInstructor?.name ?? "Choose an instructor"}
+              {needsVehicle
+                ? ` · ${selectedVehicle?.name ?? "Choose a car"}`
+                : ""}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <View className="mt-8">
+        <SectionHeader title="Timetable" />
+        <View className="mt-4 gap-5">
+          <Field
+            label="Name"
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g. Morning practical lessons"
+            icon="format-title"
+          />
+          <View>
+            <Text
+              className="mb-3 text-[11px] uppercase tracking-[1px]"
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Type
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {types.map((item) => {
+                const selected = item.value === sessionType;
+                return (
+                  <Pressable
+                    key={item.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${item.label} lesson type`}
+                    onPress={() => setSessionType(item.value)}
+                    className="flex-row items-center gap-2 rounded-full border px-4 py-2.5"
+                    style={{
+                      backgroundColor: selected
+                        ? colors.primary
+                        : colors.surface,
+                      borderColor: selected ? colors.primary : colors.border,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={item.icon}
+                      size={16}
+                      color={selected ? colors.onPrimary : colors.textMuted}
+                    />
+                    <Text
+                      className="text-[12px]"
+                      style={{
+                        color: selected ? colors.onPrimary : colors.text,
+                        fontFamily: fontFamily.figtreeBold,
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View>
+            <Text
+              className="mb-3 text-[11px] uppercase tracking-[1px]"
+              style={{
+                color: colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Days
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {weekdayOptions.map((item) => {
+                const selected = weekdays.includes(item.value);
+                return (
+                  <Pressable
+                    key={item.value}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={item.label}
+                    onPress={() =>
+                      setWeekdays((current) =>
+                        selected
+                          ? current.filter((day) => day !== item.value)
+                          : [...current, item.value].sort(),
+                      )
+                    }
+                    className="h-11 items-center justify-center rounded-full border px-4"
+                    style={{
+                      backgroundColor: selected
+                        ? colors.verifiedSoft
+                        : colors.surface,
+                      borderColor: selected ? colors.verified : colors.border,
+                    }}
+                  >
+                    <Text
+                      className="text-[12px]"
+                      style={{
+                        color: selected ? colors.verified : colors.text,
+                        fontFamily: fontFamily.figtreeBold,
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Field
+                label="Starts"
+                value={startTime}
+                onChangeText={setStartTime}
+                placeholder="09:00"
+                icon="clock-outline"
+              />
+            </View>
+            <View className="flex-1">
+              <Field
+                label="Minutes"
+                value={durationMinutes}
+                onChangeText={setDurationMinutes}
+                placeholder="90"
+                keyboardType="number-pad"
+                icon="timer-outline"
+              />
+            </View>
+          </View>
+          <Field
+            label="Starts on"
+            value={startsOn}
+            onChangeText={setStartsOn}
+            placeholder="YYYY-MM-DD"
+            icon="calendar-month-outline"
+          />
+          <Field
+            label="Ends on"
+            value={endsOn}
+            onChangeText={setEndsOn}
+            placeholder="Optional"
+            icon="calendar-remove-outline"
+          />
+          <Field
+            label="Learners"
+            value={capacity}
+            onChangeText={setCapacity}
+            placeholder="1"
+            keyboardType="number-pad"
+            icon="account-group-outline"
+          />
+        </View>
+      </View>
+      <View className="mt-9">
+        <SectionHeader title="Team" />
+        <SelectionRow
+          icon="account-search-outline"
+          label="Instructor"
+          detail={selectedInstructor?.name ?? "Choose an instructor"}
+          onPress={() => {
+            setPickerQuery("");
+            setPicker("instructor");
+          }}
+        />
+        {needsVehicle ? (
+          <SelectionRow
+            icon="car-search"
+            label="Training car"
+            detail={
+              selectedVehicle
+                ? `${selectedVehicle.name} · ${selectedVehicle.plateNumber}`
+                : "Choose a training car"
+            }
+            onPress={() => {
+              setPickerQuery("");
+              setPicker("vehicle");
+            }}
+          />
+        ) : null}
+      </View>
+      <View className="mt-9">
+        <SectionHeader title="Packages" />
+        <SelectionRow
+          icon="package-variant-closed"
+          label="Available packages"
+          detail={
+            packageIds.length
+              ? `${packageIds.length} package${packageIds.length === 1 ? "" : "s"} selected`
+              : "Choose packages"
+          }
+          onPress={() => {
+            setPickerQuery("");
+            setPicker("package");
+          }}
+        />
+      </View>
+      <View className="mt-9">
+        <SectionHeader title="Notes" />
+        <View
+          className="mt-3 rounded-3xl border"
+          style={{
+            minHeight: 112,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
+        >
+          <TextInput
+            accessibilityLabel="Timetable notes"
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            placeholder="Optional note"
+            placeholderTextColor={colors.textSubtle}
+            className="flex-1 text-[14px]"
+            style={{
+              color: colors.text,
+              fontFamily: fontFamily.figtreeMedium,
+              textAlignVertical: "top",
+            }}
+          />
+        </View>
+      </View>
+      {error ? (
+        <Text
+          className="mt-5 text-[13px]"
+          style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+        >
+          {error}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Create timetable"
+        accessibilityState={{ disabled: !canSave || saving }}
+        disabled={!canSave || saving}
+        onPress={() => void save()}
+        className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-2xl"
+        style={{
+          backgroundColor: canSave ? colors.primary : colors.surfaceStrong,
+        }}
+      >
+        {saving ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <>
+            <MaterialCommunityIcons
+              name="calendar-check"
+              size={20}
+              color={canSave ? colors.onPrimary : colors.textSubtle}
+            />
+            <Text
+              className="text-[15px]"
+              style={{
+                color: canSave ? colors.onPrimary : colors.textSubtle,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Create timetable
+            </Text>
+          </>
+        )}
+      </Pressable>
+      <Modal
+        visible={picker !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPicker(null)}
+      >
+        <View
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(4,19,32,0.55)" }}
+        >
+          <View
+            className="rounded-t-[32px] p-5"
+            style={{
+              minHeight: "55%",
+              maxHeight: "82%",
+              backgroundColor: colors.background,
+            }}
+          >
+            <View className="flex-row items-center justify-between">
+              <Text
+                className="text-[20px]"
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
+              >
+                {picker === "instructor"
+                  ? "Choose instructor"
+                  : picker === "vehicle"
+                    ? "Choose training car"
+                    : "Choose packages"}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close picker"
+                onPress={() => setPicker(null)}
+                hitSlop={12}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={23}
+                  color={colors.text}
+                />
+              </Pressable>
+            </View>
+            <View
+              className="mt-5 h-12 flex-row items-center rounded-2xl"
+              style={{
+                paddingHorizontal: 16,
+                backgroundColor: colors.surfaceStrong,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="magnify"
+                size={20}
+                color={colors.textSubtle}
+              />
+              <TextInput
+                accessibilityLabel="Search picker options"
+                value={pickerQuery}
+                onChangeText={setPickerQuery}
+                placeholder="Search"
+                placeholderTextColor={colors.textSubtle}
+                className="ml-3 flex-1 text-[14px]"
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeMedium,
+                }}
+              />
+            </View>
+            <ScrollView
+              className="mt-4 flex-1"
+              keyboardShouldPersistTaps="handled"
+            >
+              {picker === "instructor"
+                ? instructors
+                    .filter((item) =>
+                      `${item.name} ${item.email}`
+                        .toLowerCase()
+                        .includes(pickerQuery.toLowerCase()),
+                    )
+                    .map((item) => (
+                      <Pressable
+                        key={item.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{
+                          selected: item.id === instructorId,
+                        }}
+                        accessibilityLabel={`${item.name}, ${item.email}`}
+                        onPress={() => {
+                          setInstructorId(item.id);
+                          setPicker(null);
+                        }}
+                        className="flex-row items-center gap-3 border-b py-4"
+                        style={{ borderBottomColor: colors.border }}
+                      >
+                        <View
+                          className="h-10 w-10 items-center justify-center rounded-2xl"
+                          style={{ backgroundColor: colors.verifiedSoft }}
+                        >
+                          <Text
+                            className="text-[12px]"
+                            style={{
+                              color: colors.verified,
+                              fontFamily: fontFamily.figtreeBold,
+                            }}
+                          >
+                            {item.initials}
+                          </Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className="text-[14px]"
+                            style={{
+                              color: colors.text,
+                              fontFamily: fontFamily.figtreeBold,
+                            }}
+                          >
+                            {item.name}
+                          </Text>
+                          <Text
+                            className="mt-1 text-[11px]"
+                            style={{
+                              color: colors.textMuted,
+                              fontFamily: fontFamily.figtree,
+                            }}
+                          >
+                            {item.email}
+                          </Text>
+                        </View>
+                        <MaterialCommunityIcons
+                          name={
+                            item.id === instructorId
+                              ? "check-circle"
+                              : "chevron-right"
+                          }
+                          size={21}
+                          color={
+                            item.id === instructorId
+                              ? colors.verified
+                              : colors.textSubtle
+                          }
+                        />
+                      </Pressable>
+                    ))
+                : picker === "vehicle"
+                  ? vehicles
+                      .filter((item) =>
+                        `${item.name} ${item.plateNumber}`
+                          .toLowerCase()
+                          .includes(pickerQuery.toLowerCase()),
+                      )
+                      .map((item) => (
+                        <Pressable
+                          key={item.id}
+                          accessibilityRole="radio"
+                          accessibilityState={{
+                            selected: item.id === vehicleId,
+                          }}
+                          accessibilityLabel={`${item.name}, ${item.plateNumber}`}
+                          onPress={() => {
+                            setVehicleId(item.id);
+                            setPicker(null);
+                          }}
+                          className="flex-row items-center gap-3 border-b py-4"
+                          style={{ borderBottomColor: colors.border }}
+                        >
+                          <View
+                            className="h-10 w-10 items-center justify-center rounded-2xl"
+                            style={{ backgroundColor: colors.surfaceStrong }}
+                          >
+                            <MaterialCommunityIcons
+                              name="car"
+                              size={20}
+                              color={colors.primary}
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text
+                              className="text-[14px]"
+                              style={{
+                                color: colors.text,
+                                fontFamily: fontFamily.figtreeBold,
+                              }}
+                            >
+                              {item.name}
+                            </Text>
+                            <Text
+                              className="mt-1 text-[11px]"
+                              style={{
+                                color: colors.textMuted,
+                                fontFamily: fontFamily.figtree,
+                              }}
+                            >
+                              {item.plateNumber} · {item.transmissionType}
+                            </Text>
+                          </View>
+                          <MaterialCommunityIcons
+                            name={
+                              item.id === vehicleId
+                                ? "check-circle"
+                                : "chevron-right"
+                            }
+                            size={21}
+                            color={
+                              item.id === vehicleId
+                                ? colors.verified
+                                : colors.textSubtle
+                            }
+                          />
+                        </Pressable>
+                      ))
+                  : packages
+                      .filter((item) =>
+                        item.name
+                          .toLowerCase()
+                          .includes(pickerQuery.toLowerCase()),
+                      )
+                      .map((item) => {
+                        const selected = packageIds.includes(item.id);
+                        return (
+                          <Pressable
+                            key={item.id}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: selected }}
+                            accessibilityLabel={item.name}
+                            onPress={() =>
+                              setPackageIds((current) =>
+                                selected
+                                  ? current.filter((id) => id !== item.id)
+                                  : [...current, item.id],
+                              )
+                            }
+                            className="flex-row items-center gap-3 border-b py-4"
+                            style={{ borderBottomColor: colors.border }}
+                          >
+                            <View
+                              className="h-10 w-10 items-center justify-center rounded-2xl"
+                              style={{ backgroundColor: colors.surfaceStrong }}
+                            >
+                              <MaterialCommunityIcons
+                                name="package-variant-closed"
+                                size={19}
+                                color={colors.primary}
+                              />
+                            </View>
+                            <Text
+                              className="flex-1 text-[14px]"
+                              style={{
+                                color: colors.text,
+                                fontFamily: fontFamily.figtreeBold,
+                              }}
+                            >
+                              {item.name}
+                            </Text>
+                            <MaterialCommunityIcons
+                              name={
+                                selected
+                                  ? "checkbox-marked-circle"
+                                  : "checkbox-blank-circle-outline"
+                              }
+                              size={22}
+                              color={
+                                selected ? colors.success : colors.textSubtle
+                              }
+                            />
+                          </Pressable>
+                        );
+                      })}
+            </ScrollView>
+            {picker === "package" ? (
+              <View
+                className="mt-4 flex-row items-center justify-between rounded-2xl"
+                style={{
+                  minHeight: 56,
+                  paddingLeft: 16,
+                  backgroundColor: colors.surfaceStrong,
+                }}
+              >
+                <Text
+                  className="text-[13px]"
+                  style={{
+                    color: colors.textMuted,
+                    fontFamily: fontFamily.figtreeBold,
+                  }}
+                >
+                  {packageIds.length} selected
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Apply selected packages"
+                  onPress={() => setPicker(null)}
+                  className="items-center justify-center rounded-2xl"
+                  style={{
+                    minHeight: 48,
+                    paddingHorizontal: 20,
+                    marginRight: 4,
+                    backgroundColor: colors.primary,
+                  }}
+                >
+                  <Text
+                    className="text-[14px]"
+                    style={{
+                      color: colors.onPrimary,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  >
+                    Apply
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </DashboardScreen>
+  );
 }

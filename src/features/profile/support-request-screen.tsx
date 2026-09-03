@@ -1,11 +1,22 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import {
+  createSupportRequest,
+  type SupportRequestContext,
+} from "@/lib/api/support";
+import type { ApiError } from "@/types";
 
 type SupportRequestScreenProps = {
   backHref?: "/student/profile/help" | "/instructor/profile/help";
@@ -17,10 +28,42 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const isProblemReport = mode === "report";
   const isSchoolRequest = mode === "school";
+  const isPaymentRequest = mode === "payment";
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const canSubmit = subject.trim().length > 0 && message.trim().length > 0;
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSubmit = subject.trim().length >= 3 && message.trim().length >= 10;
+
+  const submit = async () => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const context: SupportRequestContext = isProblemReport
+        ? "problem"
+        : isSchoolRequest
+          ? "school"
+          : isPaymentRequest
+            ? "payment"
+            : "support";
+      await createSupportRequest({
+        context,
+        subject: subject.trim(),
+        message: message.trim(),
+      });
+      setSubmitted(true);
+    } catch (caught) {
+      setError(
+        caught && typeof caught === "object" && "message" in caught
+          ? (caught as ApiError).message
+          : "The request could not be submitted. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (submitted) {
     return (
@@ -42,21 +85,19 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
             className="mt-7 text-center font-figtree-bold text-[27px]"
             style={{ color: colors.text }}
           >
-            {isProblemReport ? "Problem report ready" : "Support request ready"}
+            {isProblemReport ? "Problem report sent" : "Support request sent"}
           </Text>
           <Text
             className="mt-3 max-w-[320px] text-center font-figtree text-[14px] leading-6"
             style={{ color: colors.textMuted }}
           >
-            The form flow is complete. Connect this action to the support
-            service before enabling it in production.
+            Your request has been recorded. Support can now review it and follow
+            up using your account details.
           </Text>
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() =>
-            backHref ? router.replace(backHref) : router.back()
-          }
+          onPress={() => (backHref ? router.replace(backHref) : router.back())}
           className="mt-10 h-14 items-center justify-center rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >
@@ -79,7 +120,9 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
             ? "Report a problem"
             : isSchoolRequest
               ? "Contact your school"
-              : "Contact support"
+              : isPaymentRequest
+                ? "Payment support"
+                : "Contact support"
         }
       />
       <Text
@@ -154,27 +197,44 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
           className="flex-1 font-figtree text-[12px] leading-5"
           style={{ color: colors.textMuted }}
         >
-          This currently demonstrates the support UI. No external message is
-          sent until a support endpoint is configured.
+          Your request is securely attached to your account so the support team
+          can investigate and follow up.
         </Text>
       </View>
 
+      {error ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          className="mt-4 font-figtree-semibold text-[12px] leading-5"
+          style={{ color: colors.error }}
+        >
+          {error}
+        </Text>
+      ) : null}
+
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSubmit }}
-        disabled={!canSubmit}
-        onPress={() => setSubmitted(true)}
+        accessibilityState={{
+          disabled: !canSubmit || submitting,
+          busy: submitting,
+        }}
+        disabled={!canSubmit || submitting}
+        onPress={() => void submit()}
         className="mt-7 h-14 items-center justify-center rounded-2xl active:opacity-80"
         style={{
           backgroundColor: canSubmit ? colors.primary : colors.surfaceStrong,
         }}
       >
-        <Text
-          className="font-figtree-bold text-[15px]"
-          style={{ color: canSubmit ? colors.onPrimary : colors.textSubtle }}
-        >
-          {isProblemReport ? "Submit report" : "Submit request"}
-        </Text>
+        {submitting ? (
+          <ActivityIndicator color={colors.onPrimary} />
+        ) : (
+          <Text
+            className="font-figtree-bold text-[15px]"
+            style={{ color: canSubmit ? colors.onPrimary : colors.textSubtle }}
+          >
+            {isProblemReport ? "Submit report" : "Submit request"}
+          </Text>
+        )}
       </Pressable>
     </DashboardScreen>
   );

@@ -11,6 +11,8 @@ export default function PublicMarketplaceLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
-    />
+    >
+      <Stack.Screen name="welcome" options={{ gestureEnabled: false }} />
+    </Stack>
   );
 }

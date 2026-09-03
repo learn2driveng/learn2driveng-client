@@ -4,7 +4,9 @@ const { fontFamily } = require('./fonts.config.cjs');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'media',
+  // Theme preference is user-selectable, so NativeWind must use a class-based
+  // scheme. `media` is read-only and throws when the app applies light/dark.
+  darkMode: 'class',
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {

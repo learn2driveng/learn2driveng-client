@@ -7,6 +7,7 @@ export type AppNotification = {
     notificationId?: string;
     participantId?: string;
     sessionId?: string;
+    url?: string;
   } | null;
   readAt?: string | null;
   createdAt: string;

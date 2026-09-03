@@ -23,7 +23,9 @@ type AttendanceStatus = "present" | "absent";
 type AttendanceByParticipant = Record<string, AttendanceStatus | undefined>;
 type FeedbackByParticipant = Record<string, string | undefined>;
 
-type AttendanceLearner = NonNullable<InstructorLessonSummary["learners"]>[number];
+type AttendanceLearner = NonNullable<
+  InstructorLessonSummary["learners"]
+>[number];
 
 const attendanceOptions: {
   value: AttendanceStatus;
@@ -112,8 +114,7 @@ export default function InstructorLessonReportScreen() {
   const allSelected = learnersToRecord.every(
     (learner) => attendance[learner.participantId],
   );
-  const canSubmit =
-    learnersToRecord.length > 0 && allSelected && !isSubmitting;
+  const canSubmit = learnersToRecord.length > 0 && allSelected && !isSubmitting;
   const presentCount = learners.filter(
     (learner) => attendance[learner.participantId] === "present",
   ).length;
@@ -121,10 +122,7 @@ export default function InstructorLessonReportScreen() {
     (learner) => attendance[learner.participantId] === "absent",
   ).length;
 
-  const selectAttendance = (
-    participantId: string,
-    value: AttendanceStatus,
-  ) => {
+  const selectAttendance = (participantId: string, value: AttendanceStatus) => {
     setAttendance((current) => ({ ...current, [participantId]: value }));
     if (value === "absent" && openFeedbackId === participantId) {
       setOpenFeedbackId(null);
@@ -170,7 +168,7 @@ export default function InstructorLessonReportScreen() {
       const allAttendanceMarked = updatedSession.participants.every(
         (participant) => participant.status !== "scheduled",
       );
-      if (allAttendanceMarked) {
+      if (allAttendanceMarked && updatedSession.status === "in_progress") {
         await endInstructorTrainingSession(lesson.sessionId);
       }
       await refreshInstructorOperations();
@@ -391,7 +389,10 @@ export default function InstructorLessonReportScreen() {
                       key={option.value}
                       accessibilityRole="radio"
                       accessibilityLabel={`${learner.name}: ${option.label}`}
-                      accessibilityState={{ selected, disabled: alreadyRecorded }}
+                      accessibilityState={{
+                        selected,
+                        disabled: alreadyRecorded,
+                      }}
                       disabled={alreadyRecorded}
                       onPress={() =>
                         selectAttendance(learner.participantId, option.value)

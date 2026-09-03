@@ -47,10 +47,12 @@ interface SettingsState {
   locationPromptDismissed: boolean;
   discoveryLocationMode: DiscoveryLocationMode;
   preferredAreaId: PreferredAreaId;
+  instructorLocationSharingEnabled: boolean;
   setTheme: (theme: ThemePreference) => void;
   setLocationPromptDismissed: (dismissed: boolean) => void;
   setDiscoveryLocationMode: (mode: DiscoveryLocationMode) => void;
   setPreferredAreaId: (areaId: PreferredAreaId) => void;
+  setInstructorLocationSharingEnabled: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -60,12 +62,15 @@ export const useSettingsStore = create<SettingsState>()(
       locationPromptDismissed: false,
       discoveryLocationMode: "area",
       preferredAreaId: "lagos",
+      instructorLocationSharingEnabled: false,
       setTheme: (theme) => set({ theme }),
       setLocationPromptDismissed: (locationPromptDismissed) =>
         set({ locationPromptDismissed }),
       setDiscoveryLocationMode: (discoveryLocationMode) =>
         set({ discoveryLocationMode }),
       setPreferredAreaId: (preferredAreaId) => set({ preferredAreaId }),
+      setInstructorLocationSharingEnabled: (instructorLocationSharingEnabled) =>
+        set({ instructorLocationSharingEnabled }),
     }),
     {
       name: "learn2drive-settings",
@@ -75,6 +80,8 @@ export const useSettingsStore = create<SettingsState>()(
         locationPromptDismissed: state.locationPromptDismissed,
         discoveryLocationMode: state.discoveryLocationMode,
         preferredAreaId: state.preferredAreaId,
+        instructorLocationSharingEnabled:
+          state.instructorLocationSharingEnabled,
       }),
     },
   ),

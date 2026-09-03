@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -25,9 +24,6 @@ import { useAuthStore } from "@/store/auth.store";
 import { useGoogleAuthStore } from "@/store/google-auth.store";
 import type { ApiError } from "@/types";
 
-const FRSC_SEAL_URI =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
-
 export default function LoginScreen() {
   const router = useRouter();
   const { passwordReset, returnTo } = useLocalSearchParams<{
@@ -49,6 +45,8 @@ export default function LoginScreen() {
     "learner",
     returnTo,
   );
+  const isCheckoutFlow =
+    typeof returnTo === "string" && returnTo.startsWith("/checkout/");
   const verificationEmail =
     typeof loginError?.details?.email === "string"
       ? loginError.details.email
@@ -114,27 +112,6 @@ export default function LoginScreen() {
       <View>
         <View className="flex-row items-start justify-between gap-4">
           <AppLogo height={50} />
-          <View
-            className="h-9 flex-row items-center gap-2 rounded-full border px-3"
-            style={{
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-sm">
-              <Image
-                source={{ uri: FRSC_SEAL_URI }}
-                className="h-5 w-5"
-                contentFit="contain"
-              />
-            </View>
-            <Text
-              className="font-figtree-bold text-[11px] tracking-[0.7px]"
-              style={{ color: colors.textMuted }}
-            >
-              FRSC VERIFIED
-            </Text>
-          </View>
         </View>
 
         <View className="mt-8">
@@ -149,7 +126,9 @@ export default function LoginScreen() {
             className="mt-2 font-figtree text-[15px]"
             style={{ color: colors.primary }}
           >
-            Sign in to continue your driving journey
+            {isCheckoutFlow
+              ? "Sign in to continue with your package"
+              : "Sign in to continue your driving journey"}
           </Text>
           {showPasswordResetMessage ? (
             <View className="mt-4">
@@ -185,8 +164,7 @@ export default function LoginScreen() {
                 Use your email or phone to link Google.
               </Text>
             ) : null}
-            {loginError?.code === "EMAIL_NOT_VERIFIED" &&
-            verificationEmail ? (
+            {loginError?.code === "EMAIL_NOT_VERIFIED" && verificationEmail ? (
               <Pressable
                 accessibilityRole="button"
                 className="ml-5 mt-2 self-start active:opacity-60"
@@ -251,7 +229,9 @@ export default function LoginScreen() {
             label={
               pendingGoogleLink
                 ? "SIGN IN & LINK GOOGLE"
-                : "LOGIN TO DASHBOARD"
+                : isCheckoutFlow
+                  ? "CONTINUE TO PAYMENT"
+                  : "LOGIN TO DASHBOARD"
             }
             showArrow
             disabled={!identifier.trim() || !password}
@@ -310,7 +290,7 @@ export default function LoginScreen() {
             className="font-figtree-bold text-[10px] tracking-[1.2px]"
             style={{ color: colors.textFaint }}
           >
-            END-TO-END ENCRYPTED SESSION
+            PROTECTED ACCOUNT SESSION
           </Text>
         </View>
       </View>

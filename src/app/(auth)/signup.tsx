@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -23,9 +22,6 @@ import {
   PASSWORD_REQUIREMENTS,
 } from "@/lib/auth/validation";
 import type { ApiError } from "@/types";
-
-const FRSC_SEAL_URI =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD99lysc47F8HMkFqweiUaINTA_KvVAT2G1YcDq5y9vW29PbZnDnesPrnabI7BUpVjxq26bQdtgD_j4Yy3oa0tfB2haDCRvMnmBld38uNMdCC2WQPjOJUAmFZVxIK3X47b0dNF9WXvm6-CfNB1DO4fjrKCe2CKDsDxjlkHw9CfTNiUip4C34sJ9Migs5-KgeQ1N245M9107h-A0uEAXmhITog9_8be-w-Buy4o9cIM3405uOYyYtDV4A2INBy9UF2tRrj-hb0ruk4Bk";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -100,27 +96,6 @@ export default function SignupScreen() {
       <View>
         <View className="flex-row items-start justify-between gap-4">
           <AppLogo height={46} />
-          <View
-            className="h-9 flex-row items-center gap-2 rounded-full border px-3"
-            style={{
-              borderColor: colors.border,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-sm">
-              <Image
-                source={{ uri: FRSC_SEAL_URI }}
-                className="h-5 w-5"
-                contentFit="contain"
-              />
-            </View>
-            <Text
-              className="font-figtree-bold text-[11px] tracking-[0.7px]"
-              style={{ color: colors.textMuted }}
-            >
-              FRSC VERIFIED
-            </Text>
-          </View>
         </View>
 
         <View className="mt-5">
@@ -135,7 +110,7 @@ export default function SignupScreen() {
             className="mt-1 font-figtree-medium text-[14px]"
             style={{ color: colors.primary }}
           >
-            Join the FRSC-verified driving community.
+            Start learning with an approved driving school.
           </Text>
         </View>
 
@@ -176,10 +151,7 @@ export default function SignupScreen() {
             value={phone}
             onChangeText={setPhone}
           />
-          <AuthDateOfBirthField
-            value={dateOfBirth}
-            onChange={setDateOfBirth}
-          />
+          <AuthDateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} />
           <AuthField
             label="CREATE PASSWORD"
             icon="lock"

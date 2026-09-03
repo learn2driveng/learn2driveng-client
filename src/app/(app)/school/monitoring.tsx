@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -39,12 +40,10 @@ function scheduleLabel(value: string) {
 
 export default function SchoolSessionMonitoringScreen() {
   const { colors } = useAppTheme();
+  const [renderedAt] = useState(() => Date.now());
   const surfaces = useSurfaceStyles();
   const schoolId = useSchoolOperationsStore((state) => state.profile.id);
   const sessionsById = useTrainingSessionStore((state) => state.sessions);
-  const locationShares = useTrainingSessionStore(
-    (state) => state.locationShares,
-  );
   const participantsBySessionId = useTrainingSessionStore(
     (state) => state.participantsBySessionId,
   );
@@ -60,7 +59,9 @@ export default function SchoolSessionMonitoringScreen() {
     (session) => session.status === "in_progress",
   );
   const scheduledSessions = schoolSessions.filter(
-    (session) => session.status === "scheduled",
+    (session) =>
+      session.status === "scheduled" &&
+      new Date(session.scheduledEndTime).getTime() > renderedAt,
   );
 
   return (
@@ -74,7 +75,6 @@ export default function SchoolSessionMonitoringScreen() {
         }}
       >
         Operational visibility for lessons being delivered by your school.
-        Location appears only when the learner has enabled session sharing.
       </Text>
 
       <View className="mt-7 flex-row gap-3">
@@ -143,8 +143,9 @@ export default function SchoolSessionMonitoringScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          Monitoring shows operational session state. Learner location is
-          visible only when session-bound sharing is active.
+          Location publishing is controlled by the assigned instructor and is
+          limited to an active lesson. A learner must separately create a
+          time-limited tracking link before anyone else can follow it.
         </Text>
       </View>
 
@@ -153,7 +154,6 @@ export default function SchoolSessionMonitoringScreen() {
         <View className="mt-4 gap-3">
           {activeSessions.length ? (
             activeSessions.map((session) => {
-              const share = locationShares[session.id];
               const participant = participantsBySessionId[session.id];
               return (
                 <View
@@ -244,19 +244,16 @@ export default function SchoolSessionMonitoringScreen() {
                           fontFamily: fontFamily.figtreeMedium,
                         }}
                       >
-                        Location sharing
+                        Scheduled end
                       </Text>
                       <Text
-                        className="mt-1 text-[12px] capitalize"
+                        className="mt-1 text-[12px]"
                         style={{
-                          color:
-                            share?.status === "sharing"
-                              ? colors.success
-                              : colors.text,
+                          color: colors.text,
                           fontFamily: fontFamily.figtreeBold,
                         }}
                       >
-                        {share?.status.replace("_", " ") ?? "Not enabled"}
+                        {scheduleLabel(session.scheduledEndTime)}
                       </Text>
                     </View>
                   </View>

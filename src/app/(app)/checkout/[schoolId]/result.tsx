@@ -229,7 +229,10 @@ export default function CheckoutResultScreen() {
         {checkError ? (
           <Text
             className="mt-3 text-center text-[12px] leading-5"
-            style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+            style={{
+              color: colors.error,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
           >
             {checkError}
           </Text>
@@ -345,8 +348,16 @@ export default function CheckoutResultScreen() {
               secondary
               label="Get payment help"
               onPress={() =>
-                router.push({ pathname: "/support", params: { mode: "contact" } })
+                router.push({
+                  pathname: "/support",
+                  params: { mode: "payment" },
+                })
               }
+            />
+            <ResultButton
+              secondary
+              label="Back to dashboard"
+              onPress={() => router.replace("/student")}
             />
           </>
         ) : null}
@@ -360,8 +371,8 @@ export default function CheckoutResultScreen() {
             />
             <ResultButton
               secondary
-              label="Back to Explore"
-              onPress={() => router.replace("/student/explore")}
+              label="Back to dashboard"
+              onPress={() => router.replace("/student")}
             />
           </>
         ) : null}
