@@ -90,12 +90,17 @@ api.interceptors.response.use(
       request?.url?.startsWith("/auth/forgot-password") ||
       request?.url?.startsWith("/auth/reset-password") ||
       request?.url?.startsWith("/auth/resend-verification-otp");
+    const isSessionTeardownRequest =
+      request?.url === "/auth/logout" ||
+      (request?.url === "/notifications/push-tokens" &&
+        request.method?.toLowerCase() === "delete");
 
     if (
       error.response?.status === 401 &&
       request &&
       !request._retry &&
       !isAuthenticationRequest &&
+      !isSessionTeardownRequest &&
       (refreshToken || Platform.OS === "web")
     ) {
       request._retry = true;

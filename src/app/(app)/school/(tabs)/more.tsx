@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
 import type { ComponentProps } from "react";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -10,6 +10,7 @@ import { DashboardScreen, SectionHeader } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshApprovedSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
 type Destination = {
@@ -54,7 +55,8 @@ export default function SchoolMoreScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const profile = useSchoolOperationsStore((state) => state.profile);
-  const { logout } = useLogout();
+  const refresh = () => refreshApprovedSchoolOperations(profile.adminName);
+  const { logout, isLoggingOut } = useLogout();
 
   const renderDestinations = (destinations: Destination[]) =>
     destinations.map((destination) => (
@@ -102,7 +104,7 @@ export default function SchoolMoreScreen() {
     ));
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <Text
         accessibilityRole="header"
         className="text-[28px] leading-8 tracking-[-0.8px]"
@@ -183,7 +185,9 @@ export default function SchoolMoreScreen() {
         <SectionHeader title="Account" />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Log out"
+          accessibilityLabel={isLoggingOut ? "Logging out" : "Log out"}
+          accessibilityState={{ disabled: isLoggingOut, busy: isLoggingOut }}
+          disabled={isLoggingOut}
           onPress={() => void logout()}
           className="mt-4 flex-row items-center gap-4 rounded-3xl border p-4 active:opacity-80"
           style={surfaces.card}
@@ -192,11 +196,15 @@ export default function SchoolMoreScreen() {
             className="h-12 w-12 items-center justify-center rounded-2xl"
             style={{ backgroundColor: colors.surfaceStrong }}
           >
-            <MaterialCommunityIcons
-              name="logout"
-              size={23}
-              color={colors.error}
-            />
+            {isLoggingOut ? (
+              <ActivityIndicator size="small" color={colors.error} />
+            ) : (
+              <MaterialCommunityIcons
+                name="logout"
+                size={23}
+                color={colors.error}
+              />
+            )}
           </View>
           <View className="flex-1">
             <Text
@@ -206,7 +214,7 @@ export default function SchoolMoreScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              Log out
+              {isLoggingOut ? "Logging out…" : "Log out"}
             </Text>
             <Text
               className="mt-1 text-[11px]"

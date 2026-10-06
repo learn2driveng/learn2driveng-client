@@ -16,6 +16,7 @@ export interface Booking {
   sessionsTotal: number;
   sessionsScheduledCount: number;
   sessionsCompletedCount: number;
+  expiresAt?: string | null;
   cancelReason?: string | null;
   createdAt: string;
   updatedAt?: string;

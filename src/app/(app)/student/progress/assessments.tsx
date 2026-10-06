@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -15,17 +16,21 @@ import {
   formatAssessmentDate,
 } from "@/features/readiness-assessment";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuthStore } from "@/store/auth.store";
 import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
-
-const currentLearnerId = "learner-amara";
 
 export default function ProgressAssessmentsScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
+  const currentLearnerId = useAuthStore((state) => state.user?.id);
   const assessments = useReadinessAssessmentStore((state) => state.assessments);
   const assignments = useReadinessAssessmentStore((state) => state.assignments);
   const attempts = useReadinessAssessmentStore((state) => state.attempts);
+  const loading = useReadinessAssessmentStore((state) => state.loading);
+  const error = useReadinessAssessmentStore((state) => state.error);
+  const refreshLearner = useReadinessAssessmentStore((state) => state.refreshLearner);
+  useFocusEffect(useCallback(() => { void refreshLearner(); }, [refreshLearner]));
   const learnerAssignments = assignments.filter(
     (item) => item.learnerId === currentLearnerId,
   );
@@ -97,7 +102,7 @@ export default function ProgressAssessmentsScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {meta.label}
+              {assessment.kind === "final_mock" ? "FINAL CBT MOCK" : "PROGRESS CHECK"} · {meta.label}
             </Text>
           </View>
           {attempt ? (
@@ -160,7 +165,9 @@ export default function ProgressAssessmentsScreen() {
             }}
           >
             {isOpen
-              ? `Due ${formatAssessmentDate(assignment.dueAt)}`
+              ? assessment.kind === "final_mock"
+                ? "Optional · no deadline"
+                : `Due ${formatAssessmentDate(assignment.dueAt)}`
               : attempt
                 ? attempt.passed
                   ? "Passed"
@@ -174,7 +181,13 @@ export default function ProgressAssessmentsScreen() {
 
   return (
     <DashboardScreen>
-      <DashboardPageHeader title="Readiness assessments" />
+      <DashboardPageHeader title="CBT quizzes" />
+      {loading ? <ActivityIndicator className="mt-4" color={colors.primary} /> : null}
+      {error ? (
+        <Pressable onPress={() => void refreshLearner()} className="mt-4 rounded-2xl p-4" style={{ backgroundColor: colors.verifiedSoft }}>
+          <Text style={{ color: colors.verified }}>{error} Tap to retry.</Text>
+        </Pressable>
+      ) : null}
       <Text
         className="mt-3 text-[13px] leading-5"
         style={{
@@ -182,8 +195,8 @@ export default function ProgressAssessmentsScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Short school-assigned checks that help connect your theory knowledge to
-        safer decisions during lessons.
+        Take optional progress checks during training and a fuller mock quiz
+        after you complete a package. Results do not change your package status.
       </Text>
 
       <HeroSurface className="mt-7 overflow-hidden rounded-[28px] p-5">
@@ -232,7 +245,7 @@ export default function ProgressAssessmentsScreen() {
             <ContentEmptyState
               icon="check-all"
               title="No open assessments"
-              description="Your school will assign a readiness check when it supports your current training stage."
+              description="Your school may assign a progress check during training. A final mock appears when a package is complete and your school has published one."
             />
           )}
         </View>

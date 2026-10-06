@@ -24,7 +24,11 @@ import {
 import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import type { ApiError } from "@/types";
-import type { PaymentChannel } from "@/types/payment";
+import {
+  parsePaymentChannel,
+  type PaymentChannel,
+  type PaymentStatus,
+} from "@/types/payment";
 
 const methodLabels: Record<PaymentChannel, string> = {
   card: "Debit or credit card",
@@ -35,18 +39,12 @@ export default function PurchaseReviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const {
-    schoolId,
-    packageId,
-    method = "card",
-  } = useLocalSearchParams<{
+  const { schoolId, packageId } = useLocalSearchParams<{
     schoolId?: string;
     packageId?: string;
-    method?: string;
   }>();
   const { school, selectedPackage, loading, error, refetch } =
     useCheckoutPackage(schoolId, packageId);
-  const paymentChannel = parsePaymentChannel(method);
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -111,7 +109,7 @@ export default function PurchaseReviewScreen() {
     ["Training package", selectedPackage.name],
     ["Duration", packageDurationLabel(selectedPackage)],
     ["Sessions", `${selectedPackage.numberOfLessons} lessons`],
-    ["Payment method", methodLabels[paymentChannel]],
+    ["Payment method", "Choose securely in Paystack"],
   ];
 
   const handlePay = async () => {
@@ -124,7 +122,7 @@ export default function PurchaseReviewScreen() {
       const booking = await createLearnerBooking({
         packageId: selectedPackage.id,
       });
-      const payment = await initializePayment(booking.id, paymentChannel);
+      const payment = await initializePayment(booking.id);
 
       if (!payment.authorizationUrl) {
         throw new Error(
@@ -132,21 +130,32 @@ export default function PurchaseReviewScreen() {
         );
       }
 
-      const returnUrlPrefix = paystackReturnUrlPrefix();
-      const { paymentStatus } = await openPaystackCheckout({
-        authorizationUrl: payment.authorizationUrl,
-        paymentId: payment.id,
-        returnUrlPrefix,
+      const returnUrl = Linking.createURL("checkout/payment-return", {
+        scheme: "learn2driveng",
       });
+      const browserResult = await WebBrowser.openAuthSessionAsync(
+        payment.authorizationUrl,
+        returnUrl,
+        { preferEphemeralSession: true },
+      );
+
+      let paymentStatus: PaymentStatus = "pending";
+      try {
+        const verified = await verifyPayment(payment.id);
+        paymentStatus = verified.status;
+      } catch {
+        paymentStatus = "pending";
+      }
 
       const resultStatus =
         paymentStatus === "success"
           ? "success"
           : paymentStatus === "failed"
             ? "failed"
-            : method === "bank_transfer"
-              ? "pending"
-              : "cancelled";
+            : browserResult.type === "cancel" ||
+                browserResult.type === "dismiss"
+              ? "cancelled"
+              : "pending";
 
       await refreshLearnerBookings().catch(() => undefined);
 
@@ -155,7 +164,6 @@ export default function PurchaseReviewScreen() {
         params: {
           schoolId: school.id,
           packageId: selectedPackage.id,
-          method: paymentChannel,
           status: resultStatus,
           bookingId: booking.id,
           paymentId: payment.id,
@@ -178,8 +186,14 @@ export default function PurchaseReviewScreen() {
   return (
     <CheckoutShell
       title="Review purchase"
-      step={2}
-      onBack={() => router.back()}
+      step={1}
+      totalSteps={1}
+      onBack={() =>
+        router.replace({
+          pathname: "/student/explore/[schoolId]/packages",
+          params: { schoolId: school.id },
+        })
+      }
       onExit={() => router.replace("/student")}
     >
       <ScrollView
@@ -328,7 +342,7 @@ export default function PurchaseReviewScreen() {
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                Pay ₦{selectedPackage.price.toLocaleString("en-NG")}
+                Pay with Paystack
               </Text>
             </>
           )}

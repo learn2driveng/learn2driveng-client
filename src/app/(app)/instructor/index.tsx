@@ -16,6 +16,7 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import {
@@ -41,6 +42,12 @@ export default function InstructorDashboardScreen() {
       void refreshNotificationUnreadCount().catch(() => undefined);
     }, []),
   );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      hydrateInstructorOperations(),
+      refreshNotificationUnreadCount(),
+    ]);
+  }, []);
   const getLessonStatus = (
     sessionId: string,
     fallback: InstructorLessonStatus,
@@ -67,7 +74,7 @@ export default function InstructorDashboardScreen() {
     });
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text

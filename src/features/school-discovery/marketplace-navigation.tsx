@@ -58,11 +58,11 @@ function createMarketplaceNavigation(
       ? (schoolId, packageId) => ({
           pathname: "/login",
           params: {
-            returnTo: `/checkout/${schoolId}/payment?packageId=${packageId}`,
+            returnTo: `/checkout/${schoolId}/review?packageId=${packageId}`,
           },
         })
       : (schoolId, packageId) => ({
-          pathname: "/checkout/[schoolId]/payment",
+          pathname: "/checkout/[schoolId]/review",
           params: { schoolId, packageId },
         }),
   };

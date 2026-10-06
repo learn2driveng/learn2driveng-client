@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Text, View } from "react-native";
 
 import { ThemeSelector } from "@/components/common/theme-selector";
@@ -7,6 +8,7 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { fetchMyProfile } from "@/lib/api/users";
 import { userDisplayName, userInitials } from "@/lib/learner/map-api";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -14,8 +16,12 @@ export default function StudentProfileScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
-  const { logout } = useLogout();
+  const { logout, isLoggingOut } = useLogout();
   const user = useAuthStore((state) => state.user);
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const refresh = useCallback(async () => {
+    updateUser(await fetchMyProfile());
+  }, [updateUser]);
 
   if (!user) return null;
 
@@ -23,7 +29,7 @@ export default function StudentProfileScreen() {
   const initials = userInitials(user);
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
@@ -87,6 +93,16 @@ export default function StudentProfileScreen() {
           description="Personal details and contact information"
           onPress={() => router.push("/student/profile/account")}
         />
+        <View
+          className="mx-4 h-px"
+          style={{ backgroundColor: colors.border }}
+        />
+        <SettingsRow
+          icon="receipt-text-outline"
+          title="Payment history"
+          description="Confirmed package payments"
+          onPress={() => router.push("/student/profile/payments")}
+        />
       </View>
 
       <Text
@@ -147,8 +163,9 @@ export default function StudentProfileScreen() {
         />
         <SettingsRow
           icon="logout"
-          title="Log out"
+          title={isLoggingOut ? "Logging out…" : "Log out"}
           destructive
+          loading={isLoggingOut}
           onPress={() => void logout()}
         />
       </View>

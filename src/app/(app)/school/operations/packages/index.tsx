@@ -11,6 +11,7 @@ import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { borderRadius } from "@/constants/theme";
 import { packageDurationLabel } from "@/lib/school/mappers";
+import { refreshApprovedSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -23,9 +24,14 @@ export default function SchoolPackagesScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const packages = useSchoolOperationsStore((state) => state.packages);
+  const adminName = useSchoolOperationsStore(
+    (state) => state.profile.adminName,
+  );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen
+      onRefresh={() => refreshApprovedSchoolOperations(adminName)}
+    >
       <DashboardPageHeader title="Packages" />
       <Text
         className="mt-3 text-[13px] leading-5"

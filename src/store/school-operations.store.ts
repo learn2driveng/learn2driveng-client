@@ -3,7 +3,6 @@ import { create } from "zustand";
 import { parseVehicleDisplayName, vehicleNameFromParts } from "@/lib/school/vehicle-input";
 import { createEmptyVerificationDocuments } from "@/lib/school/verification-documents";
 import type {
-  SchoolBookingAssignment,
   SchoolInstructorRosterItem,
   SchoolOperationsProfile,
   SchoolPackageDefinition,
@@ -60,7 +59,6 @@ type PackageInput = {
 
 type SchoolOperationsHydration = {
   profile?: SchoolOperationsProfile;
-  bookings?: SchoolBookingAssignment[];
   instructors?: SchoolInstructorRosterItem[];
   vehicles?: SchoolVehicle[];
   packages?: SchoolPackageDefinition[];
@@ -70,7 +68,6 @@ type SchoolOperationsHydration = {
 
 type SchoolOperationsState = {
   profile: SchoolOperationsProfile;
-  bookings: SchoolBookingAssignment[];
   instructors: SchoolInstructorRosterItem[];
   vehicles: SchoolVehicle[];
   packages: SchoolPackageDefinition[];
@@ -89,14 +86,6 @@ type SchoolOperationsState = {
   upsertPackage: (packageDefinition: SchoolPackageDefinition) => void;
   removePackage: (packageId: string) => void;
   setPackageActive: (packageId: string, isActive: boolean) => void;
-  assignBooking: (
-    bookingId: string,
-    instructorId: string,
-    vehicleId: string,
-  ) => void;
-  confirmBookingAssignment: (bookingId: string) => void;
-  rescheduleBooking: (bookingId: string, scheduledAt: string) => void;
-  cancelBooking: (bookingId: string, reason: string) => void;
   updateProfile: (
     input: Partial<
       Pick<
@@ -138,7 +127,6 @@ type SchoolOperationsState = {
 
 const initialState = {
   profile: emptyProfile,
-  bookings: [] as SchoolBookingAssignment[],
   instructors: [] as SchoolInstructorRosterItem[],
   vehicles: [] as SchoolVehicle[],
   packages: [] as SchoolPackageDefinition[],
@@ -295,58 +283,6 @@ export const useSchoolOperationsStore = create<SchoolOperationsState>(
           packageDefinition.id === packageId
             ? { ...packageDefinition, isActive }
             : packageDefinition,
-        ),
-      })),
-    assignBooking: (bookingId, instructorId, vehicleId) =>
-      set((state) => ({
-        bookings: state.bookings.map((booking) =>
-          booking.id === bookingId
-            ? {
-                ...booking,
-                instructorId,
-                vehicleId,
-                status: "assigned",
-              }
-            : booking,
-        ),
-      })),
-    confirmBookingAssignment: (bookingId) =>
-      set((state) => ({
-        bookings: state.bookings.map((booking) =>
-          booking.id === bookingId &&
-          booking.instructorId !== null &&
-          booking.vehicleId !== null
-            ? { ...booking, status: "confirmed" }
-            : booking,
-        ),
-      })),
-    rescheduleBooking: (bookingId, scheduledAt) =>
-      set((state) => ({
-        bookings: state.bookings.map((booking) =>
-          booking.id === bookingId && booking.status !== "cancelled"
-            ? {
-                ...booking,
-                scheduledAt,
-                rescheduledAt: new Date().toISOString(),
-                status:
-                  booking.instructorId && booking.vehicleId
-                    ? "assigned"
-                    : "unassigned",
-              }
-            : booking,
-        ),
-      })),
-    cancelBooking: (bookingId, reason) =>
-      set((state) => ({
-        bookings: state.bookings.map((booking) =>
-          booking.id === bookingId
-            ? {
-                ...booking,
-                status: "cancelled",
-                cancellationReason: reason.trim(),
-                cancelledAt: new Date().toISOString(),
-              }
-            : booking,
         ),
       })),
     updateProfile: (input) =>

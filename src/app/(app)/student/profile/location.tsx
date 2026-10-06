@@ -21,10 +21,8 @@ export default function LocationSettingsScreen() {
   const { colors } = useAppTheme();
   const { showToast } = useToast();
   const location = useUserLocation();
-  const setLocationPromptDismissed = useSettingsStore(
-    (state) => state.setLocationPromptDismissed,
-  );
   const autoLocationAttempted = useRef(false);
+  const [preciseRequestAttempted, setPreciseRequestAttempted] = useState(false);
   const [areaPickerVisible, setAreaPickerVisible] = useState(false);
   const discoveryLocationMode = useSettingsStore(
     (state) => state.discoveryLocationMode,
@@ -37,12 +35,17 @@ export default function LocationSettingsScreen() {
     (state) => state.setPreferredAreaId,
   );
   const preferredArea = getPreferredArea(preferredAreaId);
-  const { isChecking, isGranted, coordinates, requestLocation } = location;
+  const { isChecking, isGranted, isPrecise, coordinates, requestLocation } =
+    location;
+  const hasPreciseLocation = isPrecise && Boolean(coordinates);
+  const isUsingCurrentLocation =
+    discoveryLocationMode === "current" && hasPreciseLocation;
 
   useEffect(() => {
     if (
       isChecking ||
       !isGranted ||
+      !isPrecise ||
       discoveryLocationMode !== "current" ||
       coordinates ||
       autoLocationAttempted.current
@@ -51,46 +54,76 @@ export default function LocationSettingsScreen() {
     }
 
     autoLocationAttempted.current = true;
-    void requestLocation();
+    void requestLocation({ requirePrecise: true });
   }, [
     coordinates,
     discoveryLocationMode,
     isChecking,
     isGranted,
+    isPrecise,
     requestLocation,
   ]);
 
   const permissionValue = location.isChecking
     ? "Checking"
     : location.isGranted
-      ? "Allowed"
-      : "Not allowed";
+      ? location.isPrecise
+        ? "Precise location on"
+        : "Precise location off"
+      : location.canAskAgain
+        ? "Ask when needed"
+        : "Blocked";
+  const currentLocationValue = location.isLocating
+    ? "Locating"
+    : isUsingCurrentLocation
+      ? "Selected"
+      : discoveryLocationMode === "current" && !isGranted
+        ? "Permission needed"
+        : discoveryLocationMode === "current" && !isPrecise
+          ? "Precise location needed"
+          : undefined;
 
   const refreshCurrentLocation = async () => {
     autoLocationAttempted.current = true;
-    const nextCoordinates = await location.requestLocation();
+    if (
+      (!location.isGranted && !location.canAskAgain) ||
+      (location.isGranted &&
+        !location.isPrecise &&
+        (!location.canAskAgain || preciseRequestAttempted))
+    ) {
+      void Linking.openSettings();
+      return;
+    }
+
+    if (location.isGranted && !location.isPrecise) {
+      setPreciseRequestAttempted(true);
+    }
+    const nextCoordinates = await location.requestLocation({
+      requirePrecise: true,
+    });
     if (!nextCoordinates) return;
 
+    setPreciseRequestAttempted(false);
     setDiscoveryLocationMode("current");
-    setLocationPromptDismissed(false);
     showToast("Current location updated.");
   };
 
   const choosePreferredArea = (areaId: PreferredAreaId) => {
     const area = getPreferredArea(areaId);
-    location.clearLocation();
     setPreferredAreaId(areaId);
-    setDiscoveryLocationMode("area");
-    setLocationPromptDismissed(true);
+    if (hasPreciseLocation) setDiscoveryLocationMode("area");
     setAreaPickerVisible(false);
-    showToast(`${area.label} is now your discovery area.`);
+    showToast(
+      hasPreciseLocation
+        ? `${area.label} is now your discovery area.`
+        : `${area.label} saved. Enable precise location before browsing schools.`,
+    );
   };
 
   const clearCurrentLocation = () => {
     location.clearLocation();
-    setDiscoveryLocationMode("area");
-    setLocationPromptDismissed(true);
-    showToast(`Using ${preferredArea.label} for school discovery.`);
+    setDiscoveryLocationMode("current");
+    showToast("Location cleared. Refresh it to browse nearby schools.");
   };
 
   return (
@@ -112,13 +145,7 @@ export default function LocationSettingsScreen() {
           title="Device permission"
           description="Allow foreground access while using nearby school discovery."
           value={permissionValue}
-          onPress={() => {
-            if (location.isGranted || !location.canAskAgain) {
-              void Linking.openSettings();
-              return;
-            }
-            void refreshCurrentLocation();
-          }}
+          onPress={() => void refreshCurrentLocation()}
         />
         {location.error ? (
           <Text
@@ -144,17 +171,11 @@ export default function LocationSettingsScreen() {
           icon="crosshairs-gps"
           title="Use current location"
           description={
-            location.coordinates
+            isUsingCurrentLocation
               ? (location.placeName ?? "Current coordinates available")
               : "Refresh your position and sort schools by distance"
           }
-          value={
-            location.isLocating
-              ? "Locating"
-              : discoveryLocationMode === "current"
-                ? "Selected"
-                : undefined
-          }
+          value={currentLocationValue}
           onPress={() => void refreshCurrentLocation()}
         />
         <View
@@ -164,11 +185,11 @@ export default function LocationSettingsScreen() {
         <SettingsRow
           icon="map-marker-outline"
           title="Preferred area"
-          description="Used when you choose not to use your device location"
-          value={`${preferredArea.label}${discoveryLocationMode === "area" ? " · Selected" : ""}`}
+          description="Optional area filter; precise device location is still required"
+          value={`${preferredArea.label}${hasPreciseLocation && discoveryLocationMode === "area" ? " · Selected" : " · Saved"}`}
           onPress={() => setAreaPickerVisible(true)}
         />
-        {discoveryLocationMode === "current" && location.coordinates ? (
+        {hasPreciseLocation ? (
           <>
             <View
               className="mx-4 h-px"
@@ -178,7 +199,7 @@ export default function LocationSettingsScreen() {
               destructive
               icon="map-marker-remove-outline"
               title="Clear current location"
-              description={`Stop using cached coordinates and switch to ${preferredArea.label}`}
+              description="Clear cached coordinates and pause school discovery"
               onPress={clearCurrentLocation}
             />
           </>
@@ -237,8 +258,8 @@ export default function LocationSettingsScreen() {
               className="mt-2 font-figtree text-[13px] leading-5"
               style={{ color: colors.textMuted }}
             >
-              Explore will use this area whenever current location is not
-              selected.
+              This optional filter works only after precise device location is
+              available. It cannot replace location permission.
             </Text>
             <View
               className="mt-5 overflow-hidden rounded-2xl border"

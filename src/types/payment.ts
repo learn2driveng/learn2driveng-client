@@ -1,20 +1,5 @@
 export type PaymentProvider = "paystack";
 
-export const paymentChannels = ["card", "bank_transfer"] as const;
-
-export type PaymentChannel = (typeof paymentChannels)[number];
-
-export function isPaymentChannel(value: unknown): value is PaymentChannel {
-  return (
-    typeof value === "string" &&
-    paymentChannels.some((channel) => channel === value)
-  );
-}
-
-export function parsePaymentChannel(value: unknown): PaymentChannel {
-  return isPaymentChannel(value) ? value : "card";
-}
-
 export type PaymentStatus =
   | "initiated"
   | "pending"
@@ -28,7 +13,7 @@ export interface Payment {
   payerUserId: string;
   schoolId: string;
   provider: PaymentProvider;
-  channel?: PaymentChannel | null;
+  channel?: string | null;
   amount: number;
   currency: string;
   status: PaymentStatus;
@@ -39,6 +24,16 @@ export interface Payment {
   metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface SuccessfulPayment {
+  id: string;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  channel: string | null;
+  providerReference: string;
+  paidAt: string | null;
 }
 
 export interface InitializePaymentPayload {

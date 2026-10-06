@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import {
@@ -9,6 +10,8 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { computeProgressSummary } from "@/lib/learner/map-sessions";
 import {
   selectActiveLearnerPackages,
@@ -37,9 +40,12 @@ export default function StudentProgressScreen() {
           100,
         )
       : 0;
+  const refresh = useCallback(async () => {
+    await Promise.all([refreshLearnerBookings(), refreshLearnerSessions()]);
+  }, []);
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <Text
         accessibilityRole="header"
         className="text-[28px] leading-8 tracking-[-0.7px]"

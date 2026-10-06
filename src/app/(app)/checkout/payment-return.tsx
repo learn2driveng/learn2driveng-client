@@ -57,7 +57,6 @@ export default function PaymentReturnScreen() {
           packageId,
           bookingId: booking.id,
           paymentId: payment.id,
-          ...(payment.channel ? { method: payment.channel } : {}),
           status:
             payment.status === "success"
               ? "success"

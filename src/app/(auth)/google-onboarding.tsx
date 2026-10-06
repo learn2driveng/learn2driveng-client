@@ -10,7 +10,6 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
-import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { completeGoogleSignup } from "@/lib/api";
@@ -153,8 +152,6 @@ export default function GoogleOnboardingScreen() {
             color={colors.text}
           />
         </Pressable>
-        <AppLogo height={42} />
-        <View className="h-11 w-11" />
       </View>
 
       <View className="mt-8">

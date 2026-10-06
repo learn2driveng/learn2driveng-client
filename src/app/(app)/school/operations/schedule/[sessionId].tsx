@@ -464,6 +464,69 @@ export default function SchoolLessonDetailScreen() {
       {session.status === "scheduled" ? (
         <View className="mt-8">
           <SectionHeader title="Lesson actions" />
+          {seatsLeft > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add learner to lesson"
+              onPress={() =>
+                router.push({
+                  pathname: "/school/operations/schedule/[sessionId]/assign",
+                  params: { sessionId: session.id },
+                })
+              }
+              className="mt-3 flex-row items-center gap-3 rounded-[18px] p-4 active:opacity-75"
+              style={{ backgroundColor: colors.surfaceStrong }}
+            >
+              <MaterialCommunityIcons
+                name="account-plus-outline"
+                size={22}
+                color={colors.primary}
+              />
+              <Text
+                className="flex-1 text-[13px]"
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeBold,
+                }}
+              >
+                Add learner
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={20}
+                color={colors.textSubtle}
+              />
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit lesson"
+            onPress={() =>
+              router.push({
+                pathname: "/school/operations/schedule/[sessionId]/edit",
+                params: { sessionId: session.id },
+              })
+            }
+            className="mt-3 flex-row items-center gap-3 rounded-[18px] p-4 active:opacity-75"
+            style={{ backgroundColor: colors.surfaceStrong }}
+          >
+            <MaterialCommunityIcons
+              name="calendar-edit"
+              size={22}
+              color={colors.primary}
+            />
+            <Text
+              className="flex-1 text-[13px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              Edit lesson
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={colors.textSubtle}
+            />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cancel lesson"

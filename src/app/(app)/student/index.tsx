@@ -10,6 +10,8 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { userInitials } from "@/lib/learner/map-api";
 import { computeProgressSummary } from "@/lib/learner/map-sessions";
 import { useAuthStore } from "@/store/auth.store";
@@ -76,6 +78,13 @@ export default function StudentDashboardScreen() {
       void refreshNotificationUnreadCount().catch(() => undefined);
     }, []),
   );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      refreshLearnerBookings(),
+      refreshLearnerSessions(),
+      refreshNotificationUnreadCount(),
+    ]);
+  }, []);
   const header = (
     <View className="flex-row items-center justify-between">
       <View>
@@ -126,9 +135,7 @@ export default function StudentDashboardScreen() {
                 className="font-figtree-bold text-[10px] leading-[16px]"
                 style={{ color: colors.onPrimary }}
               >
-                {unreadNotificationCount > 99
-                  ? "99+"
-                  : unreadNotificationCount}
+                {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
               </Text>
             </View>
           ) : null}
@@ -152,7 +159,7 @@ export default function StudentDashboardScreen() {
   );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       {header}
 
       {activeLesson ? (

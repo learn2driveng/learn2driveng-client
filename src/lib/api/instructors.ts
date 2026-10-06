@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import type { InstructorPhotoSubmission } from "@/lib/api/users";
 import type { ApiSuccessResponse, AuthUser, UserStatus } from "@/types";
 
 export type InstructorPhotoUploadUrlResponse = {
@@ -68,6 +69,23 @@ export async function createInstructorPhotoUploadUrl(
   const { data } = await api.post<ApiSuccessResponse<InstructorPhotoUploadUrlResponse>>(
     `/instructors/${instructorId}/photo/upload-url`,
     input,
+  );
+  return data.data;
+}
+
+export async function fetchPendingInstructorPhotoSubmissions() {
+  const { data } = await api.get<ApiSuccessResponse<InstructorPhotoSubmission[]>>(
+    "/instructors/photo-submissions",
+  );
+  return data.data;
+}
+
+export async function reviewInstructorPhotoSubmission(
+  submissionId: string,
+  decision: "approve" | "reject",
+) {
+  const { data } = await api.post<ApiSuccessResponse<InstructorPhotoSubmission>>(
+    `/instructors/photo-submissions/${encodeURIComponent(submissionId)}/${decision}`,
   );
   return data.data;
 }

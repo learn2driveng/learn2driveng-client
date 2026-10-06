@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -8,12 +9,16 @@ import {
   DashboardScreen,
   SectionHeader,
 } from "@/components/dashboard";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import { useToast } from "@/components/common/toast";
 import {
+  defaultWeeklyAvailability,
+  formatTimeOffDate,
   instructorAvailabilityShifts,
-  instructorTimeOffOptions,
-  instructorWeeklyAvailability,
-} from "@/sample_data/instructor";
+  upcomingTimeOffOptions,
+} from "@/features/instructor/availability-options";
+import { TimeOffCalendarSheet } from "@/features/instructor/time-off-calendar-sheet";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { fetchInstructorAvailability, updateInstructorAvailability } from "@/lib/api/instructor-availability";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 type PickerOption = {
@@ -24,6 +29,7 @@ type PickerOption = {
 
 export default function InstructorAvailabilityScreen() {
   const { colors } = useAppTheme();
+  const { showToast } = useToast();
   const profile = useInstructorOperationsStore((state) => state.profile);
   const setAvailableToday = useInstructorOperationsStore(
     (state) => state.setAvailableToday,
@@ -32,7 +38,7 @@ export default function InstructorAvailabilityScreen() {
     profile.availableToday ?? true,
   );
   const [days, setDays] = useState(() =>
-    instructorWeeklyAvailability.map((day) => ({ ...day })),
+    defaultWeeklyAvailability.map((day) => ({ ...day })),
   );
   const [selectedShiftDayId, setSelectedShiftDayId] = useState<string | null>(
     null,
@@ -40,10 +46,60 @@ export default function InstructorAvailabilityScreen() {
   const [timeOffPickerVisible, setTimeOffPickerVisible] = useState(false);
   const [timeOffDateIds, setTimeOffDateIds] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const timeOffOptions = useMemo(() => upcomingTimeOffOptions(), []);
   const selectedShiftDay = days.find((day) => day.id === selectedShiftDayId);
-  const availableTimeOffOptions = instructorTimeOffOptions.filter(
-    (option) => !timeOffDateIds.includes(option.id),
-  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const settings = await fetchInstructorAvailability();
+      setAcceptingAssignments(settings.acceptingAssignments);
+      setDays(defaultWeeklyAvailability.map((defaultDay) => ({
+        ...defaultDay,
+        ...(settings.weeklyHours.find((day) => day.id === defaultDay.id) ?? {}),
+      })));
+      const todayId = upcomingTimeOffOptions(1)[0]?.id;
+      setTimeOffDateIds(
+        settings.timeOffDates.filter((dateId) => !todayId || dateId >= todayId),
+      );
+      setAvailableToday(settings.acceptingAssignments);
+      setSaved(false);
+    } catch {
+      setLoadError("We could not load your saved availability.");
+    } finally {
+      setLoading(false);
+    }
+  }, [setAvailableToday]);
+
+  useFocusEffect(useCallback(() => {
+    void load();
+  }, [load]));
+
+  const save = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const settings = await updateInstructorAvailability({
+        acceptingAssignments,
+        weeklyHours: days.map(({ id, enabled, shiftId }) => ({ id, enabled, shiftId })),
+        timeOffDates: timeOffDateIds,
+      });
+      setAvailableToday(settings.acceptingAssignments);
+      setSaved(true);
+      showToast("Availability saved.");
+    } catch {
+      showToast("Availability could not be saved. Please try again.", "error");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
 
   const markDirty = () => setSaved(false);
   const updateDay = (dayId: string, update: Partial<(typeof days)[number]>) => {
@@ -52,6 +108,21 @@ export default function InstructorAvailabilityScreen() {
     );
     markDirty();
   };
+
+  if (loading || loadError) {
+    return (
+      <DashboardScreen>
+        <DashboardPageHeader title="Availability" showBack={false} />
+        {loading ? (
+          <ActivityIndicator className="mt-10" color={colors.primary} />
+        ) : (
+          <Pressable accessibilityRole="button" onPress={() => void load()} className="mt-8 rounded-2xl p-5" style={{ backgroundColor: colors.surface }}>
+            <Text style={{ color: colors.error }}>{loadError} Tap to retry.</Text>
+          </Pressable>
+        )}
+      </DashboardScreen>
+    );
+  }
 
   return (
     <>
@@ -288,12 +359,8 @@ export default function InstructorAvailabilityScreen() {
             </View>
           ) : (
             <View className="mt-4 gap-2">
-              {timeOffDateIds.map((dateId) => {
-                const option = instructorTimeOffOptions.find(
-                  (item) => item.id === dateId,
-                );
-                if (!option) return null;
-
+              {[...timeOffDateIds].sort().map((dateId) => {
+                const dateLabel = formatTimeOffDate(dateId);
                 return (
                   <View
                     key={dateId}
@@ -313,18 +380,18 @@ export default function InstructorAvailabilityScreen() {
                         className="font-figtree-bold text-[13px]"
                         style={{ color: colors.text }}
                       >
-                        {option.label}
+                        {dateLabel}
                       </Text>
                       <Text
                         className="mt-1 font-figtree text-[10px]"
                         style={{ color: colors.textMuted }}
                       >
-                        Unavailable · {option.description}
+                        Unavailable · Full day
                       </Text>
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Remove time off on ${option.label}`}
+                      accessibilityLabel={`Remove time off on ${dateLabel}`}
                       hitSlop={8}
                       onPress={() => {
                         setTimeOffDateIds((current) =>
@@ -369,27 +436,26 @@ export default function InstructorAvailabilityScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: saved }}
-          disabled={saved}
-          onPress={() => {
-            setAvailableToday(acceptingAssignments);
-            setSaved(true);
-          }}
+          accessibilityState={{ disabled: saved || saving, busy: saving }}
+          disabled={saved || saving}
+          onPress={() => void save()}
           className="mt-8 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
           style={{
             backgroundColor: saved ? colors.surfaceStrong : colors.primary,
           }}
         >
-          <MaterialCommunityIcons
-            name={saved ? "check" : "content-save-outline"}
-            size={20}
-            color={saved ? colors.textSubtle : colors.onPrimary}
-          />
+          {saving ? <ActivityIndicator color={colors.onPrimary} /> : (
+            <MaterialCommunityIcons
+              name={saved ? "check" : "content-save-outline"}
+              size={20}
+              color={saved ? colors.textSubtle : colors.onPrimary}
+            />
+          )}
           <Text
             className="font-figtree-bold text-[15px]"
             style={{ color: saved ? colors.textSubtle : colors.onPrimary }}
           >
-            {saved ? "Availability saved" : "Save availability"}
+            {saving ? "Saving…" : saved ? "Availability saved" : "Save availability"}
           </Text>
         </Pressable>
       </DashboardScreen>
@@ -409,18 +475,19 @@ export default function InstructorAvailabilityScreen() {
         }}
       />
 
-      <OptionSheet
-        visible={timeOffPickerVisible}
-        title="Add time off"
-        description="Choose an upcoming date when you cannot accept lessons."
-        options={availableTimeOffOptions}
-        onClose={() => setTimeOffPickerVisible(false)}
-        onSelect={(dateId) => {
-          setTimeOffDateIds((current) => [...current, dateId]);
-          markDirty();
-          setTimeOffPickerVisible(false);
-        }}
-      />
+      {timeOffPickerVisible ? (
+        <TimeOffCalendarSheet
+          visible
+          options={timeOffOptions}
+          selectedDateIds={timeOffDateIds}
+          onClose={() => setTimeOffPickerVisible(false)}
+          onSelect={(dateId) => {
+            setTimeOffDateIds((current) => current.includes(dateId) ? current : [...current, dateId]);
+            markDirty();
+            setTimeOffPickerVisible(false);
+          }}
+        />
+      ) : null}
     </>
   );
 }

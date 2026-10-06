@@ -6,7 +6,6 @@ import {
   writeSessionTokens,
 } from "@/lib/auth/session-storage";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
-import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 import type {
   AuthSessionResponse,
   AuthTokens,
@@ -88,14 +87,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         { useLearnerSessionsStore },
         { useInstructorOperationsStore },
         { useNotificationStore },
+        { useReadinessAssessmentStore },
       ] = await Promise.all([
         import("@/store/learner-operations.store"),
         import("@/store/learner-sessions.store"),
         import("@/store/instructor-operations.store"),
         import("@/store/notification.store"),
+        import("@/store/readiness-assessment.store"),
       ]);
       useSchoolOperationsStore.getState().resetSchoolOperations();
-      useReadinessAssessmentStore.getState().resetLearners();
+      useReadinessAssessmentStore.getState().resetReadinessData();
       useLearnerOperationsStore.getState().resetLearnerOperations();
       useLearnerSessionsStore.getState().resetLearnerSessions();
       useInstructorOperationsStore.getState().resetInstructorOperations();

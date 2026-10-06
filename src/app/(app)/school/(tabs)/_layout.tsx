@@ -55,7 +55,7 @@ export default function SchoolTabsLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: "Bookings",
+          title: "Lessons",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="calendar-check"

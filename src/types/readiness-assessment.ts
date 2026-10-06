@@ -1,12 +1,10 @@
-/**
- * Client-only readiness assessment models. No matching server module yet —
- * do not treat these as API DTOs during integration.
- */
+/** Readiness assessment data returned by the server. */
 export type ReadinessArea =
   | "road_rules"
   | "road_signs"
   | "hazard_perception"
   | "vehicle_safety";
+export type ReadinessAssessmentKind = "progress_check" | "final_mock";
 
 export type SchoolLearnerStatus = "active" | "on_hold" | "completed";
 export type AssessmentAssignmentStatus =
@@ -33,6 +31,7 @@ export type ReadinessAssessment = {
   title: string;
   description: string;
   area: ReadinessArea;
+  kind: ReadinessAssessmentKind;
   durationMinutes: number;
   passingScore: number;
   questions: AssessmentQuestion[];
@@ -42,6 +41,8 @@ export type ReadinessAssessment = {
 export type SchoolLearner = {
   id: string;
   bookingId?: string;
+  packageId?: string;
+  sessionsScheduledCount?: number;
   name: string;
   initials: string;
   email: string;
@@ -63,6 +64,7 @@ export type AssessmentAssignment = {
   id: string;
   assessmentId: string;
   learnerId: string;
+  bookingId: string | null;
   assignedAt: string;
   dueAt: string;
   status: AssessmentAssignmentStatus;

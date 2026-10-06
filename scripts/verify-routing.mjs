@@ -35,6 +35,7 @@ function requireText(path, expected, description) {
   "src/app/(app)/student/explore/index.tsx",
   "src/app/(app)/school/(tabs)/instructors/[instructorId].tsx",
   "src/app/(app)/unsupported-role.tsx",
+  "src/app/(auth)/google-link.tsx",
 ].forEach(requireFile);
 
 requireText(
@@ -48,6 +49,11 @@ requireText(
   "Protected route trees must preserve their return destination",
 );
 requireText(
+  "src/features/auth/use-google-auth.ts",
+  'router.replace("/google-link")',
+  "Existing Google accounts must open the dedicated linking route",
+);
+requireText(
   "src/app/(app)/checkout/_layout.tsx",
   'allowedRoles={["learner"]}',
   "Checkout must be a learner-owned sibling of student tabs",
@@ -57,20 +63,30 @@ requireText(
   'pathname: "/support"',
   "Payment help must open outside every tab navigator",
 );
-[
+requireText(
   "src/app/(app)/checkout/[schoolId]/payment.tsx",
+  'pathname: "/checkout/[schoolId]/review"',
+  "Old payment links must reach the one-step checkout",
+);
+requireText(
   "src/app/(app)/checkout/[schoolId]/review.tsx",
-].forEach((path) =>
-  requireText(
-    path,
-    'onExit={() => router.replace("/student")}',
-    "Pre-payment screens must provide a direct dashboard exit",
-  ),
+  'onExit={() => router.replace("/student")}',
+  "The pre-payment screen must provide a direct dashboard exit",
 );
 requireText(
   "src/app/onboarding.tsx",
-  'router.replace("/location")',
-  "Completing onboarding must remove the intro from navigation history",
+  'router.replace("/welcome")',
+  "Completing onboarding must enter welcome without a custom permission gate",
+);
+requireText(
+  "src/app/onboarding.tsx",
+  "Location.requestForegroundPermissionsAsync()",
+  "Completing onboarding must request the native location permission before welcome",
+);
+requireText(
+  "src/app/(public)/location.tsx",
+  'export { default } from "@/app/(app)/student/profile/location";',
+  "Public location settings must reuse the learner screen instead of a custom consent gate",
 );
 requireText(
   "src/app/(public)/_layout.tsx",
