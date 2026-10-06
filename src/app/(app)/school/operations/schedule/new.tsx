@@ -17,9 +17,21 @@ import {
   DashboardScreen,
   SectionHeader,
 } from "@/components/dashboard";
+import {
+  isTimetableDateKey,
+  schoolTodayDateKey,
+  TimetableDateField,
+} from "@/components/dashboard/timetable-date-field";
+import { TimetableTimeField } from "@/components/dashboard/timetable-time-field";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { createRecurringTrainingSchedule } from "@/lib/api/training-sessions";
+import {
+  durationBetweenTimes,
+  endsNextDay,
+  formatTimetableDuration,
+  formatTimetableTimeRange,
+} from "@/lib/school/timetable-time";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError, TrainingSessionType } from "@/types";
 
@@ -169,13 +181,11 @@ export default function NewSchoolLessonScreen() {
   const [title, setTitle] = useState("");
   const [sessionType, setSessionType] =
     useState<TrainingSessionType>("practical");
-  const [startsOn, setStartsOn] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [startsOn, setStartsOn] = useState(schoolTodayDateKey);
   const [endsOn, setEndsOn] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 5]);
   const [startTime, setStartTime] = useState("09:00");
-  const [durationMinutes, setDurationMinutes] = useState("90");
+  const [endTime, setEndTime] = useState("10:30");
   const [capacity, setCapacity] = useState("1");
   const [notes, setNotes] = useState("");
   const [instructorId, setInstructorId] = useState<string | null>(null);
@@ -192,6 +202,9 @@ export default function NewSchoolLessonScreen() {
     (item) => item.id === instructorId,
   );
   const selectedVehicle = vehicles.find((item) => item.id === vehicleId);
+  const durationMinutes = durationBetweenTimes(startTime, endTime);
+  const validDuration =
+    durationMinutes !== null && durationMinutes >= 15 && durationMinutes <= 480;
   const canSave = useMemo(
     () =>
       title.trim().length >= 2 &&
@@ -199,25 +212,26 @@ export default function NewSchoolLessonScreen() {
       !!instructorId &&
       packageIds.length > 0 &&
       Number(capacity) > 0 &&
-      Number(durationMinutes) >= 15 &&
+      validDuration &&
       (!needsVehicle || !!vehicleId) &&
-      !Number.isNaN(new Date(`${startsOn}T${startTime}:00`).getTime()),
+      isTimetableDateKey(startsOn) &&
+      (!endsOn || (isTimetableDateKey(endsOn) && endsOn >= startsOn)),
     [
       title,
       weekdays.length,
       instructorId,
       packageIds.length,
       capacity,
-      durationMinutes,
+      validDuration,
       needsVehicle,
       vehicleId,
       startsOn,
-      startTime,
+      endsOn,
     ],
   );
 
   const save = async () => {
-    if (!canSave || saving || !instructorId) return;
+    if (!canSave || saving || !instructorId || durationMinutes === null) return;
     setError(null);
     setSaving(true);
     try {
@@ -229,7 +243,7 @@ export default function NewSchoolLessonScreen() {
         eligiblePackageIds: packageIds,
         weekdays,
         startTime,
-        durationMinutes: Number(durationMinutes),
+        durationMinutes,
         capacity: Number(capacity),
         startsOn,
         endsOn: endsOn.trim() || undefined,
@@ -296,7 +310,8 @@ export default function NewSchoolLessonScreen() {
                     weekdayOptions.find((item) => item.value === day)?.label,
                 )
                 .join(", ")}{" "}
-              · {startTime}
+              · {formatTimetableTimeRange(startTime, endTime)}
+              {endsNextDay(startTime, endTime) ? " (+1 day)" : ""}
             </Text>
             <Text
               className="mt-1 text-[11px]"
@@ -419,39 +434,43 @@ export default function NewSchoolLessonScreen() {
             </View>
           </View>
           <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Field
-                label="Starts"
-                value={startTime}
-                onChangeText={setStartTime}
-                placeholder="09:00"
-                icon="clock-outline"
-              />
-            </View>
-            <View className="flex-1">
-              <Field
-                label="Minutes"
-                value={durationMinutes}
-                onChangeText={setDurationMinutes}
-                placeholder="90"
-                keyboardType="number-pad"
-                icon="timer-outline"
-              />
-            </View>
+            <TimetableTimeField
+              label="Start time"
+              value={startTime}
+              onChange={setStartTime}
+            />
+            <TimetableTimeField
+              label="End time"
+              value={endTime}
+              onChange={setEndTime}
+            />
           </View>
-          <Field
+          <Text
+            className="text-[12px]"
+            style={{
+              color: validDuration ? colors.textMuted : colors.error,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
+          >
+            {validDuration
+              ? `Lesson duration: ${formatTimetableDuration(durationMinutes)}${endsNextDay(startTime, endTime) ? " · Ends next day" : ""}`
+              : "End time must be 15 minutes to 8 hours after start time."}
+          </Text>
+          <TimetableDateField
             label="Starts on"
             value={startsOn}
-            onChangeText={setStartsOn}
-            placeholder="YYYY-MM-DD"
-            icon="calendar-month-outline"
+            minDate={schoolTodayDateKey()}
+            onChange={(date) => {
+              setStartsOn(date);
+              if (endsOn && endsOn < date) setEndsOn("");
+            }}
           />
-          <Field
+          <TimetableDateField
             label="Ends on"
             value={endsOn}
-            onChangeText={setEndsOn}
-            placeholder="Optional"
-            icon="calendar-remove-outline"
+            minDate={startsOn}
+            onChange={setEndsOn}
+            optional
           />
           <Field
             label="Learners"

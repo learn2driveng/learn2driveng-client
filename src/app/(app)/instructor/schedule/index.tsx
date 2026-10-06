@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -13,6 +13,7 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
@@ -34,9 +35,7 @@ export default function InstructorScheduleScreen() {
     (state) => state.scheduleDays,
   );
   const sessions = useTrainingSessionStore((state) => state.sessions);
-  const [selectedDayId, setSelectedDayId] = useState(
-    scheduleDays[0]?.id ?? "",
-  );
+  const [selectedDayId, setSelectedDayId] = useState(scheduleDays[0]?.id ?? "");
   const [filter, setFilter] = useState<ScheduleFilter>("all");
   const selectedDay =
     scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
@@ -52,9 +51,10 @@ export default function InstructorScheduleScreen() {
   const filteredLessons = lessonsWithStatus.filter(
     (item) => filter === "all" || item.status === filter,
   );
+  const refresh = useCallback(() => refreshInstructorOperations(), []);
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <DashboardPageHeader title="Schedule" showBack={false} />
       <Text
         className="mt-3 mb-3 font-figtree text-[14px] leading-5"

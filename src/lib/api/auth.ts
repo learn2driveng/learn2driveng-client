@@ -103,13 +103,13 @@ export async function getAuthenticatedUser() {
 }
 
 export async function logOutSession() {
-  await api.post("/auth/logout");
+  await api.post("/auth/logout", undefined, { timeout: 1500 });
 }
 
 export async function authenticateWithGoogle(idToken: string) {
   const { data } = await api.post<
     ApiSuccessResponse<GoogleAuthenticationResult>
-  >("/auth/google", { idToken });
+  >("/auth/google", { idToken }, { timeout: 15000 });
 
   return data.data;
 }

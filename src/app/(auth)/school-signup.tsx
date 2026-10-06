@@ -10,7 +10,6 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
-import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { registerAccount } from "@/lib/api";
@@ -86,7 +85,7 @@ export default function SchoolSignupScreen() {
 
   return (
     <AuthScreen>
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row items-center">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -103,7 +102,6 @@ export default function SchoolSignupScreen() {
             color={colors.text}
           />
         </Pressable>
-        <AppLogo height={46} />
       </View>
       <View className="mt-10">
         <Text

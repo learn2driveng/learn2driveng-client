@@ -10,6 +10,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 type CheckoutShellProps = PropsWithChildren<{
   title: string;
   step: number;
+  totalSteps?: number;
   onBack: () => void;
   onExit: () => void;
 }>;
@@ -17,6 +18,7 @@ type CheckoutShellProps = PropsWithChildren<{
 export function CheckoutShell({
   title,
   step,
+  totalSteps = 2,
   onBack,
   onExit,
   children,
@@ -63,7 +65,7 @@ export function CheckoutShell({
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            Step {step} of 2
+            Step {step} of {totalSteps}
           </Text>
         </View>
         <Pressable
@@ -96,7 +98,7 @@ export function CheckoutShell({
           className="h-full rounded-full"
           style={{
             backgroundColor: colors.primary,
-            width: step === 1 ? "50%" : "100%",
+            width: `${Math.min(100, Math.round((step / totalSteps) * 100))}%`,
           }}
         />
       </View>

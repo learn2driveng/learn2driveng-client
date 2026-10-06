@@ -122,7 +122,7 @@ export async function unregisterCurrentPushDevice() {
     await unregisterPushToken(token);
   } finally {
     await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
-    await syncNotificationBadge(0).catch(() => undefined);
+    void syncNotificationBadge(0).catch(() => undefined);
   }
 }
 

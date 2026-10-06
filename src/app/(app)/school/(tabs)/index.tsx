@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import { SchoolAvatar } from "@/components/school/school-avatar";
@@ -12,7 +13,10 @@ import {
 } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { fetchSchoolTrainingSessions } from "@/lib/api/training-sessions";
+import { refreshApprovedSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
+import type { TrainingSession } from "@/types";
 
 function formatPolicy(policy: string) {
   if (policy === "learner_preference") return "Learner preference";
@@ -34,31 +38,64 @@ export default function SchoolDashboardScreen() {
   const surfaces = useSurfaceStyles();
   const instructors = useSchoolOperationsStore((state) => state.instructors);
   const profile = useSchoolOperationsStore((state) => state.profile);
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [renderedAt, setRenderedAt] = useState(() => Date.now());
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState(false);
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    setSessionsError(false);
+    try {
+      setSessions(await fetchSchoolTrainingSessions());
+      setRenderedAt(Date.now());
+    } catch {
+      setSessionsError(true);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void loadSessions();
+    }, [loadSessions]),
+  );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      refreshApprovedSchoolOperations(profile.adminName),
+      loadSessions(),
+    ]);
+  }, [loadSessions, profile.adminName]);
   const activeInstructors = instructors.filter(
     (item) => item.status === "active",
   );
   const pendingInstructors = instructors.filter(
     (item) => item.status !== "active",
   );
-  const bookings = useSchoolOperationsStore((state) => state.bookings);
   const vehicles = useSchoolOperationsStore((state) => state.vehicles);
   const packages = useSchoolOperationsStore((state) => state.packages);
-  const unassignedBookings = bookings.filter(
-    (booking) => booking.status === "unassigned",
-  );
   const activeVehicles = vehicles.filter((vehicle) => vehicle.isActive);
   const maintenanceVehicles = vehicles.filter((vehicle) => !vehicle.isActive);
   const activePackages = packages.filter((item) => item.isActive);
-  const upcomingBookings = [...bookings]
+  const upcomingSessions = sessions
+    .filter(
+      (session) =>
+        session.status === "scheduled" &&
+        new Date(session.scheduledEndTime).getTime() > renderedAt,
+    )
     .sort(
       (left, right) =>
-        new Date(left.scheduledAt).getTime() -
-        new Date(right.scheduledAt).getTime(),
+        new Date(left.scheduledStartTime).getTime() -
+        new Date(right.scheduledStartTime).getTime(),
     )
     .slice(0, 2);
+  const upcomingCount = sessions.filter(
+    (session) =>
+      session.status === "scheduled" &&
+      new Date(session.scheduledEndTime).getTime() > renderedAt,
+  ).length;
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <View className="flex-row items-center gap-3">
         <SchoolAvatar name={profile.name} logoUrl={profile.logoUrl} size={52} />
         <View className="flex-1">
@@ -79,7 +116,10 @@ export default function SchoolDashboardScreen() {
       </View>
       <Text
         className="mt-4 text-[13px] leading-5"
-        style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+        style={{
+          color: colors.textMuted,
+          fontFamily: fontFamily.figtreeMedium,
+        }}
       >
         Manage school-owned instructors, fleet, packages, and lesson operations
         from one place.
@@ -104,7 +144,7 @@ export default function SchoolDashboardScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {unassignedBookings.length + pendingInstructors.length}
+              {pendingInstructors.length}
             </Text>
           </View>
           <View
@@ -134,7 +174,6 @@ export default function SchoolDashboardScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          {unassignedBookings.length} lessons need assignment ·{" "}
           {pendingInstructors.length} instructors need review
         </Text>
       </HeroSurface>
@@ -149,7 +188,7 @@ export default function SchoolDashboardScreen() {
         <StatCard
           icon="calendar-check"
           label="Upcoming lessons"
-          value={String(bookings.length)}
+          value={sessionsLoading || sessionsError ? "—" : String(upcomingCount)}
           style={surfaces.card}
         />
       </View>
@@ -200,7 +239,7 @@ export default function SchoolDashboardScreen() {
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                {unassignedBookings.length} lessons need assignment
+                Manage lesson schedule
               </Text>
               <Text
                 className="mt-1 text-[11px]"
@@ -209,7 +248,7 @@ export default function SchoolDashboardScreen() {
                   fontFamily: fontFamily.figtreeMedium,
                 }}
               >
-                Match instructors and vehicles before lesson time
+                Create and review real training sessions
               </Text>
             </View>
             <MaterialCommunityIcons
@@ -272,14 +311,22 @@ export default function SchoolDashboardScreen() {
           onActionPress={() => router.push("/school/bookings")}
         />
         <View className="mt-4 gap-3">
-          {upcomingBookings.map((booking) => (
+          {sessionsLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : null}
+          {sessionsError ? (
+            <Text style={{ color: colors.error }}>
+              Could not load lessons. Open the schedule to retry.
+            </Text>
+          ) : null}
+          {upcomingSessions.map((session) => (
             <Pressable
-              key={booking.id}
+              key={session.id}
               accessibilityRole="button"
               onPress={() =>
                 router.push({
-                  pathname: "/school/bookings/[bookingId]",
-                  params: { bookingId: booking.id },
+                  pathname: "/school/operations/schedule/[sessionId]",
+                  params: { sessionId: session.id },
                 })
               }
               className="flex-row items-center gap-3 rounded-3xl border p-4 active:opacity-80"
@@ -296,7 +343,11 @@ export default function SchoolDashboardScreen() {
                     fontFamily: fontFamily.figtreeBold,
                   }}
                 >
-                  {booking.learnerInitials}
+                  <MaterialCommunityIcons
+                    name="calendar"
+                    size={22}
+                    color={colors.primary}
+                  />
                 </Text>
               </View>
               <View className="flex-1">
@@ -307,7 +358,7 @@ export default function SchoolDashboardScreen() {
                     fontFamily: fontFamily.figtreeBold,
                   }}
                 >
-                  {booking.learnerName}
+                  {session.title}
                 </Text>
                 <Text
                   className="mt-1 text-[11px]"
@@ -316,20 +367,18 @@ export default function SchoolDashboardScreen() {
                     fontFamily: fontFamily.figtreeMedium,
                   }}
                 >
-                  {formatSchedule(booking.scheduledAt)} · {booking.transmission}
+                  {formatSchedule(session.scheduledStartTime)} ·{" "}
+                  {session.participantCount}/{session.capacity} booked
                 </Text>
               </View>
               <Text
                 className="text-[10px] capitalize"
                 style={{
-                  color:
-                    booking.status === "confirmed"
-                      ? colors.success
-                      : colors.verified,
+                  color: colors.success,
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                {booking.status}
+                {session.status}
               </Text>
             </Pressable>
           ))}

@@ -17,6 +17,11 @@ import {
   DashboardScreen,
   SectionHeader,
 } from "@/components/dashboard";
+import {
+  isTimetableDateKey,
+  TimetableDateField,
+} from "@/components/dashboard/timetable-date-field";
+import { TimetableTimeField } from "@/components/dashboard/timetable-time-field";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
@@ -24,6 +29,12 @@ import {
   updateRecurringTrainingSchedule,
 } from "@/lib/api/training-sessions";
 import { useToast } from "@/components/common/toast";
+import {
+  durationBetweenTimes,
+  endTimeForDuration,
+  endsNextDay,
+  formatTimetableDuration,
+} from "@/lib/school/timetable-time";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError, RecurringTrainingSchedule } from "@/types";
 
@@ -90,7 +101,7 @@ export default function EditTimetableScreen() {
   const [title, setTitle] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [capacity, setCapacity] = useState("");
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
@@ -124,7 +135,7 @@ export default function EditTimetableScreen() {
         setTitle(found.title);
         setWeekdays(found.weekdays);
         setStartTime(found.startTime);
-        setDurationMinutes(String(found.durationMinutes));
+        setEndTime(endTimeForDuration(found.startTime, found.durationMinutes));
         setCapacity(String(found.capacity));
         setStartsOn(found.startsOn);
         setEndsOn(found.endsOn ?? "");
@@ -146,28 +157,32 @@ export default function EditTimetableScreen() {
       void load();
     }, [load]),
   );
+  const durationMinutes = durationBetweenTimes(startTime, endTime);
+  const validDuration =
+    durationMinutes !== null && durationMinutes >= 15 && durationMinutes <= 480;
   const canSave = useMemo(
     () =>
       title.trim().length >= 2 &&
       weekdays.length > 0 &&
       !!instructorId &&
       packageIds.length > 0 &&
-      Number(durationMinutes) >= 15 &&
+      validDuration &&
       Number(capacity) > 0 &&
-      !Number.isNaN(new Date(`${startsOn}T${startTime}:00`).getTime()),
+      isTimetableDateKey(startsOn) &&
+      (!endsOn || (isTimetableDateKey(endsOn) && endsOn >= startsOn)),
     [
       title,
       weekdays.length,
       instructorId,
       packageIds.length,
-      durationMinutes,
+      validDuration,
       capacity,
       startsOn,
-      startTime,
+      endsOn,
     ],
   );
   const save = async () => {
-    if (!item || !canSave || saving) return;
+    if (!item || !canSave || saving || durationMinutes === null) return;
     setSaving(true);
     setError(null);
     try {
@@ -175,13 +190,13 @@ export default function EditTimetableScreen() {
         title: title.trim(),
         weekdays,
         startTime,
-        durationMinutes: Number(durationMinutes),
+        durationMinutes,
         capacity: Number(capacity),
         startsOn,
-        endsOn: endsOn.trim() || undefined,
-        notes: notes.trim() || undefined,
+        endsOn: endsOn.trim() || null,
+        notes: notes.trim() || null,
         instructorId,
-        vehicleId: vehicleId ?? undefined,
+        vehicleId,
         eligiblePackageIds: packageIds,
       });
       showToast("Timetable updated.");
@@ -328,24 +343,28 @@ export default function EditTimetableScreen() {
           </View>
         </View>
         <View className="flex-row gap-3">
-          <View className="flex-1">
-            <Field
-              label="Starts"
-              value={startTime}
-              onChangeText={setStartTime}
-              placeholder="09:00"
-            />
-          </View>
-          <View className="flex-1">
-            <Field
-              label="Minutes"
-              value={durationMinutes}
-              onChangeText={setDurationMinutes}
-              placeholder="90"
-              number
-            />
-          </View>
+          <TimetableTimeField
+            label="Start time"
+            value={startTime}
+            onChange={setStartTime}
+          />
+          <TimetableTimeField
+            label="End time"
+            value={endTime}
+            onChange={setEndTime}
+          />
         </View>
+        <Text
+          className="text-[12px]"
+          style={{
+            color: validDuration ? colors.textMuted : colors.error,
+            fontFamily: fontFamily.figtreeMedium,
+          }}
+        >
+          {validDuration
+            ? `Lesson duration: ${formatTimetableDuration(durationMinutes)}${endsNextDay(startTime, endTime) ? " · Ends next day" : ""}`
+            : "End time must be 15 minutes to 8 hours after start time."}
+        </Text>
         <Field
           label="Learners"
           value={capacity}
@@ -353,17 +372,20 @@ export default function EditTimetableScreen() {
           placeholder="4"
           number
         />
-        <Field
+        <TimetableDateField
           label="Starts on"
           value={startsOn}
-          onChangeText={setStartsOn}
-          placeholder="YYYY-MM-DD"
+          onChange={(date) => {
+            setStartsOn(date);
+            if (endsOn && endsOn < date) setEndsOn("");
+          }}
         />
-        <Field
+        <TimetableDateField
           label="Ends on"
           value={endsOn}
-          onChangeText={setEndsOn}
-          placeholder="Optional"
+          minDate={startsOn}
+          onChange={setEndsOn}
+          optional
         />
         <View>
           <SectionHeader title="Team" />
@@ -425,13 +447,23 @@ export default function EditTimetableScreen() {
           {error}
         </Text>
       ) : null}
+      <Text
+        className="mt-6 text-[12px] leading-5"
+        style={{
+          color: colors.textMuted,
+          fontFamily: fontFamily.figtreeMedium,
+        }}
+      >
+        Changes to this timetable apply to future unbooked lessons only. Edit an
+        already-booked lesson individually to change its details.
+      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Save timetable"
         accessibilityState={{ disabled: !canSave || saving }}
         disabled={!canSave || saving}
         onPress={() => void save()}
-        className="mt-8 h-14 items-center justify-center rounded-2xl"
+        className="mt-5 h-14 items-center justify-center rounded-2xl"
         style={{
           backgroundColor: canSave ? colors.primary : colors.surfaceStrong,
         }}

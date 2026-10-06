@@ -13,10 +13,16 @@ import {
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
+  deleteRecurringTrainingSchedule,
   fetchRecurringTrainingSchedules,
   pauseRecurringTrainingSchedule,
   resumeRecurringTrainingSchedule,
 } from "@/lib/api/training-sessions";
+import {
+  endTimeForDuration,
+  formatTimetableDuration,
+  formatTimetableTimeRange,
+} from "@/lib/school/timetable-time";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError, RecurringTrainingSchedule } from "@/types";
 
@@ -39,6 +45,7 @@ export default function SchoolTimetablesScreen() {
   const [timetables, setTimetables] = useState<RecurringTrainingSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [pausingId, setPausingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -102,9 +109,39 @@ export default function SchoolTimetablesScreen() {
       setPausingId(null);
     }
   };
+  const remove = (item: RecurringTrainingSchedule) =>
+    Alert.alert(
+      "Delete timetable?",
+      "Future lessons without bookings will be removed. Booked and past lessons will remain on the calendar. This cannot be undone.",
+      [
+        { text: "Keep timetable", style: "cancel" },
+        {
+          text: "Delete timetable",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingId(item.id);
+            setError(null);
+            try {
+              await deleteRecurringTrainingSchedule(item.id);
+              setTimetables((current) =>
+                current.filter((row) => row.id !== item.id),
+              );
+              showToast("Timetable deleted. Booked lessons were kept.");
+            } catch (caught) {
+              setError(
+                (caught as ApiError).message ||
+                  "We could not delete this timetable.",
+              );
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+    );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={load}>
       <DashboardPageHeader title="Timetables" />
       <Pressable
         accessibilityRole="button"
@@ -130,11 +167,7 @@ export default function SchoolTimetablesScreen() {
       </Pressable>
       <View className="mt-8">
         <SectionHeader title="Your timetables" />
-        {loading ? (
-          <View className="mt-8 items-center">
-            <ActivityIndicator color={colors.primary} />
-          </View>
-        ) : error ? (
+        {error ? (
           <Text
             className="mt-4 text-[13px]"
             style={{
@@ -144,6 +177,11 @@ export default function SchoolTimetablesScreen() {
           >
             {error}
           </Text>
+        ) : null}
+        {loading ? (
+          <View className="mt-8 items-center">
+            <ActivityIndicator color={colors.primary} />
+          </View>
         ) : timetables.length === 0 ? (
           <View className="mt-4">
             <ContentEmptyState
@@ -218,7 +256,15 @@ export default function SchoolTimetablesScreen() {
                         {item.weekdays
                           .map((day) => weekdayLabels[day])
                           .join(" · ")}{" "}
-                        · {item.startTime} · {item.durationMinutes} min
+                        ·{" "}
+                        {formatTimetableTimeRange(
+                          item.startTime,
+                          endTimeForDuration(
+                            item.startTime,
+                            item.durationMinutes,
+                          ),
+                        )}{" "}
+                        · {formatTimetableDuration(item.durationMinutes)}
                       </Text>
                       <Text
                         className="mt-1 text-[11px]"
@@ -236,10 +282,12 @@ export default function SchoolTimetablesScreen() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Edit ${item.title}`}
+                      accessibilityState={{ disabled: deletingId === item.id }}
+                      disabled={deletingId === item.id}
                       onPress={() =>
                         router.push({
                           pathname:
-                            "/school/operations/schedule/[timetableId]/edit",
+                            "/school/operations/schedule/timetables/[timetableId]/edit",
                           params: { timetableId: item.id },
                         })
                       }
@@ -262,8 +310,11 @@ export default function SchoolTimetablesScreen() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${item.isActive ? "Pause" : "Resume"} ${item.title}`}
-                      accessibilityState={{ disabled: pausingId === item.id }}
-                      disabled={pausingId === item.id}
+                      accessibilityState={{
+                        disabled:
+                          pausingId === item.id || deletingId === item.id,
+                      }}
+                      disabled={pausingId === item.id || deletingId === item.id}
                       onPress={() =>
                         item.isActive ? pause(item) : void resume(item)
                       }
@@ -290,6 +341,41 @@ export default function SchoolTimetablesScreen() {
                       </Text>
                     </Pressable>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${item.title}`}
+                    accessibilityState={{
+                      disabled: deletingId === item.id || pausingId === item.id,
+                    }}
+                    disabled={deletingId === item.id || pausingId === item.id}
+                    onPress={() => remove(item)}
+                    className="mt-3 h-11 flex-row items-center justify-center gap-2 rounded-2xl border"
+                    style={{
+                      backgroundColor: colors.surfaceMuted,
+                      borderColor: colors.error,
+                    }}
+                  >
+                    {deletingId === item.id ? (
+                      <ActivityIndicator size="small" color={colors.error} />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="delete-outline"
+                        size={18}
+                        color={colors.error}
+                      />
+                    )}
+                    <Text
+                      className="text-[13px]"
+                      style={{
+                        color: colors.error,
+                        fontFamily: fontFamily.figtreeBold,
+                      }}
+                    >
+                      {deletingId === item.id
+                        ? "Deleting…"
+                        : "Delete timetable"}
+                    </Text>
+                  </Pressable>
                 </View>
               );
             })}

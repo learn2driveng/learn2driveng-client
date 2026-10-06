@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -24,6 +25,7 @@ import Svg, { Path } from "react-native-svg";
 import { AppLogo } from "@/components/common/app-logo";
 import { Screen } from "@/components/common/screen";
 import { borderRadius, splashPalette } from "@/constants/theme";
+import { useSettingsStore } from "@/store/settings.store";
 
 const PRIMARY = splashPalette.primary;
 const SLIDE_COUNT = 3;
@@ -513,13 +515,32 @@ function OnboardingSlide3({
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const setDiscoveryLocationMode = useSettingsStore(
+    (state) => state.setDiscoveryLocationMode,
+  );
+  const completeOnboarding = useSettingsStore(
+    (state) => state.completeOnboarding,
+  );
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
+  const isLeavingOnboarding = useRef(false);
   const [, setPage] = useState(0);
   const [slideHeight, setSlideHeight] = useState(0);
 
-  const continueToDiscovery = () => {
-    router.replace("/location");
+  const continueToDiscovery = async () => {
+    if (isLeavingOnboarding.current) return;
+    isLeavingOnboarding.current = true;
+    completeOnboarding();
+
+    try {
+      // Let the OS show its own permission dialog; do not insert an app-made gate.
+      await Location.requestForegroundPermissionsAsync();
+    } catch {
+      // Explore will show the location action if the request cannot complete.
+    } finally {
+      setDiscoveryLocationMode("current");
+      router.replace("/welcome");
+    }
   };
 
   const goToPage = (index: number) => {

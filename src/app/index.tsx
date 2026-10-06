@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -16,6 +16,7 @@ import { Screen } from "@/components/common/screen";
 import { splashPalette } from "@/constants/theme";
 import { homeForRole } from "@/features/auth";
 import { useAuthStore } from "@/store/auth.store";
+import { useSettingsStore } from "@/store/settings.store";
 
 const GRID_ROWS = 18;
 const GRID_COLS = 14;
@@ -72,27 +73,40 @@ export default function SplashScreen() {
   const progress = useSharedValue(0);
   const role = useAuthStore((state) => state.role);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasCompletedOnboarding = useSettingsStore(
+    (state) => state.hasCompletedOnboarding,
+  );
+  const skipCustomSplash = (isAuthenticated && !!role) || hasCompletedOnboarding;
 
   useEffect(() => {
+    if (skipCustomSplash) return;
     progress.value = withTiming(0.72, {
       duration: 2200,
       easing: Easing.out(Easing.cubic),
     });
-  }, [progress]);
+  }, [progress, skipCustomSplash]);
 
   useEffect(() => {
+    if (skipCustomSplash) return;
+
     const timer = setTimeout(() => {
-      router.replace(
-        isAuthenticated && role ? homeForRole(role) : ("/onboarding" as Href),
-      );
+      router.replace("/onboarding");
     }, 2800);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, role, router]);
+  }, [router, skipCustomSplash]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: progress.value * 240,
   }));
+
+  if (isAuthenticated && role) {
+    return <Redirect href={homeForRole(role)} />;
+  }
+
+  if (hasCompletedOnboarding) {
+    return <Redirect href="/welcome" />;
+  }
 
   return (
     <Screen

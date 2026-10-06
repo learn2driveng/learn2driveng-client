@@ -12,7 +12,6 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
-import { AppLogo } from "@/components/common/app-logo";
 import { useGoogleAuth } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { registerAccount } from "@/lib/api";
@@ -94,11 +93,7 @@ export default function SignupScreen() {
   return (
     <AuthScreen contentClassName="justify-between">
       <View>
-        <View className="flex-row items-start justify-between gap-4">
-          <AppLogo height={46} />
-        </View>
-
-        <View className="mt-5">
+        <View>
           <Text
             accessibilityRole="header"
             className="font-figtree-bold text-[30px] leading-[36px]"

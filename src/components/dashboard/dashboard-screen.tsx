@@ -1,23 +1,55 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useToast } from "@/components/common/toast";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useKeepFocusedInputVisible } from "@/hooks/use-keep-focused-input-visible";
 
 type DashboardScreenProps = {
   children: ReactNode;
   scrollResetKey?: string | number;
+  onRefresh?: () => Promise<unknown> | void;
 };
 
 export function DashboardScreen({
   children,
   scrollResetKey,
+  onRefresh,
 }: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { showToast } = useToast();
   const scrollViewRef = useRef<ScrollView>(null);
+  const refreshingRef = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
   const keepFocusedInputVisible = useKeepFocusedInputVisible(scrollViewRef);
+
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } catch {
+      showToast("Could not refresh. Please try again.", "error");
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+    }
+  }, [onRefresh, showToast]);
 
   useEffect(() => {
     if (scrollResetKey === undefined) return;
@@ -36,7 +68,20 @@ export function DashboardScreen({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         onFocus={keepFocusedInputVisible}
+        alwaysBounceVertical={!!onRefresh}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void handleRefresh()}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+              progressBackgroundColor={colors.surface}
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
+          flexGrow: 1,
           paddingTop: insets.top + 16,
           paddingBottom: 32,
           paddingHorizontal: 20,

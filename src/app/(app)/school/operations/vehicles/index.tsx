@@ -10,6 +10,7 @@ import {
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { formatTransmissionLabel } from "@/lib/school/format";
+import { refreshApprovedSchoolOperations } from "@/lib/school/hydrate-school-operations";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 
@@ -18,9 +19,14 @@ export default function SchoolFleetScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const vehicles = useSchoolOperationsStore((state) => state.vehicles);
+  const adminName = useSchoolOperationsStore(
+    (state) => state.profile.adminName,
+  );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen
+      onRefresh={() => refreshApprovedSchoolOperations(adminName)}
+    >
       <DashboardPageHeader title="Fleet" />
       <Text
         className="mt-3 text-[13px] leading-5"
@@ -74,11 +80,19 @@ export default function SchoolFleetScreen() {
                 className="h-12 w-12 items-center justify-center overflow-hidden rounded-2xl"
                 style={{ backgroundColor: colors.surfaceStrong }}
               >
-                {vehicle.photoUrl ? <Image source={{ uri: vehicle.photoUrl }} className="h-full w-full" resizeMode="cover" /> : <MaterialCommunityIcons
-                  name="car-hatchback"
-                  size={24}
-                  color={colors.primary}
-                />}
+                {vehicle.photoUrl ? (
+                  <Image
+                    source={{ uri: vehicle.photoUrl }}
+                    className="h-full w-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="car-hatchback"
+                    size={24}
+                    color={colors.primary}
+                  />
+                )}
               </View>
               <View className="flex-1">
                 <Text
@@ -97,7 +111,8 @@ export default function SchoolFleetScreen() {
                     fontFamily: fontFamily.figtreeMedium,
                   }}
                 >
-                  {vehicle.plateNumber.toUpperCase()} · {vehicle.color ? `${vehicle.color} · ` : ""}
+                  {vehicle.plateNumber.toUpperCase()} ·{" "}
+                  {vehicle.color ? `${vehicle.color} · ` : ""}
                   {formatTransmissionLabel(vehicle.transmissionType)}
                 </Text>
               </View>
@@ -114,7 +129,10 @@ export default function SchoolFleetScreen() {
                 <View className="mt-2 flex-row items-center gap-1">
                   <Text
                     className="text-[11px]"
-                    style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+                    style={{
+                      color: colors.text,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
                   >
                     View vehicle
                   </Text>

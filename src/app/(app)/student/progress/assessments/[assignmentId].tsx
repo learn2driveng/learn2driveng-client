@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -9,6 +9,7 @@ import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { assessmentAreaMeta } from "@/features/readiness-assessment";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuthStore } from "@/store/auth.store";
 import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 import type { AssessmentAttempt } from "@/types";
 
@@ -19,8 +20,10 @@ export default function LearnerAssessmentScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
+  const currentLearnerId = useAuthStore((state) => state.user?.id);
   const assignments = useReadinessAssessmentStore((state) => state.assignments);
   const assessments = useReadinessAssessmentStore((state) => state.assessments);
+  const completedAssessmentAnswers = useReadinessAssessmentStore((state) => state.completedAssessmentAnswers);
   const attempts = useReadinessAssessmentStore((state) => state.attempts);
   const startAssessment = useReadinessAssessmentStore(
     (state) => state.startAssessment,
@@ -28,8 +31,14 @@ export default function LearnerAssessmentScreen() {
   const submitAssessment = useReadinessAssessmentStore(
     (state) => state.submitAssessment,
   );
-  const assignment = assignments.find((item) => item.id === assignmentId);
-  const assessment = assessments.find(
+  const refreshLearner = useReadinessAssessmentStore((state) => state.refreshLearner);
+  const loading = useReadinessAssessmentStore((state) => state.loading);
+  const loadError = useReadinessAssessmentStore((state) => state.error);
+  useFocusEffect(useCallback(() => { void refreshLearner(); }, [refreshLearner]));
+  const assignment = assignments.find(
+    (item) => item.id === assignmentId && item.learnerId === currentLearnerId,
+  );
+  const assessment = completedAssessmentAnswers[assignmentId ?? ""] ?? assessments.find(
     (item) => item.id === assignment?.assessmentId,
   );
   const existingAttempt = attempts.find(
@@ -42,18 +51,24 @@ export default function LearnerAssessmentScreen() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittedAttempt, setSubmittedAttempt] =
     useState<AssessmentAttempt | null>(existingAttempt ?? null);
+  const [working, setWorking] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const resultAttempt = submittedAttempt ?? existingAttempt;
 
   if (!assignment || !assessment) {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Assessment" />
+        {loading ? <ActivityIndicator className="mt-8" color={colors.primary} /> : (
         <View className="mt-8">
           <ContentEmptyState
             icon="clipboard-alert-outline"
-            title="Assessment unavailable"
-            description="This assignment may have been removed by your school."
+            title={loadError ? "Could not load assessment" : "Assessment unavailable"}
+            description={loadError ?? "This assignment may have been removed by your school."}
           />
+          {loadError ? <Pressable onPress={() => void refreshLearner()} className="mt-4 rounded-full p-4" style={{ backgroundColor: colors.primary }}><Text style={{ color: colors.onPrimary }}>Try again</Text></Pressable> : null}
         </View>
+        )}
       </DashboardScreen>
     );
   }
@@ -62,7 +77,7 @@ export default function LearnerAssessmentScreen() {
   const question = assessment.questions[questionIndex];
   const currentAnswer = question ? answers[question.id] : undefined;
 
-  if (mode === "result" && submittedAttempt) {
+  if (resultAttempt && (mode === "result" || assignment.status === "completed")) {
     return (
       <DashboardScreen>
         <DashboardPageHeader title="Assessment result" />
@@ -73,7 +88,7 @@ export default function LearnerAssessmentScreen() {
           >
             <MaterialCommunityIcons
               name={
-                submittedAttempt.passed ? "trophy-outline" : "refresh-circle"
+                resultAttempt.passed ? "trophy-outline" : "refresh-circle"
               }
               size={29}
               color={colors.onPrimary}
@@ -86,7 +101,7 @@ export default function LearnerAssessmentScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            {submittedAttempt.score}%
+            {resultAttempt.score}%
           </Text>
           <Text
             className="mt-2 text-[18px]"
@@ -95,8 +110,8 @@ export default function LearnerAssessmentScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            {submittedAttempt.passed
-              ? "Readiness check passed"
+            {resultAttempt.passed
+              ? assessment.kind === "final_mock" ? "Mock quiz passed" : "Progress check passed"
               : "Review and practise"}
           </Text>
           <Text
@@ -106,8 +121,8 @@ export default function LearnerAssessmentScreen() {
               fontFamily: fontFamily.figtreeMedium,
             }}
           >
-            {submittedAttempt.passed
-              ? "Your result has been added to the readiness view shared with your school."
+            {resultAttempt.passed
+              ? "Your quiz result has been shared with your school. It does not change your package status."
               : `The pass mark is ${assessment.passingScore}%. Use the explanations below with your instructor.`}
           </Text>
         </HeroSurface>
@@ -121,7 +136,7 @@ export default function LearnerAssessmentScreen() {
         </Text>
         <View className="mt-4 gap-4">
           {assessment.questions.map((item, index) => {
-            const selected = submittedAttempt.answers[item.id];
+            const selected = resultAttempt.answers[item.id];
             const correct = selected === item.correctOptionId;
             return (
               <View
@@ -183,6 +198,11 @@ export default function LearnerAssessmentScreen() {
             Back to assessments
           </Text>
         </Pressable>
+        {actionError ? (
+          <Text className="mt-3 text-[12px]" style={{ color: colors.verified }}>
+            {actionError}
+          </Text>
+        ) : null}
       </DashboardScreen>
     );
   }
@@ -317,18 +337,28 @@ export default function LearnerAssessmentScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: !currentAnswer }}
-          disabled={!currentAnswer}
-          onPress={() => {
+          accessibilityState={{ disabled: !currentAnswer || working }}
+          disabled={!currentAnswer || working}
+          onPress={async () => {
             const isLast = questionIndex === assessment.questions.length - 1;
             if (!isLast) {
               setQuestionIndex((current) => current + 1);
               return;
             }
-            const attempt = submitAssessment(assignment.id, answers);
-            if (attempt) {
+            setWorking(true);
+            setActionError(null);
+            try {
+              const attempt = await submitAssessment(assignment.id, answers);
               setSubmittedAttempt(attempt);
               setMode("result");
+            } catch (cause) {
+              setActionError(
+                cause && typeof cause === "object" && "message" in cause
+                  ? String(cause.message)
+                  : "Could not submit your answers. Please try again.",
+              );
+            } finally {
+              setWorking(false);
             }
           }}
           className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
@@ -345,16 +375,22 @@ export default function LearnerAssessmentScreen() {
               fontFamily: fontFamily.figtreeBold,
             }}
           >
-            {questionIndex === assessment.questions.length - 1
+            {working ? "Submitting…" : questionIndex === assessment.questions.length - 1
               ? "Submit assessment"
               : "Next question"}
           </Text>
+          {working ? <ActivityIndicator color={colors.onPrimary} /> : null}
           <MaterialCommunityIcons
             name="arrow-right"
             size={19}
             color={currentAnswer ? colors.onPrimary : colors.textSubtle}
           />
         </Pressable>
+        {actionError ? (
+          <Text className="mt-3 text-[12px]" style={{ color: colors.verified }}>
+            {actionError}
+          </Text>
+        ) : null}
       </DashboardScreen>
     );
   }
@@ -456,9 +492,23 @@ export default function LearnerAssessmentScreen() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => {
-          startAssessment(assignment.id);
-          setMode("question");
+        accessibilityState={{ disabled: working }}
+        disabled={working}
+        onPress={async () => {
+          setWorking(true);
+          setActionError(null);
+          try {
+            await startAssessment(assignment.id);
+            setMode("question");
+          } catch (cause) {
+            setActionError(
+              cause && typeof cause === "object" && "message" in cause
+                ? String(cause.message)
+                : "Could not start the assessment. Please try again.",
+            );
+          } finally {
+            setWorking(false);
+          }
         }}
         className="mt-7 h-14 flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
         style={{ backgroundColor: colors.primary }}
@@ -470,14 +520,15 @@ export default function LearnerAssessmentScreen() {
             fontFamily: fontFamily.figtreeBold,
           }}
         >
-          Start assessment
+          {working ? "Starting…" : "Start assessment"}
         </Text>
-        <MaterialCommunityIcons
-          name="arrow-right"
-          size={20}
-          color={colors.onPrimary}
-        />
+        {working ? <ActivityIndicator color={colors.onPrimary} /> : <MaterialCommunityIcons name="arrow-right" size={20} color={colors.onPrimary} />}
       </Pressable>
+      {actionError ? (
+        <Text className="mt-3 text-[12px]" style={{ color: colors.verified }}>
+          {actionError}
+        </Text>
+      ) : null}
     </DashboardScreen>
   );
 }

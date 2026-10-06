@@ -1,12 +1,22 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 
+import { useToast } from "@/components/common/toast";
 import { ThemeSelector } from "@/components/common/theme-selector";
 import { useSurfaceStyles } from "@/components/common/surface";
 import { DashboardScreen, SettingsRow } from "@/components/dashboard";
 import { useLogout } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import {
+  fetchMyInstructorPhotoSubmission,
+  fetchMyProfile,
+} from "@/lib/api/users";
+import type { InstructorPhotoSubmission } from "@/lib/api/users";
+import { uploadOwnInstructorPhoto } from "@/lib/instructor/upload-own-photo";
+import { useAuthStore } from "@/store/auth.store";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 
 function Divider() {
@@ -21,10 +31,85 @@ export default function InstructorProfileScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const profile = useInstructorOperationsStore((state) => state.profile);
-  const { logout } = useLogout();
+  const setProfilePhoto = useInstructorOperationsStore(
+    (state) => state.setProfilePhoto,
+  );
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const { showToast } = useToast();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [photoSubmission, setPhotoSubmission] =
+    useState<InstructorPhotoSubmission | null>(null);
+  const { logout, isLoggingOut } = useLogout();
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void fetchMyProfile()
+        .then((user) => {
+          if (!active) return;
+          updateUser(user);
+          setProfilePhoto(user.profilePhoto ?? null);
+          setPhotoFailed(false);
+        })
+        .catch(() => undefined);
+      void fetchMyInstructorPhotoSubmission()
+        .then((submission) => {
+          if (active) setPhotoSubmission(submission);
+        })
+        .catch(() => undefined);
+      return () => {
+        active = false;
+      };
+    }, [setProfilePhoto, updateUser]),
+  );
+
+  const refresh = useCallback(async () => {
+    const [user, submission] = await Promise.all([
+      fetchMyProfile(),
+      fetchMyInstructorPhotoSubmission(),
+    ]);
+    updateUser(user);
+    setProfilePhoto(user.profilePhoto ?? null);
+    setPhotoFailed(false);
+    setPhotoSubmission(submission);
+  }, [setProfilePhoto, updateUser]);
+
+  const choosePhoto = async () => {
+    if (isUploadingPhoto) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      setIsUploadingPhoto(true);
+      const submission = await uploadOwnInstructorPhoto({
+        uri: asset.uri,
+        fileName: asset.fileName ?? "instructor-photo.jpg",
+        mimeType: asset.mimeType,
+        size: asset.fileSize,
+      });
+      setPhotoSubmission(submission);
+      showToast("Photo sent to your school for approval.");
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Your photo could not be uploaded.",
+        "error",
+      );
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
@@ -40,36 +125,115 @@ export default function InstructorProfileScreen() {
       </Text>
 
       <View className="mt-8 items-center">
-        <View
-          className="h-24 w-24 items-center justify-center rounded-full border-4"
-          style={{ backgroundColor: colors.text, borderColor: colors.primary }}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            profile.profilePhoto
+              ? "Change instructor photo"
+              : "Upload instructor photo"
+          }
+          accessibilityState={{
+            disabled: isUploadingPhoto,
+            busy: isUploadingPhoto,
+          }}
+          disabled={isUploadingPhoto}
+          onPress={() => void choosePhoto()}
+          className="items-center active:opacity-75"
         >
+          <View className="relative">
+            <View
+              className="h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4"
+              style={{
+                backgroundColor: colors.text,
+                borderColor: colors.primary,
+              }}
+            >
+              {isUploadingPhoto ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : profile.profilePhoto && !photoFailed ? (
+                <Image
+                  source={{ uri: profile.profilePhoto }}
+                  className="h-full w-full"
+                  resizeMode="cover"
+                  onError={() => setPhotoFailed(true)}
+                />
+              ) : (
+                <Text
+                  className="font-figtree-bold text-[28px]"
+                  style={{ color: colors.primary }}
+                >
+                  {profile.initials}
+                </Text>
+              )}
+            </View>
+            <View
+              className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full border-2"
+              style={{
+                backgroundColor: colors.primary,
+                borderColor: colors.background,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={18}
+                color={colors.onPrimary}
+              />
+            </View>
+          </View>
           <Text
-            className="font-figtree-bold text-[28px]"
+            className="mt-3 font-figtree-semibold text-[13px]"
             style={{ color: colors.primary }}
           >
-            {profile.initials}
+            {isUploadingPhoto
+              ? "Sending photo…"
+              : profile.profilePhoto
+                ? "Submit new photo"
+                : "Upload photo"}
           </Text>
-        </View>
+        </Pressable>
+        {photoSubmission?.status === "pending" ? (
+          <View
+            className="mt-4 w-full flex-row items-center gap-3 rounded-2xl border p-3"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <Image
+              source={{ uri: photoSubmission.photoUrl }}
+              className="h-12 w-12 rounded-xl"
+              resizeMode="cover"
+            />
+            <Text
+              className="flex-1 font-figtree-medium text-[12px] leading-5"
+              style={{ color: colors.textMuted }}
+            >
+              Your new photo is awaiting school approval. Your current photo
+              stays visible until then.
+            </Text>
+          </View>
+        ) : photoSubmission?.status === "rejected" ? (
+          <Text
+            className="mt-4 text-center font-figtree-medium text-[12px]"
+            style={{ color: colors.error }}
+          >
+            Your last photo was not approved. You can submit another.
+          </Text>
+        ) : null}
         <Text
-          className="mt-4 font-figtree-bold text-[22px]"
+          className="mt-3 font-figtree-bold text-[22px]"
           style={{ color: colors.text }}
         >
           {profile.name}
         </Text>
-        <View className="mt-2 flex-row items-center gap-1.5">
-          <MaterialCommunityIcons
-            name="check-decagram"
-            size={16}
-            color={colors.primary}
-          />
+        {profile.schoolName ? (
           <Text
-            className="font-figtree-medium text-[13px]"
+            className="mt-2 font-figtree-medium text-[13px]"
             style={{ color: colors.textMuted }}
           >
-            Verified instructor · {profile.schoolName}
+            {profile.schoolName}
           </Text>
-        </View>
+        ) : null}
       </View>
 
       <Text
@@ -156,8 +320,9 @@ export default function InstructorProfileScreen() {
         <Divider />
         <SettingsRow
           icon="logout"
-          title="Log out"
+          title={isLoggingOut ? "Logging out…" : "Log out"}
           destructive
+          loading={isLoggingOut}
           onPress={() => void logout()}
         />
       </View>

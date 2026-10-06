@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   Text,
   TextInput,
@@ -16,11 +17,7 @@ import { assessmentAreaMeta } from "@/features/readiness-assessment";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
-import type {
-  AssessmentQuestion,
-  ReadinessArea,
-  ReadinessAssessment,
-} from "@/types";
+import type { AssessmentQuestion, ReadinessArea, ReadinessAssessmentKind } from "@/types";
 
 type BuilderStep = "details" | "questions" | "review";
 
@@ -97,6 +94,7 @@ export default function NewSchoolAssessmentScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [area, setArea] = useState<ReadinessArea>("road_rules");
+  const [kind, setKind] = useState<ReadinessAssessmentKind>("progress_check");
   const [passingScore, setPassingScore] = useState(70);
   const [durationMinutes, setDurationMinutes] = useState(10);
   const [questions, setQuestions] = useState<AssessmentQuestion[]>([]);
@@ -104,6 +102,7 @@ export default function NewSchoolAssessmentScreen() {
     useState<QuestionDraft>(emptyQuestion);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const detailComplete =
     title.trim().length >= 4 && description.trim().length >= 12;
@@ -168,21 +167,30 @@ export default function NewSchoolAssessmentScreen() {
     setError(null);
   };
 
-  const publishAssessment = () => {
-    const input: Omit<
-      ReadinessAssessment,
-      "id" | "schoolId" | "createdAt" | "status"
-    > = {
-      createdBy: profile.adminName,
+  const publishAssessment = async () => {
+    if (publishing) return;
+    setPublishing(true);
+    setError(null);
+    try {
+      await createAssessment({
       title: title.trim(),
       description: description.trim(),
       area,
+      kind,
       durationMinutes,
       passingScore,
       questions,
-    };
-    createAssessment(input);
-    router.replace("/school/learners/assessments");
+      });
+      router.replace("/school/learners/assessments");
+    } catch (cause) {
+      setError(
+        cause && typeof cause === "object" && "message" in cause
+          ? String(cause.message)
+          : "Could not publish the assessment. Please try again.",
+      );
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const stepNumber = step === "details" ? 1 : step === "questions" ? 2 : 3;
@@ -270,12 +278,42 @@ export default function NewSchoolAssessmentScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Keep one assessment focused on one competency so the result gives
-              instructors a useful training signal.
+              Create a short progress check for lessons or an optional CBT mock
+              for learners who complete a package.
             </Text>
           </HeroSurface>
 
           <View className="mt-7 gap-5">
+            <View>
+              <Text className="mb-3 text-[10px] uppercase tracking-[0.8px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeBold }}>
+                Quiz purpose
+              </Text>
+              <View className="flex-row gap-2">
+                {([
+                  ["progress_check", "Progress check"],
+                  ["final_mock", "Final CBT mock"],
+                ] as const).map(([value, label]) => (
+                  <Pressable
+                    key={value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: kind === value }}
+                    onPress={() => {
+                      setKind(value);
+                      if (value === "final_mock" && durationMinutes < 10) setDurationMinutes(10);
+                    }}
+                    className="min-h-11 flex-1 items-center justify-center rounded-full border px-2"
+                    style={{ backgroundColor: kind === value ? colors.primary : colors.surface, borderColor: kind === value ? colors.primary : colors.border }}
+                  >
+                    <Text className="text-[11px]" style={{ color: kind === value ? colors.onPrimary : colors.text, fontFamily: fontFamily.figtreeBold }}>{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text className="mt-2 text-[11px] leading-4" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>
+                {kind === "final_mock"
+                  ? "The newest published final mock is offered automatically when a learner completes a package. It is optional and needs at least 10 questions."
+                  : "Assign this short check to enrolled learners whenever it supports their training."}
+              </Text>
+            </View>
             <BuilderField
               label="Assessment title"
               value={title}
@@ -300,7 +338,7 @@ export default function NewSchoolAssessmentScreen() {
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                Competency area
+                {kind === "final_mock" ? "Primary topic" : "Competency area"}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {areas.map(([value, meta]) => {
@@ -337,6 +375,11 @@ export default function NewSchoolAssessmentScreen() {
                   );
                 })}
               </View>
+              {kind === "final_mock" ? (
+                <Text className="mt-2 text-[11px] leading-4" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>
+                  Your mock can include questions from different topics; this label identifies its main focus.
+                </Text>
+              ) : null}
             </View>
 
             <View>
@@ -392,7 +435,7 @@ export default function NewSchoolAssessmentScreen() {
                 Estimated duration
               </Text>
               <View className="flex-row gap-2">
-                {durations.map((value) => {
+                {durations.filter((value) => kind !== "final_mock" || value >= 10).map((value) => {
                   const selected = durationMinutes === value;
                   return (
                     <Pressable
@@ -763,14 +806,14 @@ export default function NewSchoolAssessmentScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{
-                disabled: questions.length < 2 || currentQuestionStarted,
+                disabled: questions.length < (kind === "final_mock" ? 10 : 2) || currentQuestionStarted,
               }}
-              disabled={questions.length < 2 || currentQuestionStarted}
+              disabled={questions.length < (kind === "final_mock" ? 10 : 2) || currentQuestionStarted}
               onPress={() => setStep("review")}
               className="h-14 flex-[1.6] items-center justify-center rounded-full active:opacity-80"
               style={{
                 backgroundColor:
-                  questions.length >= 2 && !currentQuestionStarted
+                  questions.length >= (kind === "final_mock" ? 10 : 2) && !currentQuestionStarted
                     ? colors.primary
                     : colors.surfaceStrong,
               }}
@@ -779,7 +822,7 @@ export default function NewSchoolAssessmentScreen() {
                 className="text-[13px]"
                 style={{
                   color:
-                    questions.length >= 2 && !currentQuestionStarted
+                    questions.length >= (kind === "final_mock" ? 10 : 2) && !currentQuestionStarted
                       ? colors.onPrimary
                       : colors.textSubtle,
                   fontFamily: fontFamily.figtreeBold,
@@ -887,12 +930,18 @@ export default function NewSchoolAssessmentScreen() {
                   fontFamily: fontFamily.figtreeMedium,
                 }}
               >
-                Publishing makes this assessment available to your school for
-                learner assignment. {profile.adminName} will be recorded as the
-                creator.
+                {kind === "final_mock"
+                  ? "The newest final mock will be offered after a learner completes a package. Taking it is optional and does not affect package completion."
+                  : "Publishing makes this check available for learner assignment."} {profile.adminName} will be recorded as the creator.
               </Text>
             </View>
           </View>
+
+          {error ? (
+            <Text className="mt-4 text-[12px]" style={{ color: colors.verified }}>
+              {error}
+            </Text>
+          ) : null}
 
           <Text
             accessibilityRole="header"
@@ -984,15 +1033,17 @@ export default function NewSchoolAssessmentScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ disabled: publishing }}
+              disabled={publishing}
               onPress={publishAssessment}
               className="h-14 flex-[1.7] flex-row items-center justify-center gap-2 rounded-full active:opacity-80"
               style={{ backgroundColor: colors.primary }}
             >
-              <MaterialCommunityIcons
-                name="publish"
-                size={19}
-                color={colors.onPrimary}
-              />
+              {publishing ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <MaterialCommunityIcons name="publish" size={19} color={colors.onPrimary} />
+              )}
               <Text
                 className="text-[13px]"
                 style={{
@@ -1000,7 +1051,7 @@ export default function NewSchoolAssessmentScreen() {
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                Publish assessment
+                {publishing ? "Publishing…" : "Publish assessment"}
               </Text>
             </Pressable>
           </View>

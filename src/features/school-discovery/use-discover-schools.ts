@@ -17,6 +17,7 @@ type UseDiscoverSchoolsResult = {
 
 export function useDiscoverSchools(
   query: DiscoverSchoolsQuery,
+  enabled = true,
 ): UseDiscoverSchoolsResult {
   const [schools, setSchools] = useState<SchoolSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,12 @@ export function useDiscoverSchools(
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!enabled) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     async function load() {
       setLoading(true);
@@ -70,6 +77,7 @@ export function useDiscoverSchools(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- query fields drive refetch
   }, [
+    enabled,
     reloadToken,
     query.search,
     query.city,
@@ -83,5 +91,10 @@ export function useDiscoverSchools(
     query.limit,
   ]);
 
-  return { schools, loading, error, refetch };
+  return {
+    schools: enabled ? schools : [],
+    loading: enabled ? loading : false,
+    error: enabled ? error : null,
+    refetch,
+  };
 }
