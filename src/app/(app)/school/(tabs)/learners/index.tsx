@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -29,6 +29,14 @@ export default function SchoolLearnersScreen() {
   const learners = useReadinessAssessmentStore((state) => state.learners);
   const assignments = useReadinessAssessmentStore((state) => state.assignments);
   const attempts = useReadinessAssessmentStore((state) => state.attempts);
+  const refreshSchool = useReadinessAssessmentStore(
+    (state) => state.refreshSchool,
+  );
+  useFocusEffect(
+    useCallback(() => {
+      void refreshSchool();
+    }, [refreshSchool]),
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | SchoolLearnerStatus>("all");
 
@@ -53,7 +61,7 @@ export default function SchoolLearnersScreen() {
   );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refreshSchool}>
       <DashboardPageHeader title="Learners" showBack={false} />
       <Text
         className="mt-2 text-[13px] leading-5"
@@ -62,8 +70,7 @@ export default function SchoolLearnersScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Follow enrolment, practical progress, and certification readiness in one
-        place.
+        Follow enrolment, completed lessons, and quiz results in one place.
       </Text>
 
       <HeroSurface className="mt-7 overflow-hidden rounded-[28px] p-5">
@@ -183,14 +190,13 @@ export default function SchoolLearnersScreen() {
             const completedScores = learnerAssignments
               .map((item) => latestAttemptByAssignment.get(item.id)?.score)
               .filter((score): score is number => score !== undefined);
-            const theoryReadiness = completedScores.length
+            const quizAverage = completedScores.length
               ? Math.round(
                   completedScores.reduce((sum, score) => sum + score, 0) /
                     completedScores.length,
                 )
               : null;
-            const needsAttention =
-              learner.instructorId === null || learner.practicalReadiness < 50;
+            const needsAttention = learner.status === "on_hold";
 
             return (
               <Pressable
@@ -253,7 +259,7 @@ export default function SchoolLearnersScreen() {
                           fontFamily: fontFamily.figtreeBold,
                         }}
                       >
-                        REVIEW
+                        ON HOLD
                       </Text>
                     </View>
                   ) : null}
@@ -299,9 +305,7 @@ export default function SchoolLearnersScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {theoryReadiness === null
-                        ? "Not started"
-                        : `${theoryReadiness}%`}
+                      {quizAverage === null ? "Not started" : `${quizAverage}%`}
                     </Text>
                     <Text
                       className="mt-1 text-[9px] uppercase tracking-[0.6px]"
@@ -310,7 +314,7 @@ export default function SchoolLearnersScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      Theory
+                      Quiz average
                     </Text>
                   </View>
                   <View

@@ -10,10 +10,10 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
-import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { completeGoogleSignup } from "@/lib/api";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operations";
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { useAuthStore } from "@/store/auth.store";
@@ -35,6 +35,7 @@ function getErrorMessage(error: unknown) {
 
 export default function GoogleOnboardingScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/welcome");
   const { colors } = useAppTheme();
   const pendingSignup = useGoogleAuthStore((state) => state.pendingSignup);
   const clearSignup = useGoogleAuthStore((state) => state.clearSignup);
@@ -140,7 +141,7 @@ export default function GoogleOnboardingScreen() {
           accessibilityRole="button"
           accessibilityLabel="Back"
           hitSlop={12}
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
           style={{
             borderColor: colors.border,
@@ -153,8 +154,6 @@ export default function GoogleOnboardingScreen() {
             color={colors.text}
           />
         </Pressable>
-        <AppLogo height={42} />
-        <View className="h-11 w-11" />
       </View>
 
       <View className="mt-8">

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -7,6 +7,7 @@ import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 import type { LearnerLessonCard } from "@/types";
 
@@ -17,6 +18,7 @@ const filters: { label: string; value: HistoryFilter }[] = [
   { label: "Upcoming", value: "scheduled" },
   { label: "Live", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Missed", value: "missed" },
   { label: "Cancelled", value: "cancelled" },
 ];
 
@@ -28,6 +30,7 @@ export default function BookingHistoryScreen() {
   const bookings = lessonCards.filter(
     (booking) => filter === "all" || booking.status === filter,
   );
+  const refresh = useCallback(() => refreshLearnerSessions(), []);
   const header = (
     <>
       <DashboardPageHeader title="Booking history" />
@@ -42,7 +45,7 @@ export default function BookingHistoryScreen() {
 
   if (lessonCards.length === 0) {
     return (
-      <DashboardScreen>
+      <DashboardScreen onRefresh={refresh}>
         {header}
         <View className="mt-8">
           <ContentEmptyState
@@ -58,7 +61,7 @@ export default function BookingHistoryScreen() {
   }
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       {header}
 
       <View className="mt-6 flex-row flex-wrap gap-2">

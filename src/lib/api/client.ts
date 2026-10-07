@@ -3,6 +3,7 @@ import {
   type AxiosError,
   type InternalAxiosRequestConfig,
 } from "axios";
+import { Platform } from "react-native";
 
 import { getApiBaseUrl } from "@/lib/api/config";
 import { useAuthStore } from "@/store/auth.store";
@@ -16,12 +17,15 @@ type ErrorPayload = Partial<ApiError> & {
 
 export const api = create({
   baseURL: getApiBaseUrl(),
-  headers: { Accept: "application/json" },
+  headers: { Accept: "application/json", "X-Client-Platform": Platform.OS },
+  withCredentials: Platform.OS === "web",
 });
 
 const refreshApi = create({
   baseURL: getApiBaseUrl(),
-  headers: { Accept: "application/json" },
+  timeout: 15000,
+  headers: { Accept: "application/json", "X-Client-Platform": Platform.OS },
+  withCredentials: Platform.OS === "web",
 });
 
 type RetryableRequest = InternalAxiosRequestConfig & {
@@ -48,12 +52,16 @@ function normalizeApiError(error: AxiosError<ErrorPayload>): ApiError {
 
 async function refreshAccessToken() {
   const { refreshToken, updateTokens } = useAuthStore.getState();
-  if (!refreshToken) throw new Error("Refresh token is unavailable.");
+  if (!refreshToken && Platform.OS !== "web") {
+    throw new Error("Refresh token is unavailable.");
+  }
 
   const { data } = await refreshApi.post<ApiSuccessResponse<AuthTokens>>(
     "/auth/refresh",
     undefined,
-    { headers: { Authorization: `Bearer ${refreshToken}` } },
+    refreshToken
+      ? { headers: { Authorization: `Bearer ${refreshToken}` } }
+      : undefined,
   );
 
   await updateTokens(data.data);
@@ -83,13 +91,18 @@ api.interceptors.response.use(
       request?.url?.startsWith("/auth/forgot-password") ||
       request?.url?.startsWith("/auth/reset-password") ||
       request?.url?.startsWith("/auth/resend-verification-otp");
+    const isSessionTeardownRequest =
+      request?.url === "/auth/logout" ||
+      (request?.url === "/notifications/push-tokens" &&
+        request.method?.toLowerCase() === "delete");
 
     if (
       error.response?.status === 401 &&
       request &&
       !request._retry &&
       !isAuthenticationRequest &&
-      refreshToken
+      !isSessionTeardownRequest &&
+      (refreshToken || Platform.OS === "web")
     ) {
       request._retry = true;
 

@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
 import {
@@ -20,6 +21,10 @@ export default function SchoolAssessmentLibraryScreen() {
   const assessments = useReadinessAssessmentStore((state) => state.assessments);
   const assignments = useReadinessAssessmentStore((state) => state.assignments);
   const attempts = useReadinessAssessmentStore((state) => state.attempts);
+  const loading = useReadinessAssessmentStore((state) => state.loading);
+  const error = useReadinessAssessmentStore((state) => state.error);
+  const refreshSchool = useReadinessAssessmentStore((state) => state.refreshSchool);
+  useFocusEffect(useCallback(() => { void refreshSchool(); }, [refreshSchool]));
   const completedAttempts = attempts.filter((attempt) =>
     assignments.some(
       (assignment) =>
@@ -34,10 +39,17 @@ export default function SchoolAssessmentLibraryScreen() {
           100,
       )
     : 0;
+  const currentFinalMockId = assessments.find((item) => item.kind === "final_mock")?.id;
 
   return (
     <DashboardScreen>
       <DashboardPageHeader title="Assessment library" />
+      {loading ? <ActivityIndicator className="mt-4" color={colors.primary} /> : null}
+      {error ? (
+        <Pressable onPress={() => void refreshSchool()} className="mt-4 rounded-2xl p-4" style={{ backgroundColor: colors.verifiedSoft }}>
+          <Text style={{ color: colors.verified }}>{error} Tap to retry.</Text>
+        </Pressable>
+      ) : null}
       <Text
         className="mt-3 text-[13px] leading-5"
         style={{
@@ -45,8 +57,8 @@ export default function SchoolAssessmentLibraryScreen() {
           fontFamily: fontFamily.figtreeMedium,
         }}
       >
-        Create scenario-led readiness checks for your school, then assign the
-        right check to each learner at the right stage.
+        Create short CBT progress checks for lessons and a fuller optional mock
+        quiz for learners who complete a package.
       </Text>
 
       <Pressable
@@ -91,7 +103,7 @@ export default function SchoolAssessmentLibraryScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {assessments.length} readiness checks
+              {assessments.length} school quizzes
             </Text>
             <Text
               className="mt-1 text-[11px]"
@@ -148,7 +160,7 @@ export default function SchoolAssessmentLibraryScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {meta.label}
+                      {assessment.kind === "final_mock" ? "FINAL CBT MOCK" : "PROGRESS CHECK"} · {meta.label}
                     </Text>
                   </View>
                   <View
@@ -228,7 +240,7 @@ export default function SchoolAssessmentLibraryScreen() {
                     Assigned to {assignedCount} learner
                     {assignedCount === 1 ? "" : "s"}
                   </Text>
-                  <Pressable
+                  {assessment.kind !== "final_mock" ? <Pressable
                     accessibilityRole="button"
                     onPress={() => router.replace("/school/learners")}
                     className="min-h-10 flex-row items-center justify-center gap-1 rounded-full px-3 active:opacity-75"
@@ -248,7 +260,13 @@ export default function SchoolAssessmentLibraryScreen() {
                       size={15}
                       color={colors.text}
                     />
-                  </Pressable>
+                  </Pressable> : (
+                    <Text className="text-[10px]" style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}>
+                      {assessment.id === currentFinalMockId
+                        ? "Current mock · offered after package completion"
+                        : "Previous mock · existing assignments stay available"}
+                    </Text>
+                  )}
                 </View>
               </View>
             );

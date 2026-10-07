@@ -1,3 +1,3 @@
 export { InstructorLocationPublisher } from "./instructor-location-publisher";
-export { LocationPermissionGate } from "./location-permission-gate";
+export { requestInstructorLocationPermissions } from "./instructor-location-permissions";
 export { useUserLocation } from "./use-user-location";

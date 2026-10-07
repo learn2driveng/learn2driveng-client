@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Image, Text, View } from "react-native";
 
 import { fontFamily } from "@/constants/fonts";
@@ -28,13 +28,12 @@ export function SchoolAvatar({
   inverse = false,
 }: SchoolAvatarProps) {
   const { colors } = useAppTheme();
-  const [isImageLoading, setIsImageLoading] = useState(Boolean(logoUrl));
-  const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setIsImageLoading(Boolean(logoUrl));
-    setImageFailed(false);
-  }, [logoUrl]);
+  const [loadedLogoUrl, setLoadedLogoUrl] = useState<string | null>(null);
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
+  const imageFailed = Boolean(logoUrl && failedLogoUrl === logoUrl);
+  const isImageLoading = Boolean(
+    logoUrl && loadedLogoUrl !== logoUrl && !imageFailed,
+  );
 
   const showFallback = !logoUrl || imageFailed;
 
@@ -71,10 +70,9 @@ export function SchoolAvatar({
           source={{ uri: logoUrl }}
           className="absolute h-full w-full"
           resizeMode="cover"
-          onLoadEnd={() => setIsImageLoading(false)}
+          onLoadEnd={() => setLoadedLogoUrl(logoUrl)}
           onError={() => {
-            setImageFailed(true);
-            setIsImageLoading(false);
+            setFailedLogoUrl(logoUrl);
           }}
         />
       ) : null}

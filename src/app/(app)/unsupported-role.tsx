@@ -44,7 +44,7 @@ export default function UnsupportedRoleScreen() {
       <View className="mt-8 w-full">
         <AuthPrimaryButton
           label={isLoggingOut ? "Signing out…" : "Sign out"}
-          disabled={isLoggingOut}
+          loading={isLoggingOut}
           onPress={() => void logout()}
         />
       </View>

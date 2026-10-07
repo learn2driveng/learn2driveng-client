@@ -1,10 +1,14 @@
 import { create } from "zustand";
 
 import {
-  assessmentAssignments,
-  assessmentAttempts,
-  readinessAssessments,
-} from "@/sample_data";
+  assignReadinessAssessment,
+  createReadinessAssessment,
+  fetchLearnerReadiness,
+  fetchSchoolReadiness,
+  startReadinessAssessment,
+  submitReadinessAssessment,
+  type CreateReadinessAssessmentInput,
+} from "@/lib/api/readiness-assessments";
 import type {
   AssessmentAssignment,
   AssessmentAttempt,
@@ -17,122 +21,122 @@ type ReadinessAssessmentState = {
   assessments: ReadinessAssessment[];
   assignments: AssessmentAssignment[];
   attempts: AssessmentAttempt[];
+  completedAssessmentAnswers: Record<string, ReadinessAssessment>;
+  loading: boolean;
+  error: string | null;
   hydrateLearners: (learners: SchoolLearner[]) => void;
-  resetLearners: () => void;
-  createAssessment: (
-    input: Omit<
-      ReadinessAssessment,
-      "id" | "schoolId" | "createdAt" | "status"
-    >,
-  ) => ReadinessAssessment;
-  assignAssessment: (assessmentId: string, learnerId: string) => boolean;
-  startAssessment: (assignmentId: string) => void;
+  resetReadinessData: () => void;
+  refreshSchool: () => Promise<void>;
+  refreshLearner: () => Promise<void>;
+  createAssessment: (input: CreateReadinessAssessmentInput) => Promise<ReadinessAssessment>;
+  assignAssessment: (assessmentId: string, learnerId: string) => Promise<AssessmentAssignment>;
+  startAssessment: (assignmentId: string) => Promise<AssessmentAssignment>;
   submitAssessment: (
     assignmentId: string,
     answers: Record<string, string>,
-  ) => AssessmentAttempt | null;
+  ) => Promise<AssessmentAttempt>;
 };
 
-export const useReadinessAssessmentStore = create<ReadinessAssessmentState>(
-  (set, get) => ({
-    learners: [],
-    assessments: readinessAssessments,
-    assignments: assessmentAssignments,
-    attempts: assessmentAttempts,
-    hydrateLearners: (learners) => set({ learners }),
-    resetLearners: () => set({ learners: [] }),
-    createAssessment: (input) => {
-      const assessment: ReadinessAssessment = {
-        ...input,
-        id: `assessment-${Date.now().toString(36)}`,
-        schoolId: "",
-        createdAt: new Date().toISOString(),
-        status: "published",
-      };
+let accountGeneration = 0;
 
-      set((state) => ({
-        assessments: [assessment, ...state.assessments],
-      }));
+function errorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : typeof error === "object" && error !== null && "message" in error
+      ? String(error.message)
+      : "Could not load assessments. Please try again.";
+}
+
+export const useReadinessAssessmentStore = create<ReadinessAssessmentState>(
+  (set) => ({
+    learners: [],
+    assessments: [],
+    assignments: [],
+    attempts: [],
+    completedAssessmentAnswers: {},
+    loading: false,
+    error: null,
+    hydrateLearners: (learners) => set({ learners }),
+    resetReadinessData: () => {
+      accountGeneration += 1;
+      set({
+        learners: [],
+        assessments: [],
+        assignments: [],
+        attempts: [],
+        completedAssessmentAnswers: {},
+        loading: false,
+        error: null,
+      });
+    },
+    refreshSchool: async () => {
+      const generation = accountGeneration;
+      set({ loading: true, error: null });
+      try {
+        const snapshot = await fetchSchoolReadiness();
+        if (generation === accountGeneration) set({ ...snapshot, loading: false });
+      } catch (error) {
+        if (generation === accountGeneration) {
+          set({ loading: false, error: errorMessage(error) });
+        }
+      }
+    },
+    refreshLearner: async () => {
+      const generation = accountGeneration;
+      set({ loading: true, error: null });
+      try {
+        const snapshot = await fetchLearnerReadiness();
+        if (generation === accountGeneration) set({ ...snapshot, loading: false });
+      } catch (error) {
+        if (generation === accountGeneration) {
+          set({ loading: false, error: errorMessage(error) });
+        }
+      }
+    },
+    createAssessment: async (input) => {
+      const generation = accountGeneration;
+      const assessment = await createReadinessAssessment(input);
+      if (generation === accountGeneration) {
+        set((state) => ({ assessments: [assessment, ...state.assessments] }));
+      }
       return assessment;
     },
-    assignAssessment: (assessmentId, learnerId) => {
-      const state = get();
-      const assessment = state.assessments.find(
-        (item) => item.id === assessmentId && item.status === "published",
-      );
-      const learner = state.learners.find((item) => item.id === learnerId);
-      const alreadyOpen = state.assignments.some(
-        (item) =>
-          item.assessmentId === assessmentId &&
-          item.learnerId === learnerId &&
-          item.status !== "completed",
-      );
-
-      if (!assessment || !learner || alreadyOpen) return false;
-
-      const now = new Date();
-      const dueAt = new Date(now);
-      dueAt.setDate(dueAt.getDate() + 7);
-      const assignment: AssessmentAssignment = {
-        id: `assignment-${learnerId}-${Date.now().toString(36)}`,
-        assessmentId,
-        learnerId,
-        assignedAt: now.toISOString(),
-        dueAt: dueAt.toISOString(),
-        status: "assigned",
-        latestAttemptId: null,
-      };
-
-      set((current) => ({
-        assignments: [assignment, ...current.assignments],
-      }));
-      return true;
+    assignAssessment: async (assessmentId, learnerId) => {
+      const generation = accountGeneration;
+      const assignment = await assignReadinessAssessment(assessmentId, learnerId);
+      if (generation === accountGeneration) {
+        set((state) => ({ assignments: [assignment, ...state.assignments] }));
+      }
+      return assignment;
     },
-    startAssessment: (assignmentId) =>
-      set((state) => ({
-        assignments: state.assignments.map((assignment) =>
-          assignment.id === assignmentId && assignment.status === "assigned"
-            ? { ...assignment, status: "in_progress" }
-            : assignment,
-        ),
-      })),
-    submitAssessment: (assignmentId, answers) => {
-      const state = get();
-      const assignment = state.assignments.find(
-        (item) => item.id === assignmentId,
-      );
-      const assessment = state.assessments.find(
-        (item) => item.id === assignment?.assessmentId,
-      );
-
-      if (!assignment || !assessment) return null;
-
-      const correct = assessment.questions.filter(
-        (question) => answers[question.id] === question.correctOptionId,
-      ).length;
-      const score = Math.round((correct / assessment.questions.length) * 100);
-      const attempt: AssessmentAttempt = {
-        id: `attempt-${Date.now().toString(36)}`,
-        assignmentId,
-        answers,
-        score,
-        passed: score >= assessment.passingScore,
-        completedAt: new Date().toISOString(),
-      };
-
-      set((current) => ({
-        attempts: [attempt, ...current.attempts],
-        assignments: current.assignments.map((item) =>
-          item.id === assignmentId
-            ? {
-                ...item,
-                status: "completed",
-                latestAttemptId: attempt.id,
-              }
-            : item,
-        ),
-      }));
-      return attempt;
+    startAssessment: async (assignmentId) => {
+      const generation = accountGeneration;
+      const assignment = await startReadinessAssessment(assignmentId);
+      if (generation === accountGeneration) {
+        set((state) => ({
+          assignments: state.assignments.map((item) =>
+            item.id === assignmentId ? assignment : item,
+          ),
+        }));
+      }
+      return assignment;
+    },
+    submitAssessment: async (assignmentId, answers) => {
+      const generation = accountGeneration;
+      const result = await submitReadinessAssessment(assignmentId, answers);
+      if (generation === accountGeneration) {
+        set((state) => ({
+          completedAssessmentAnswers: {
+            ...state.completedAssessmentAnswers,
+            [assignmentId]: result.assessment,
+          },
+          assignments: state.assignments.map((item) =>
+            item.id === assignmentId ? result.assignment : item,
+          ),
+          attempts: [result.attempt, ...state.attempts],
+        }));
+      }
+      return result.attempt;
     },
   }),
 );

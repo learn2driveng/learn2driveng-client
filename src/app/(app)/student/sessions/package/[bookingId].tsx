@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -11,6 +12,7 @@ import {
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useLearnerOperationsStore } from "@/store/learner-operations.store";
+import { useReadinessAssessmentStore } from "@/store/readiness-assessment.store";
 
 function formatPurchaseDate(value?: string) {
   if (!value) return "Not available";
@@ -41,6 +43,12 @@ export default function LearnerPackageDetailScreen() {
   const booking = useLearnerOperationsStore((state) =>
     state.bookings.find((item) => item.id === bookingId),
   );
+  const quizAssignments = useReadinessAssessmentStore((state) => state.assignments);
+  const quizzes = useReadinessAssessmentStore((state) => state.assessments);
+  const refreshQuizzes = useReadinessAssessmentStore((state) => state.refreshLearner);
+  useFocusEffect(useCallback(() => { void refreshQuizzes(); }, [refreshQuizzes]));
+  const finalMockAssignment = quizAssignments.find((item) => item.bookingId === bookingId);
+  const finalMock = quizzes.find((item) => item.id === finalMockAssignment?.assessmentId);
 
   if (!packageCredit || !booking) {
     return (
@@ -88,7 +96,7 @@ export default function LearnerPackageDetailScreen() {
           >
             {packageCredit.status === "active"
               ? "Active package"
-              : packageCredit.status}
+              : `${packageCredit.status} package`}
           </Text>
         </View>
         <Text
@@ -139,6 +147,32 @@ export default function LearnerPackageDetailScreen() {
           />
         </View>
       </HeroSurface>
+
+      {booking.status === "completed" && finalMockAssignment && finalMock ? (
+        <View className="mt-6 rounded-[28px] border p-5" style={surfaces.card}>
+          <View className="flex-row items-start gap-3">
+            <MaterialCommunityIcons name="clipboard-text-outline" size={26} color={colors.primary} />
+            <View className="flex-1">
+              <Text className="font-figtree-bold text-[16px]" style={{ color: colors.text }}>
+                Optional CBT mock is ready
+              </Text>
+              <Text className="mt-2 font-figtree text-[12px] leading-5" style={{ color: colors.textMuted }}>
+                Your school prepared {finalMock.title}. Take it when you are ready; it does not affect your completed package.
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.navigate({ pathname: "/student/progress/assessments/[assignmentId]", params: { assignmentId: finalMockAssignment.id } })}
+            className="mt-4 min-h-12 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Text className="font-figtree-bold text-[13px]" style={{ color: colors.onPrimary }}>
+              {finalMockAssignment.status === "completed" ? "Review mock result" : "Take CBT mock"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View className="mt-8">
         <SectionHeader title="Package summary" />

@@ -1,21 +1,24 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import type { Href } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { useSurfaceStyles } from "@/components/common/surface";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 
 type DashboardPageHeaderProps = {
   title: string;
   showBack?: boolean;
+  backHref?: Href;
 };
 
 export function DashboardPageHeader({
   title,
   showBack = true,
+  backHref,
 }: DashboardPageHeaderProps) {
-  const router = useRouter();
+  const goBack = useSafeBack(backHref);
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
 
@@ -27,7 +30,7 @@ export function DashboardPageHeader({
           accessibilityLabel="Go back"
           accessibilityHint="Returns to the previous screen"
           hitSlop={12}
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 flex-row items-center justify-center gap-2 rounded-full border px-4 active:opacity-70"
           style={surfaces.card}
         >

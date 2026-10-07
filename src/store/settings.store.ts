@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 import { create } from "zustand";
 import {
@@ -18,10 +19,16 @@ function getWebStorage() {
 }
 
 const settingsStorage: StateStorage = {
-  getItem: async (name) =>
-    Platform.OS === "web"
-      ? (getWebStorage()?.getItem(name) ?? null)
-      : SecureStore.getItemAsync(name),
+  getItem: async (name) => {
+    try {
+      return Platform.OS === "web"
+        ? (getWebStorage()?.getItem(name) ?? null)
+        : await SecureStore.getItemAsync(name);
+    } catch {
+      // A storage failure must not leave the native splash visible indefinitely.
+      return null;
+    }
+  },
   setItem: async (name, value) => {
     if (Platform.OS === "web") {
       getWebStorage()?.setItem(name, value);
@@ -44,38 +51,70 @@ const settingsStorage: StateStorage = {
 
 interface SettingsState {
   theme: ThemePreference;
-  locationPromptDismissed: boolean;
+  hasCompletedOnboarding: boolean;
   discoveryLocationMode: DiscoveryLocationMode;
   preferredAreaId: PreferredAreaId;
+  instructorLocationSharingEnabled: boolean;
   setTheme: (theme: ThemePreference) => void;
-  setLocationPromptDismissed: (dismissed: boolean) => void;
+  completeOnboarding: () => void;
   setDiscoveryLocationMode: (mode: DiscoveryLocationMode) => void;
   setPreferredAreaId: (areaId: PreferredAreaId) => void;
+  setInstructorLocationSharingEnabled: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       theme: "system",
-      locationPromptDismissed: false,
-      discoveryLocationMode: "area",
+      hasCompletedOnboarding: false,
+      discoveryLocationMode: "current",
       preferredAreaId: "lagos",
+      instructorLocationSharingEnabled: false,
       setTheme: (theme) => set({ theme }),
-      setLocationPromptDismissed: (locationPromptDismissed) =>
-        set({ locationPromptDismissed }),
+      completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       setDiscoveryLocationMode: (discoveryLocationMode) =>
         set({ discoveryLocationMode }),
       setPreferredAreaId: (preferredAreaId) => set({ preferredAreaId }),
+      setInstructorLocationSharingEnabled: (instructorLocationSharingEnabled) =>
+        set({ instructorLocationSharingEnabled }),
     }),
     {
       name: "learn2drive-settings",
+      version: 1,
       storage: createJSONStorage(() => settingsStorage),
+      migrate: (persistedState) => ({
+        ...(persistedState && typeof persistedState === "object"
+          ? persistedState
+          : {}),
+        // A saved v0 settings record means this installation already used the app.
+        hasCompletedOnboarding: true,
+      }),
       partialize: (state) => ({
         theme: state.theme,
-        locationPromptDismissed: state.locationPromptDismissed,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
         discoveryLocationMode: state.discoveryLocationMode,
         preferredAreaId: state.preferredAreaId,
+        instructorLocationSharingEnabled:
+          state.instructorLocationSharingEnabled,
       }),
     },
   ),
 );
+
+function subscribeToSettingsHydration(onStoreChange: () => void) {
+  const unsubscribeStarted = useSettingsStore.persist.onHydrate(onStoreChange);
+  const unsubscribeFinished =
+    useSettingsStore.persist.onFinishHydration(onStoreChange);
+  return () => {
+    unsubscribeStarted();
+    unsubscribeFinished();
+  };
+}
+
+export function useSettingsHydrated() {
+  return useSyncExternalStore(
+    subscribeToSettingsHydration,
+    useSettingsStore.persist.hasHydrated,
+    () => false,
+  );
+}

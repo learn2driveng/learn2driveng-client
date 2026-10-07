@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -13,17 +13,20 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
 
-type ScheduleFilter = "all" | InstructorLessonStatus;
+type ScheduleFilter = "all" | InstructorLessonStatus | "not_held";
 
 const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "All", value: "all" },
   { label: "Upcoming", value: "scheduled" },
   { label: "In progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Missed", value: "missed" },
+  { label: "Not held", value: "not_held" },
 ];
 
 export default function InstructorScheduleScreen() {
@@ -33,21 +36,19 @@ export default function InstructorScheduleScreen() {
     (state) => state.scheduleDays,
   );
   const sessions = useTrainingSessionStore((state) => state.sessions);
-  const [selectedDayId, setSelectedDayId] = useState(
-    scheduleDays[0]?.id ?? "",
-  );
+  const [renderedAt, setRenderedAt] = useState(() => Date.now());
+  const [selectedDayId, setSelectedDayId] = useState("");
   const [filter, setFilter] = useState<ScheduleFilter>("all");
+  const nextAssignedDay = scheduleDays.find((day) =>
+    day.lessons.some((lesson) =>
+      new Date(lesson.scheduledEndTime ?? lesson.scheduledStartTime ?? lesson.scheduledAt).getTime() > renderedAt,
+    ),
+  );
   const selectedDay =
-    scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
+    scheduleDays.find((day) => day.id === selectedDayId) ??
+    nextAssignedDay ??
+    scheduleDays[scheduleDays.length - 1];
 
-  useEffect(() => {
-    if (scheduleDays.length === 0) return;
-    setSelectedDayId((current) =>
-      scheduleDays.some((day) => day.id === current)
-        ? current
-        : (scheduleDays[0]?.id ?? ""),
-    );
-  }, [scheduleDays]);
   const lessonsWithStatus =
     selectedDay?.lessons.map((lesson) => ({
       lesson,
@@ -56,12 +57,26 @@ export default function InstructorScheduleScreen() {
         lesson.status,
       ),
     })) ?? [];
-  const filteredLessons = lessonsWithStatus.filter(
-    (item) => filter === "all" || item.status === filter,
-  );
+  const filteredLessons = lessonsWithStatus.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "not_held") {
+      return item.status === "missed" && item.lesson.learnerCount === 0;
+    }
+    if (filter === "missed") {
+      return item.status === "missed" && item.lesson.learnerCount !== 0;
+    }
+    return item.status === filter;
+  });
+  const refresh = useCallback(async () => {
+    await refreshInstructorOperations();
+    setRenderedAt(Date.now());
+  }, []);
+  useFocusEffect(useCallback(() => {
+    void refresh().catch(() => undefined);
+  }, [refresh]));
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <DashboardPageHeader title="Schedule" showBack={false} />
       <Text
         className="mt-3 mb-3 font-figtree text-[14px] leading-5"
@@ -77,7 +92,7 @@ export default function InstructorScheduleScreen() {
         contentContainerClassName="gap-2 py-6"
       >
         {scheduleDays.map((day) => {
-          const selected = selectedDayId === day.id;
+          const selected = selectedDay?.id === day.id;
 
           return (
             <Pressable

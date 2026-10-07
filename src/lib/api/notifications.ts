@@ -25,6 +25,14 @@ export async function markAllNotificationsRead() {
   await api.post("/notifications/read-all", {});
 }
 
+export async function clearAllNotifications() {
+  await api.delete("/notifications/me");
+}
+
+export async function clearNotification(notificationId: string) {
+  await api.delete(`/notifications/${encodeURIComponent(notificationId)}`);
+}
+
 export async function fetchNotificationPreferences() {
   const { data } = await api.get<ApiSuccessResponse<NotificationPreferences>>(
     "/notifications/preferences",
@@ -51,5 +59,16 @@ export async function registerPushToken(input: {
 }
 
 export async function unregisterPushToken(token: string) {
-  await api.delete("/notifications/push-tokens", { data: { token } });
+  await api.delete("/notifications/push-tokens", {
+    data: { token },
+    timeout: 1500,
+  });
+}
+
+export async function sendTestNotification() {
+  const { data } = await api.post<ApiSuccessResponse<AppNotification>>(
+    "/notifications/test",
+    {},
+  );
+  return data.data;
 }

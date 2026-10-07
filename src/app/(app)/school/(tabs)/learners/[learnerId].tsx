@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -29,7 +29,10 @@ export default function SchoolLearnerDetailScreen() {
   const assignAssessment = useReadinessAssessmentStore(
     (state) => state.assignAssessment,
   );
+  const refreshSchool = useReadinessAssessmentStore((state) => state.refreshSchool);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  useFocusEffect(useCallback(() => { void refreshSchool(); }, [refreshSchool]));
   const learner = learners.find((item) => item.id === learnerId);
 
   if (!learner) {
@@ -55,15 +58,12 @@ export default function SchoolLearnerDetailScreen() {
       attempts.find((attempt) => attempt.id === assignment.latestAttemptId),
     )
     .filter((attempt) => attempt !== undefined);
-  const theoryReadiness = completedAttempts.length
+  const quizAverage = completedAttempts.length
     ? Math.round(
         completedAttempts.reduce((sum, attempt) => sum + attempt.score, 0) /
           completedAttempts.length,
       )
     : 0;
-  const overallReadiness = Math.round(
-    learner.practicalReadiness * 0.6 + theoryReadiness * 0.4,
-  );
 
   return (
     <DashboardScreen>
@@ -94,7 +94,7 @@ export default function SchoolLearnerDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {overallReadiness}%
+              {learner.practicalReadiness}%
             </Text>
           </View>
           <View className="flex-1">
@@ -105,7 +105,7 @@ export default function SchoolLearnerDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              Combined readiness
+              Package progress
             </Text>
             <Text
               className="mt-2 text-[18px] leading-6"
@@ -114,9 +114,9 @@ export default function SchoolLearnerDetailScreen() {
                 fontFamily: fontFamily.figtreeBold,
               }}
             >
-              {overallReadiness >= 75
-                ? "Approaching test readiness"
-                : "Still building core skills"}
+              {learner.status === "completed"
+                ? "Package lessons complete"
+                : "Lessons in progress"}
             </Text>
             <Text
               className="mt-1 text-[11px] leading-4"
@@ -125,8 +125,8 @@ export default function SchoolLearnerDetailScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Theory supports decisions; practical lessons confirm safe
-              execution.
+              Based on completed lessons in this package. Quiz results are
+              shown separately.
             </Text>
           </View>
         </View>
@@ -135,8 +135,8 @@ export default function SchoolLearnerDetailScreen() {
       <View className="mt-4 flex-row gap-3">
         {[
           [`${learner.completedLessons}/${learner.totalLessons}`, "Lessons"],
-          [`${learner.practicalReadiness}%`, "Practical"],
-          [completedAttempts.length ? `${theoryReadiness}%` : "—", "Theory"],
+          [`${learner.practicalReadiness}%`, "Completion"],
+          [completedAttempts.length ? `${quizAverage}%` : "—", "Quiz average"],
         ].map(([value, label]) => (
           <View
             key={label}
@@ -264,7 +264,9 @@ export default function SchoolLearnerDetailScreen() {
                     >
                       {attempt
                         ? `Completed · ${attempt.score}%`
-                        : `Due ${formatAssessmentDate(assignment.dueAt)}`}
+                        : assessment.kind === "final_mock"
+                          ? "Optional · no deadline"
+                          : `Due ${formatAssessmentDate(assignment.dueAt)}`}
                     </Text>
                   </View>
                   <Text
@@ -329,11 +331,10 @@ export default function SchoolLearnerDetailScreen() {
           </View>
         ) : null}
         <View className="mt-4 gap-3">
-          {assessments.map((assessment) => {
+          {assessments.filter((assessment) => assessment.kind !== "final_mock").map((assessment) => {
             const alreadyOpen = learnerAssignments.some(
               (assignment) =>
-                assignment.assessmentId === assessment.id &&
-                assignment.status !== "completed",
+                assignment.assessmentId === assessment.id,
             );
             return (
               <View
@@ -365,18 +366,22 @@ export default function SchoolLearnerDetailScreen() {
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ disabled: alreadyOpen }}
-                    disabled={alreadyOpen}
-                    onPress={() => {
-                      const assigned = assignAssessment(
-                        assessment.id,
-                        learner.id,
-                      );
-                      setNotice(
-                        assigned
-                          ? `${assessment.title} assigned to ${learner.name}.`
-                          : "This assessment already has an open assignment.",
-                      );
+                    accessibilityState={{ disabled: alreadyOpen || assigningId !== null }}
+                    disabled={alreadyOpen || assigningId !== null}
+                    onPress={async () => {
+                      setAssigningId(assessment.id);
+                      try {
+                        await assignAssessment(assessment.id, learner.id);
+                        setNotice(`${assessment.title} assigned to ${learner.name}.`);
+                      } catch (cause) {
+                        setNotice(
+                          cause && typeof cause === "object" && "message" in cause
+                            ? String(cause.message)
+                            : "Could not assign this assessment. Please try again.",
+                        );
+                      } finally {
+                        setAssigningId(null);
+                      }
                     }}
                     className="min-h-10 justify-center rounded-full px-4 active:opacity-75"
                     style={{
@@ -394,7 +399,7 @@ export default function SchoolLearnerDetailScreen() {
                         fontFamily: fontFamily.figtreeBold,
                       }}
                     >
-                      {alreadyOpen ? "Assigned" : "Assign"}
+                      {assigningId === assessment.id ? <ActivityIndicator color={colors.onPrimary} /> : alreadyOpen ? "Assigned" : "Assign"}
                     </Text>
                   </Pressable>
                 </View>

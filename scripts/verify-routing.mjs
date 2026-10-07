@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -35,6 +35,7 @@ function requireText(path, expected, description) {
   "src/app/(app)/student/explore/index.tsx",
   "src/app/(app)/school/(tabs)/instructors/[instructorId].tsx",
   "src/app/(app)/unsupported-role.tsx",
+  "src/app/(auth)/google-link.tsx",
 ].forEach(requireFile);
 
 requireText(
@@ -48,6 +49,11 @@ requireText(
   "Protected route trees must preserve their return destination",
 );
 requireText(
+  "src/features/auth/use-google-auth.ts",
+  'router.replace("/google-link")',
+  "Existing Google accounts must open the dedicated linking route",
+);
+requireText(
   "src/app/(app)/checkout/_layout.tsx",
   'allowedRoles={["learner"]}',
   "Checkout must be a learner-owned sibling of student tabs",
@@ -56,6 +62,36 @@ requireText(
   "src/app/(app)/checkout/[schoolId]/result.tsx",
   'pathname: "/support"',
   "Payment help must open outside every tab navigator",
+);
+requireText(
+  "src/app/(app)/checkout/[schoolId]/payment.tsx",
+  'pathname: "/checkout/[schoolId]/review"',
+  "Old payment links must reach the one-step checkout",
+);
+requireText(
+  "src/app/(app)/checkout/[schoolId]/review.tsx",
+  'onExit={() => router.replace("/student")}',
+  "The pre-payment screen must provide a direct dashboard exit",
+);
+requireText(
+  "src/app/onboarding.tsx",
+  'router.replace("/welcome")',
+  "Completing onboarding must enter welcome without a custom permission gate",
+);
+requireText(
+  "src/app/onboarding.tsx",
+  "Location.requestForegroundPermissionsAsync()",
+  "Completing onboarding must request the native location permission before welcome",
+);
+requireText(
+  "src/app/(public)/location.tsx",
+  'export { default } from "@/app/(app)/student/profile/location";',
+  "Public location settings must reuse the learner screen instead of a custom consent gate",
+);
+requireText(
+  "src/app/(public)/_layout.tsx",
+  '<Stack.Screen name="welcome" options={{ gestureEnabled: false }} />',
+  "Welcome must block the iOS back gesture into onboarding",
 );
 if (
   source("src/app/(app)/checkout/[schoolId]/result.tsx").includes(
@@ -88,13 +124,29 @@ if (
   "src/app/(app)/student/_layout.tsx",
   "src/app/(app)/instructor/_layout.tsx",
   "src/app/(app)/school/(tabs)/_layout.tsx",
-].forEach((path) =>
-  requireText(
-    path,
-    "router.replace(tabRoot)",
-    "Tab presses must target canonical tab roots",
-  ),
-);
+].forEach((path) => {
+  if (source(path).includes("event.preventDefault()")) {
+    failures.push(`Tab presses must use the navigator's default behavior: ${path}`);
+  }
+});
+
+function routeScreenFiles(directory) {
+  return readdirSync(join(projectRoot, directory), { withFileTypes: true })
+    .flatMap((entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory()
+        ? routeScreenFiles(path)
+        : entry.name.endsWith(".tsx")
+          ? [path]
+          : [];
+    });
+}
+
+for (const path of routeScreenFiles("src")) {
+  if (/\brouter\.back\s*\(/.test(source(path))) {
+    failures.push(`Screens must use a safe Back fallback: ${path}`);
+  }
+}
 requireText(
   "src/features/auth/navigation.ts",
   'guardian: "/unsupported-role"',

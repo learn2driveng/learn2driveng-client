@@ -10,3 +10,5 @@ export * from "./bookings";
 export * from "./users";
 export * from "./payments";
 export * from "./training-sessions";
+export * from "./instructor-availability";
+export * from "./readiness-assessments";

@@ -10,7 +10,6 @@ import {
   AuthPrimaryButton,
   AuthScreen,
 } from "@/components/auth";
-import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { registerAccount } from "@/lib/api";
@@ -19,11 +18,13 @@ import {
   isValidEmail,
   PASSWORD_REQUIREMENTS,
 } from "@/lib/auth/validation";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError } from "@/types";
 
 export default function SchoolSignupScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/welcome");
   const { colors } = useAppTheme();
   const beginOnboarding = useSchoolOperationsStore(
     (state) => state.beginSchoolOnboarding,
@@ -86,11 +87,11 @@ export default function SchoolSignupScreen() {
 
   return (
     <AuthScreen>
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row items-center">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full border"
           style={{
             backgroundColor: colors.surface,
@@ -103,7 +104,6 @@ export default function SchoolSignupScreen() {
             color={colors.text}
           />
         </Pressable>
-        <AppLogo height={46} />
       </View>
       <View className="mt-10">
         <Text

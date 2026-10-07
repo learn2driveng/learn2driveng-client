@@ -72,6 +72,37 @@ function formatDurationMinutes(start?: string | null, end?: string | null) {
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 
+function recordedSessionTimes(session: EnrichedTrainingSession) {
+  const start = session.actualStartTime ?? session.scheduledStartTime;
+  const rawEnd = session.actualEndTime ?? session.scheduledEndTime;
+  const startedAt = Date.parse(start);
+  const endedAt = Date.parse(rawEnd);
+  const scheduledStart = Date.parse(session.scheduledStartTime);
+  const scheduledEnd = Date.parse(session.scheduledEndTime);
+
+  if (
+    !Number.isFinite(startedAt) ||
+    !Number.isFinite(endedAt) ||
+    !Number.isFinite(scheduledStart) ||
+    !Number.isFinite(scheduledEnd)
+  ) {
+    return { start, end: rawEnd };
+  }
+
+  const scheduledDuration = Math.max(scheduledEnd - scheduledStart, 60_000);
+  const configuredDeadline = session.activeUntil
+    ? Date.parse(session.activeUntil)
+    : startedAt + scheduledDuration;
+  const deadline = Number.isFinite(configuredDeadline)
+    ? configuredDeadline
+    : startedAt + scheduledDuration;
+
+  return {
+    start: new Date(startedAt).toISOString(),
+    end: new Date(Math.min(Math.max(endedAt, startedAt), deadline)).toISOString(),
+  };
+}
+
 function sessionLocation(session: EnrichedTrainingSession | null) {
   if (!session) return "To be confirmed";
   const school = session.schoolId as string | EnrichedRef;
@@ -86,12 +117,21 @@ function sessionLocation(session: EnrichedTrainingSession | null) {
 function mapLessonStatus(
   sessionStatus?: TrainingSessionStatus,
   participantStatus?: LearnerJoinedSession["status"],
+  scheduledEndTime?: string,
 ): LearnerLessonCard["status"] {
   if (
     sessionStatus === "cancelled" ||
     participantStatus === "cancelled"
   ) {
     return "cancelled";
+  }
+  if (
+    sessionStatus === "missed" ||
+    (sessionStatus === "scheduled" &&
+      scheduledEndTime &&
+      new Date(scheduledEndTime).getTime() <= Date.now())
+  ) {
+    return "missed";
   }
   if (sessionStatus === "completed" || participantStatus === "present") {
     return "completed";
@@ -125,7 +165,11 @@ export function participantToLessonCard(
     time: formatLessonTime(session?.scheduledStartTime),
     location: sessionLocation(session),
     instructor: instructorName,
-    status: mapLessonStatus(session?.status, participant.status),
+    status: mapLessonStatus(
+      session?.status,
+      participant.status,
+      session?.scheduledEndTime,
+    ),
   };
 }
 
@@ -148,7 +192,8 @@ export function participantToProgressLesson(
   const packageName = readRefName(participant.packageId, "Training package");
   const schoolName = readRefName(session.schoolId, "Driving school");
   const instructorName = readRefName(session.instructorId, "Instructor");
-  const completedAt = session.actualEndTime ?? session.scheduledEndTime;
+  const recordedTimes = recordedSessionTimes(session);
+  const completedAt = recordedTimes.end;
 
   return {
     id: participant.id,
@@ -156,10 +201,7 @@ export function participantToProgressLesson(
     schoolName,
     instructorName,
     completedAt: formatLessonDate(completedAt),
-    duration: formatDurationMinutes(
-      session.actualStartTime ?? session.scheduledStartTime,
-      completedAt,
-    ),
+    duration: formatDurationMinutes(recordedTimes.start, completedAt),
     score: scoreFromSkillRatings(participant.skillRatings),
     focusAreas: focusAreasFromSkillRatings(participant.skillRatings),
     feedback: [
@@ -228,9 +270,8 @@ export function computeProgressSummary(
   const drivingMinutes = completedSessions.reduce((total, item) => {
     const session = readSession(item);
     if (!session) return total;
-    const start = session.actualStartTime;
-    const end = session.actualEndTime;
-    if (!start || !end) return total;
+    if (!session.actualStartTime || !session.actualEndTime) return total;
+    const { start, end } = recordedSessionTimes(session);
     return (
       total +
       Math.max(

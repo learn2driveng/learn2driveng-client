@@ -23,6 +23,7 @@ import {
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   fetchNotificationPreferences,
+  sendTestNotification,
   updateNotificationPreferences,
 } from "@/lib/api/notifications";
 import type {
@@ -42,7 +43,8 @@ const learnerRows: {
   {
     key: "sessionReminders",
     title: "Sessions and bookings",
-    description: "Booking confirmations, reminders, reschedules and cancellations.",
+    description:
+      "Booking confirmations, reminders, reschedules and cancellations.",
   },
   {
     key: "packageUpdates",
@@ -86,11 +88,13 @@ export function NotificationPreferencesScreen({
 }: NotificationPreferencesScreenProps) {
   const { colors } = useAppTheme();
   const { showToast } = useToast();
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences | null>(null);
+  const [permission, setPermission] = useState<PushPermissionState | null>(
     null,
   );
-  const [permission, setPermission] = useState<PushPermissionState | null>(null);
   const [isEnabling, setIsEnabling] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -116,7 +120,7 @@ export function NotificationPreferencesScreen({
   const enableNotifications = async () => {
     if (permission?.status === "unavailable") {
       showToast(
-        "Push notifications require an updated development build on a physical device.",
+        "Push notifications require an updated development build on a supported device or emulator.",
       );
       return;
     }
@@ -135,13 +139,38 @@ export function NotificationPreferencesScreen({
         token
           ? "Push notifications are enabled."
           : nextPermission.status === "unavailable"
-            ? "Push notifications require an updated development build on a physical device."
+            ? "Push notifications require an updated development build on a supported device or emulator."
             : "Notification permission was not enabled.",
       );
     } catch {
       showToast("We could not enable push notifications. Please try again.");
     } finally {
       setIsEnabling(false);
+    }
+  };
+
+  const testNotifications = async () => {
+    if (isSendingTest) return;
+    if (permission?.status !== "allowed") {
+      showToast("Enable push notifications before sending a test.");
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const token = await syncPushRegistration(false);
+      if (!token) {
+        showToast(
+          "This device could not be registered for push notifications.",
+        );
+        return;
+      }
+      await sendTestNotification();
+      showToast("Test sent. Watch for the notification banner and bell count.");
+    } catch {
+      showToast("The test notification could not be sent. Please try again.");
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -184,6 +213,17 @@ export function NotificationPreferencesScreen({
           value={isEnabling ? "Enabling" : permissionLabel(permission)}
           onPress={() => void enableNotifications()}
         />
+        <View
+          className="mx-4 h-px"
+          style={{ backgroundColor: colors.border }}
+        />
+        <SettingsRow
+          icon="send-check-outline"
+          title="Send a test notification"
+          description="Verify the complete server-to-device notification flow."
+          value={isSendingTest ? "Sending" : undefined}
+          onPress={() => void testNotifications()}
+        />
       </View>
 
       <Text
@@ -220,9 +260,7 @@ export function NotificationPreferencesScreen({
                 title={row.title}
                 description={row.description}
                 value={preferences[row.key]}
-                onValueChange={(value) =>
-                  void changePreference(row.key, value)
-                }
+                onValueChange={(value) => void changePreference(row.key, value)}
               />
             </View>
           ))

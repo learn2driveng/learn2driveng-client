@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs, useRouter, type Href } from "expo-router";
+import { Tabs } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { fontFamily } from "@/constants/fonts";
@@ -9,16 +9,7 @@ import { hydrateLearnerOperations } from "@/lib/learner/hydrate-learner-operatio
 import { hydrateLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { useAuthStore } from "@/store/auth.store";
 
-const studentTabRoots: Readonly<Record<string, Href>> = {
-  index: "/student",
-  explore: "/student/explore",
-  sessions: "/student/sessions",
-  progress: "/student/progress",
-  profile: "/student/profile",
-};
-
 export default function StudentLayout() {
-  const router = useRouter();
   const { colors } = useAppTheme();
   const status = useAuthStore((state) => state.status);
   const role = useAuthStore((state) => state.role);
@@ -54,15 +45,6 @@ export default function StudentLayout() {
 
   return (
     <Tabs
-      screenListeners={({ route }) => ({
-        tabPress: (event) => {
-          const tabRoot = studentTabRoots[route.name];
-          if (!tabRoot) return;
-
-          event.preventDefault();
-          router.replace(tabRoot);
-        },
-      })}
       screenOptions={{
         headerShown: false,
         popToTopOnBlur: true,

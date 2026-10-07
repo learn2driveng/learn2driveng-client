@@ -17,10 +17,12 @@ import {
   isStrongPassword,
   PASSWORD_REQUIREMENTS,
 } from "@/lib/auth/validation";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import type { ApiError } from "@/types";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/forgot-password");
   const { colors } = useAppTheme();
   const { email } = useLocalSearchParams<{ email?: string }>();
   const [otp, setOtp] = useState("");
@@ -151,7 +153,7 @@ export default function ResetPasswordScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={8}
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-12 w-12 items-center justify-center rounded-full border active:scale-[0.98] active:opacity-70"
           style={{
             borderColor: colors.border,

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -21,6 +21,7 @@ import {
 import { fontFamily } from "@/constants/fonts";
 import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { updateSchoolVehicle } from "@/lib/api";
 import { formatTransmissionLabel } from "@/lib/school/format";
 import { vehicleToSchoolVehicle } from "@/lib/school/map-api";
@@ -36,7 +37,7 @@ type SelectedPhoto = {
 };
 
 export default function EditVehicleScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack("/school/operations/vehicles");
   const { colors } = useAppTheme();
   const { showToast } = useToast();
   const { vehicleId } = useLocalSearchParams<{ vehicleId?: string }>();
@@ -153,7 +154,7 @@ export default function EditVehicleScreen() {
         lessonsThisWeek: vehicle.lessonsThisWeek,
       });
       showToast("Vehicle changes saved.");
-      router.back();
+      goBack();
     } catch (caught) {
       setError(
         (caught as ApiError).message || "We could not save this vehicle.",

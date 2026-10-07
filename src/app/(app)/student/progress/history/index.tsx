@@ -6,10 +6,12 @@ import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 
 export default function ProgressHistoryScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/student/progress");
   const { colors } = useAppTheme();
   const progressLessons = useLearnerSessionsStore(
     (state) => state.progressLessons,
@@ -21,7 +23,7 @@ export default function ProgressHistoryScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
           style={{
             backgroundColor: colors.surface,

@@ -24,8 +24,8 @@ export function AuthScreen({
   return (
     <KeyboardAvoidingView
       className="flex-1"
-      style={{ backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         ref={scrollViewRef}
@@ -36,11 +36,14 @@ export function AuthScreen({
         showsVerticalScrollIndicator={false}
         contentContainerClassName="flex-grow items-center px-7"
         contentContainerStyle={{
-          paddingTop: insets.top + 24,
+          paddingTop: 24,
           paddingBottom: insets.bottom + 24,
         }}
       >
-        <View className={`w-full max-w-[620px] flex-1 ${contentClassName}`}>
+        <View
+          className={`w-full max-w-[620px] ${contentClassName}`}
+          style={{ flexGrow: 1, flexShrink: 0 }}
+        >
           {children}
         </View>
       </ScrollView>

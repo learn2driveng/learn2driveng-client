@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fontFamily } from "@/constants/fonts";
 import { MarketplaceImage } from "@/features/school-discovery/marketplace-image";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   fetchDiscoverSchoolInstructors,
   fetchDiscoverSchoolVehicles,
@@ -38,7 +39,7 @@ type CollectionItem =
 export function SchoolCollectionScreen({
   collection,
 }: SchoolCollectionScreenProps) {
-  const router = useRouter();
+  const goBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { schoolId, schoolName } = useLocalSearchParams<{
@@ -213,7 +214,7 @@ export function SchoolCollectionScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
           style={{
             backgroundColor: colors.surface,
@@ -284,6 +285,8 @@ export function SchoolCollectionScreen({
               </Text>
               {error ? (
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Try loading ${title.toLowerCase()} again`}
                   onPress={() => void loadPage(1, true)}
                   className="mt-5 rounded-full px-5 py-3"
                   style={{ backgroundColor: colors.primary }}

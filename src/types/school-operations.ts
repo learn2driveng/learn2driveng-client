@@ -26,12 +26,6 @@ export type InstructorAssignmentPolicy =
   | "learner_preference"
   | "learner_selected";
 
-export type SchoolBookingAssignmentStatus =
-  | "unassigned"
-  | "assigned"
-  | "confirmed"
-  | "cancelled";
-
 export type SchoolOperationsProfile = {
   id: string;
   name: string;
@@ -92,38 +86,6 @@ export type SchoolVehicle = Vehicle & {
 export type SchoolPackageDefinition = TrainingPackage & {
   eligibleTransmissions?: VehicleTransmissionType[];
   purchasesThisMonth?: number;
-};
-
-/**
- * Ops booking board row. Today this is UI-oriented; long-term maps to
- * Booking + TrainingSessionParticipant assignment fields.
- */
-export type SchoolBookingAssignment = {
-  id: string;
-  bookingId?: string;
-  sessionId?: string;
-  learnerName: string;
-  learnerInitials: string;
-  packageName: string;
-  lessonNumber: number;
-  totalLessons: number;
-  scheduledAt: string;
-  location: string;
-  transmission: VehicleTransmissionType;
-  instructorPreferenceId: string | null;
-  instructorId: string | null;
-  vehicleId: string | null;
-  status: SchoolBookingAssignmentStatus;
-  requestedAt: string;
-  rescheduledAt: string | null;
-  cancellationReason: string | null;
-  cancelledAt: string | null;
-};
-
-export type SchoolRescheduleSlot = {
-  id: string;
-  scheduledAt: string;
-  label: string;
 };
 
 export type SchoolVerificationDocumentType =

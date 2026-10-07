@@ -16,6 +16,15 @@ function errorMessage(error: unknown) {
   if (
     typeof error === "object" &&
     error !== null &&
+    "statusCode" in error &&
+    (error as ApiError).statusCode === 0
+  ) {
+    return "Could not reach Learn2Drive. Check your connection and try again.";
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
     "message" in error &&
     typeof (error as ApiError).message === "string"
   ) {
@@ -75,10 +84,7 @@ export function useGoogleAuth(role: GoogleSignupRole, returnTo?: string) {
         profile: result.profile,
         returnTo,
       });
-      router.replace({
-        pathname: "/login",
-        params: typeof returnTo === "string" ? { returnTo } : undefined,
-      });
+      router.replace("/google-link");
     } catch (error) {
       setGoogleError(errorMessage(error));
     } finally {

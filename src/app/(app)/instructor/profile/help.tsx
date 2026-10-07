@@ -35,7 +35,7 @@ export default function InstructorHelpScreen() {
       >
         <FaqItem
           question="How are lessons assigned?"
-          answer="Your school assigns lessons within the hours you mark as available."
+          answer="Your school assigns non-overlapping lessons when you are accepting new assignments. Pausing assignments does not cancel lessons already scheduled."
         />
         <View
           className="mx-5 h-px"

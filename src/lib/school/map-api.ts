@@ -2,10 +2,8 @@ import { vehicleNameFromParts } from "@/lib/school/vehicle-input";
 import { createEmptyVerificationDocuments } from "@/lib/school/verification-documents";
 import type {
   AuthUser,
-  Booking,
   DrivingSchool,
   DrivingSchoolVerificationDocument,
-  SchoolBookingAssignment,
   SchoolInstructorRosterItem,
   SchoolOperationsProfile,
   SchoolPackageDefinition,
@@ -13,7 +11,6 @@ import type {
   SchoolVehicle,
   TrainingPackage,
   Vehicle,
-  VehicleTransmissionType,
 } from "@/types";
 import type {
   SchoolLearner,
@@ -157,78 +154,6 @@ export function instructorUserToRosterItem(
         ? instructor.updatedAt ?? instructor.createdAt ?? null
         : null,
     lessonsThisWeek: 0,
-  };
-}
-
-type EnrichedLearner = {
-  id?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-};
-
-type EnrichedPackage = {
-  id?: string;
-  name?: string;
-};
-
-type EnrichedSchoolBooking = Omit<
-  Booking,
-  "packageId" | "learnerId" | "schoolId"
-> & {
-  packageId?: string | EnrichedPackage;
-  schoolId?: string | { id?: string; name?: string };
-  learnerId?: string | EnrichedLearner;
-};
-
-function readLearner(booking: EnrichedSchoolBooking): EnrichedLearner | null {
-  if (typeof booking.learnerId === "object" && booking.learnerId) {
-    return booking.learnerId;
-  }
-  return null;
-}
-
-function readPackageName(booking: EnrichedSchoolBooking) {
-  const packageRef = booking.packageId;
-  if (typeof packageRef === "object" && packageRef && "name" in packageRef) {
-    return packageRef.name ?? "Training package";
-  }
-  return "Training package";
-}
-
-export function bookingToSchoolAssignment(
-  booking: EnrichedSchoolBooking,
-): SchoolBookingAssignment {
-  const learner = readLearner(booking);
-  const firstName = learner?.firstName ?? "Learner";
-  const lastName = learner?.lastName ?? "";
-  const learnerName = `${firstName} ${lastName}`.trim();
-  const status =
-    booking.status === "cancelled"
-      ? "cancelled"
-      : booking.status === "completed"
-        ? "confirmed"
-        : "unassigned";
-
-  return {
-    id: booking.id,
-    bookingId: booking.id,
-    learnerName,
-    learnerInitials: initialsFromName(learnerName || "L"),
-    packageName: readPackageName(booking),
-    lessonNumber: Math.max(booking.sessionsCompletedCount + 1, 1),
-    totalLessons: booking.sessionsTotal,
-    scheduledAt: booking.createdAt,
-    location: "To be scheduled",
-    transmission: "automatic" as VehicleTransmissionType,
-    instructorPreferenceId: null,
-    instructorId: null,
-    vehicleId: null,
-    status,
-    requestedAt: booking.createdAt,
-    rescheduledAt: null,
-    cancellationReason: booking.cancelReason ?? null,
-    cancelledAt: booking.status === "cancelled" ? booking.updatedAt ?? null : null,
   };
 }
 

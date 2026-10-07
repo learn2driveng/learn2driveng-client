@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -22,9 +21,8 @@ export default function StudentEntryChoiceScreen() {
       }}
     >
       <View className="flex-1 justify-center">
-        <AppLogo height={58} />
         <Text
-          className="mt-8 text-[10px] uppercase tracking-[2px]"
+          className="text-[10px] uppercase tracking-[2px]"
           style={{
             color: colors.textMuted,
             fontFamily: fontFamily.figtreeBold,
@@ -47,8 +45,8 @@ export default function StudentEntryChoiceScreen() {
             fontFamily: fontFamily.figtreeMedium,
           }}
         >
-          Browse FRSC-verified schools freely, or log in to manage your
-          packages, lessons, and progress.
+          Compare approved schools freely, or log in to manage your packages,
+          lessons, and progress.
         </Text>
 
         <View className="flex-row gap-3 mt-8">

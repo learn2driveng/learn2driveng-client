@@ -41,65 +41,49 @@ export function SchoolCard({ school, onPress }: SchoolCardProps) {
         <View className="flex-1 flex-row items-start gap-3">
           <SchoolAvatar name={school.name} logoUrl={school.logoUrl} size={50} />
           <View className="flex-1">
-          <View className="mb-1 flex-row items-center gap-2">
-            {school.premium ? (
-              <View
-                className="rounded px-2 py-0.5"
-                style={{ backgroundColor: colors.contrastSurface }}
-              >
-                <Text
-                  className="text-[9px] uppercase tracking-[-0.2px]"
-                  style={{
-                    color: colors.contrastText,
-                    fontFamily: fontFamily.figtreeBold,
-                  }}
+            <View className="mb-1 flex-row items-center gap-2">
+              {school.premium ? (
+                <View
+                  className="rounded px-2 py-0.5"
+                  style={{ backgroundColor: colors.contrastSurface }}
                 >
-                  Premium
-                </Text>
-              </View>
-            ) : null}
-            <View className="flex-row items-center gap-0.5">
+                  <Text
+                    className="text-[9px] uppercase tracking-[-0.2px]"
+                    style={{
+                      color: colors.contrastText,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  >
+                    Premium
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Text
+              className="text-[19px] leading-6 tracking-[-0.35px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              {school.name}
+            </Text>
+            <View className="mt-1 flex-row items-center gap-1">
               <MaterialCommunityIcons
-                name="check-decagram"
-                size={15}
-                color={colors.verified}
+                name="map-marker"
+                size={13}
+                color={colors.textMuted}
               />
               <Text
-                className="text-[9px] uppercase"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="flex-1 text-[12px]"
                 style={{
-                  color: colors.verified,
-                  fontFamily: fontFamily.figtreeBold,
+                  color: colors.textMuted,
+                  fontFamily: fontFamily.figtreeMedium,
                 }}
               >
-                {school.premium ? "Verified" : "FRSC Verified"}
+                {school.location}
               </Text>
             </View>
-          </View>
-
-          <Text
-            className="text-[19px] leading-6 tracking-[-0.35px]"
-            style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-          >
-            {school.name}
-          </Text>
-          <View className="mt-1 flex-row items-center gap-1">
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={13}
-              color={colors.textMuted}
-            />
-            <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              className="flex-1 text-[12px]"
-              style={{
-                color: colors.textMuted,
-                fontFamily: fontFamily.figtreeMedium,
-              }}
-            >
-              {school.location}
-            </Text>
-          </View>
           </View>
         </View>
 

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -50,17 +50,6 @@ export default function SchoolProfileScreen() {
     [name, email, phone, primaryLocation, address, description].every(
       (value) => value.trim().length > 0,
     );
-
-  useEffect(() => {
-    if (!profile.id) return;
-    setName(profile.name);
-    setEmail(profile.email);
-    setPhone(profile.phone);
-    setPrimaryLocation(profile.primaryLocation);
-    setAddress(profile.address);
-    setDescription(profile.description);
-    setSaved(true);
-  }, [profile.id]);
 
   const selectLogo = async (source: "camera" | "library") => {
     setSaveError(null);
@@ -151,8 +140,7 @@ export default function SchoolProfileScreen() {
   );
 
   return (
-    <DashboardScreen>
-      <DashboardPageHeader title="School profile" />
+    <DashboardScreen header={<DashboardPageHeader title="School profile" />}>
       <View
         className="mt-5 overflow-hidden rounded-[32px] border p-5"
         style={{

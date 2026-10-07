@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -15,8 +16,13 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
+import {
+  refreshNotificationUnreadCount,
+  useNotificationStore,
+} from "@/store/notification.store";
 import type { InstructorLessonStatus } from "@/types";
 
 export default function InstructorDashboardScreen() {
@@ -27,7 +33,24 @@ export default function InstructorDashboardScreen() {
   const todayLessons = useInstructorOperationsStore(
     (state) => state.todayLessons,
   );
+  const scheduleDays = useInstructorOperationsStore((state) => state.scheduleDays);
   const sessions = useTrainingSessionStore((state) => state.sessions);
+  const [renderedAt, setRenderedAt] = useState(() => Date.now());
+  const unreadNotificationCount = useNotificationStore(
+    (state) => state.unreadCount,
+  );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      hydrateInstructorOperations(),
+      refreshNotificationUnreadCount(),
+    ]);
+    setRenderedAt(Date.now());
+  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void refresh().catch(() => undefined);
+    }, [refresh]),
+  );
   const getLessonStatus = (
     sessionId: string,
     fallback: InstructorLessonStatus,
@@ -36,13 +59,27 @@ export default function InstructorDashboardScreen() {
     (lesson) =>
       getLessonStatus(lesson.sessionId, lesson.status) === "in_progress",
   );
-  const nextLesson = todayLessons.find(
-    (lesson) =>
-      getLessonStatus(lesson.sessionId, lesson.status) === "scheduled",
-  );
+  const nextLesson = scheduleDays
+    .flatMap((day) => day.lessons)
+    .filter((lesson) =>
+      getLessonStatus(lesson.sessionId, lesson.status) === "scheduled" &&
+      new Date(lesson.scheduledEndTime ?? lesson.scheduledStartTime ?? lesson.scheduledAt).getTime() > renderedAt,
+    )
+    .sort((left, right) =>
+      new Date(left.scheduledStartTime ?? left.scheduledAt).getTime() -
+      new Date(right.scheduledStartTime ?? right.scheduledAt).getTime(),
+    )[0];
   const featuredLesson = activeLesson ?? nextLesson;
   const featuredStatus = featuredLesson
     ? getLessonStatus(featuredLesson.sessionId, featuredLesson.status)
+    : null;
+  const featuredLessonDate = featuredLesson
+    ? new Intl.DateTimeFormat("en-NG", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        timeZone: "Africa/Lagos",
+      }).format(new Date(featuredLesson.scheduledStartTime ?? featuredLesson.scheduledAt))
     : null;
   const availabilityColor = profile.availableToday
     ? colors.success
@@ -54,7 +91,7 @@ export default function InstructorDashboardScreen() {
     });
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text
@@ -86,16 +123,57 @@ export default function InstructorDashboardScreen() {
             </Text>
           </View>
         </View>
-        <View
-          className="h-12 w-12 items-center justify-center rounded-full"
-          style={{ backgroundColor: colors.contrastSurface }}
-        >
-          <Text
-            className="font-figtree-bold text-[14px]"
-            style={{ color: colors.primary }}
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              unreadNotificationCount > 0
+                ? `Notifications, ${unreadNotificationCount} unread`
+                : "Notifications"
+            }
+            onPress={() => router.navigate("/instructor/profile/inbox")}
+            className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
+            style={{
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
-            {profile.initials}
-          </Text>
+            <MaterialCommunityIcons
+              name="bell-outline"
+              size={22}
+              color={colors.text}
+            />
+            {unreadNotificationCount > 0 ? (
+              <View
+                className="absolute -right-1 -top-1 min-w-5 items-center justify-center rounded-full border-2 px-1"
+                style={{
+                  height: 20,
+                  borderColor: colors.background,
+                  backgroundColor: colors.primary,
+                }}
+              >
+                <Text
+                  className="font-figtree-bold text-[10px] leading-[16px]"
+                  style={{ color: colors.onPrimary }}
+                >
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : unreadNotificationCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+          <View
+            className="h-12 w-12 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.contrastSurface }}
+          >
+            <Text
+              className="font-figtree-bold text-[14px]"
+              style={{ color: colors.primary }}
+            >
+              {profile.initials}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -128,7 +206,7 @@ export default function InstructorDashboardScreen() {
               style={{ color: colors.text }}
             >
               {profile.availableToday
-                ? "Available today"
+                ? "Accepting assignments"
                 : "Assignments paused"}
             </Text>
             <Text
@@ -136,8 +214,8 @@ export default function InstructorDashboardScreen() {
               style={{ color: colors.textMuted }}
             >
               {profile.availableToday
-                ? "Accepting assigned lessons"
-                : "Update availability to accept lessons"}
+                ? "Open to new lessons"
+                : "New lessons are paused"}
             </Text>
           </View>
         </View>
@@ -171,7 +249,13 @@ export default function InstructorDashboardScreen() {
             </View>
           </View>
           <Text
-            className="mt-4 font-figtree-bold text-[38px] tracking-[-1px]"
+            className="mt-4 font-figtree-medium text-[12px]"
+            style={{ color: colors.contrastMuted }}
+          >
+            {featuredLessonDate}
+          </Text>
+          <Text
+            className="mt-1 font-figtree-bold text-[38px] tracking-[-1px]"
             style={{ color: colors.contrastText }}
           >
             {featuredLesson.time}
@@ -227,7 +311,7 @@ export default function InstructorDashboardScreen() {
         <View className="mt-8">
           <ContentEmptyState
             icon="calendar-check-outline"
-            title="No upcoming lesson today"
+            title="No upcoming lessons"
             description="Your next assigned lesson will appear here when one is scheduled."
             actionLabel="View schedule"
             onActionPress={() => router.push("/instructor/schedule")}
@@ -272,7 +356,7 @@ export default function InstructorDashboardScreen() {
               icon="calendar-blank-outline"
               title="Your day is clear"
               description="There are no lessons assigned to you today."
-              actionLabel="Set availability"
+              actionLabel="Manage assignments"
               onActionPress={() => router.push("/instructor/availability")}
             />
           )}
@@ -289,7 +373,7 @@ export default function InstructorDashboardScreen() {
           />
           <QuickAction
             icon="calendar-account"
-            label="Availability"
+            label="Assignments"
             onPress={() => router.push("/instructor/availability")}
           />
           <QuickAction
