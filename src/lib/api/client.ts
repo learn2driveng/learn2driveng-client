@@ -23,6 +23,7 @@ export const api = create({
 
 const refreshApi = create({
   baseURL: getApiBaseUrl(),
+  timeout: 15000,
   headers: { Accept: "application/json", "X-Client-Platform": Platform.OS },
   withCredentials: Platform.OS === "web",
 });

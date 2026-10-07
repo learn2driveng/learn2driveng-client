@@ -17,6 +17,7 @@ import {
   paystackReturnUrlPrefix,
 } from "@/features/checkout/open-paystack-checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   createLearnerBooking,
   initializePayment,
@@ -37,6 +38,7 @@ const methodLabels: Record<PaymentChannel, string> = {
 
 export default function PurchaseReviewScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/student/explore");
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { schoolId, packageId } = useLocalSearchParams<{
@@ -73,7 +75,7 @@ export default function PurchaseReviewScreen() {
         </Text>
         <Pressable
           accessibilityRole="button"
-          onPress={() => (error ? refetch() : router.back())}
+          onPress={() => (error ? refetch() : goBack())}
           className="mt-6 rounded-full px-6 py-3 active:opacity-75"
           style={{ backgroundColor: colors.contrastSurface }}
         >

@@ -16,6 +16,7 @@ import { MarketplaceImage } from "@/features/school-discovery/marketplace-image"
 import { useMarketplaceNavigation } from "@/features/school-discovery/marketplace-navigation";
 import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { transmissionSummaryLabel } from "@/lib/school/mappers";
 
 function IconButton({
@@ -100,6 +101,7 @@ function SectionHeading({
 
 export function SchoolDetailScreen() {
   const router = useRouter();
+  const goBack = useSafeBack();
   const marketplaceNavigation = useMarketplaceNavigation();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
@@ -160,7 +162,7 @@ export function SchoolDetailScreen() {
         </Text>
         <Pressable
           accessibilityRole="button"
-          onPress={error ? refetch : () => router.back()}
+          onPress={error ? refetch : goBack}
           className="mt-6 rounded-full px-6 py-3 active:opacity-75"
           style={{ backgroundColor: colors.contrastSurface }}
         >
@@ -203,7 +205,7 @@ export function SchoolDetailScreen() {
         <IconButton
           icon="arrow-left"
           label="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
         />
         <Text
           className="text-[13px]"

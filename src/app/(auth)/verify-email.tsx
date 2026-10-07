@@ -13,6 +13,7 @@ import { AppLogo } from "@/components/common/app-logo";
 import { destinationForRole } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { resendVerificationOtp, verifyEmailOtp } from "@/lib/api";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { useAuthStore } from "@/store/auth.store";
 import type { ApiError } from "@/types";
 
@@ -27,6 +28,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/signup");
   const { colors } = useAppTheme();
   const { email, returnTo } = useLocalSearchParams<{
     email?: string;
@@ -115,7 +117,7 @@ export default function VerifyEmailScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full border"
           style={{
             backgroundColor: colors.surface,

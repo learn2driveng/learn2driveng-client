@@ -14,6 +14,7 @@ import {
   BookingOptionCard,
 } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   fetchAvailableTrainingSessions,
   rescheduleLearnerTrainingSession,
@@ -32,6 +33,7 @@ import type { AvailableTrainingSession } from "@/types/training-session";
 
 export default function RescheduleBookingScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/student/sessions");
   const { colors } = useAppTheme();
   const { showToast } = useToast();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
@@ -226,7 +228,7 @@ export default function RescheduleBookingScreen() {
             title="No alternative lessons"
             description="There are no other available school slots for this package right now."
             actionLabel="Keep current lesson"
-            onActionPress={() => router.back()}
+            onActionPress={goBack}
           />
         </View>
       ) : (

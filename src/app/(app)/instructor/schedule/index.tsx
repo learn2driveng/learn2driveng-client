@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -18,7 +18,7 @@ import { useInstructorOperationsStore } from "@/store/instructor-operations.stor
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
 
-type ScheduleFilter = "all" | InstructorLessonStatus;
+type ScheduleFilter = "all" | InstructorLessonStatus | "not_held";
 
 const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "All", value: "all" },
@@ -26,6 +26,7 @@ const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "In progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
   { label: "Missed", value: "missed" },
+  { label: "Not held", value: "not_held" },
 ];
 
 export default function InstructorScheduleScreen() {
@@ -35,10 +36,18 @@ export default function InstructorScheduleScreen() {
     (state) => state.scheduleDays,
   );
   const sessions = useTrainingSessionStore((state) => state.sessions);
-  const [selectedDayId, setSelectedDayId] = useState(scheduleDays[0]?.id ?? "");
+  const [renderedAt, setRenderedAt] = useState(() => Date.now());
+  const [selectedDayId, setSelectedDayId] = useState("");
   const [filter, setFilter] = useState<ScheduleFilter>("all");
+  const nextAssignedDay = scheduleDays.find((day) =>
+    day.lessons.some((lesson) =>
+      new Date(lesson.scheduledEndTime ?? lesson.scheduledStartTime ?? lesson.scheduledAt).getTime() > renderedAt,
+    ),
+  );
   const selectedDay =
-    scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
+    scheduleDays.find((day) => day.id === selectedDayId) ??
+    nextAssignedDay ??
+    scheduleDays[scheduleDays.length - 1];
 
   const lessonsWithStatus =
     selectedDay?.lessons.map((lesson) => ({
@@ -48,10 +57,23 @@ export default function InstructorScheduleScreen() {
         lesson.status,
       ),
     })) ?? [];
-  const filteredLessons = lessonsWithStatus.filter(
-    (item) => filter === "all" || item.status === filter,
-  );
-  const refresh = useCallback(() => refreshInstructorOperations(), []);
+  const filteredLessons = lessonsWithStatus.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "not_held") {
+      return item.status === "missed" && item.lesson.learnerCount === 0;
+    }
+    if (filter === "missed") {
+      return item.status === "missed" && item.lesson.learnerCount !== 0;
+    }
+    return item.status === filter;
+  });
+  const refresh = useCallback(async () => {
+    await refreshInstructorOperations();
+    setRenderedAt(Date.now());
+  }, []);
+  useFocusEffect(useCallback(() => {
+    void refresh().catch(() => undefined);
+  }, [refresh]));
 
   return (
     <DashboardScreen onRefresh={refresh}>

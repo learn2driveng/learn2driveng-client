@@ -1,13 +1,17 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -23,94 +27,47 @@ type TimetableTimeFieldProps = {
   onChange: (value: string) => void;
 };
 
+type Period = "AM" | "PM";
+
 export function TimetableTimeField({
   label,
   value,
   onChange,
 }: TimetableTimeFieldProps) {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
-  const [hour, setHour] = useState(9);
-  const [minute, setMinute] = useState(0);
-  const hourScroll = useRef<ScrollView>(null);
-  const minuteScroll = useRef<ScrollView>(null);
-  const displayedTime = formatTimetableTime(minutesToTime(hour * 60 + minute));
+  const [hourText, setHourText] = useState("9");
+  const [minuteText, setMinuteText] = useState("00");
+  const [period, setPeriod] = useState<Period>("AM");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const validTime =
+    /^\d{1,2}$/.test(hourText) &&
+    /^\d{1,2}$/.test(minuteText) &&
+    hour >= 1 &&
+    hour <= 12 &&
+    minute >= 0 &&
+    minute <= 59;
+  const selectedTime = validTime
+    ? minutesToTime(((hour % 12) + (period === "PM" ? 12 : 0)) * 60 + minute)
+    : null;
+  const displayedTime = selectedTime
+    ? formatTimetableTime(selectedTime)
+    : "Enter a valid time";
 
-  const scrollToSelectedTime = useCallback(() => {
-    hourScroll.current?.scrollTo({
-      y: Math.max(0, (hour % 12 || 12) - 3) * 44,
-      animated: false,
-    });
-    minuteScroll.current?.scrollTo({
-      y: Math.max(0, minute - 2) * 44,
-      animated: false,
-    });
-  }, [hour, minute]);
-
-  useEffect(() => {
-    if (!visible) return;
-    const frame = requestAnimationFrame(scrollToSelectedTime);
-    return () => cancelAnimationFrame(frame);
-  }, [visible, scrollToSelectedTime]);
+  const close = () => {
+    Keyboard.dismiss();
+    setVisible(false);
+  };
 
   const open = () => {
     const selected = timeToMinutes(value) ?? 9 * 60;
-    setHour(Math.floor(selected / 60));
-    setMinute(selected % 60);
+    const selectedHour = Math.floor(selected / 60);
+    setHourText(String(selectedHour % 12 || 12));
+    setMinuteText(String(selected % 60).padStart(2, "0"));
+    setPeriod(selectedHour < 12 ? "AM" : "PM");
     setVisible(true);
-  };
-
-  const choiceColumn = (kind: "hour" | "minute") => {
-    const count = kind === "hour" ? 12 : 60;
-    const selected = kind === "hour" ? (hour % 12 || 12) - 1 : minute;
-    return (
-      <View className="flex-1">
-        <Text
-          className="mb-2 text-center text-[11px] uppercase tracking-[1px]"
-          style={{
-            color: colors.textMuted,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          {kind === "hour" ? "Hour" : "Minute"}
-        </Text>
-        <ScrollView
-          key={`${kind}-${visible}-${value}`}
-          ref={kind === "hour" ? hourScroll : minuteScroll}
-          style={{ height: 220 }}
-          showsVerticalScrollIndicator
-        >
-          {Array.from({ length: count }, (_, index) => (
-            <Pressable
-              key={index}
-              accessibilityRole="button"
-              accessibilityLabel={`${kind === "hour" ? "Hour" : "Minute"} ${kind === "hour" ? index + 1 : String(index).padStart(2, "0")}`}
-              accessibilityState={{ selected: selected === index }}
-              onPress={() =>
-                kind === "hour"
-                  ? setHour((hour >= 12 ? 12 : 0) + ((index + 1) % 12))
-                  : setMinute(index)
-              }
-              className="mb-1 h-10 items-center justify-center rounded-xl"
-              style={{
-                backgroundColor:
-                  selected === index ? colors.primary : colors.surfaceMuted,
-              }}
-            >
-              <Text
-                className="text-[15px]"
-                style={{
-                  color: selected === index ? colors.onPrimary : colors.text,
-                  fontFamily: fontFamily.figtreeBold,
-                }}
-              >
-                {kind === "hour" ? index + 1 : String(index).padStart(2, "0")}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-    );
   };
 
   return (
@@ -118,10 +75,7 @@ export function TimetableTimeField({
       <View className="flex-1 gap-2">
         <Text
           className="text-[11px] uppercase tracking-[1px]"
-          style={{
-            color: colors.textSubtle,
-            fontFamily: fontFamily.figtreeBold,
-          }}
+          style={{ color: colors.textSubtle, fontFamily: fontFamily.figtreeBold }}
         >
           {label}
         </Text>
@@ -130,10 +84,7 @@ export function TimetableTimeField({
           accessibilityLabel={`${label}: ${value ? formatTimetableTime(value) : "Select time"}`}
           onPress={open}
           className="h-14 flex-row items-center gap-2 rounded-2xl border px-3 active:opacity-80"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
+          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
         >
           <MaterialCommunityIcons
             name="clock-outline"
@@ -156,65 +107,90 @@ export function TimetableTimeField({
       <Modal
         visible={visible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setVisible(false)}
-        onShow={scrollToSelectedTime}
+        animationType="fade"
+        onRequestClose={close}
       >
-        <View
+        <KeyboardAvoidingView
           className="flex-1 justify-end"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ backgroundColor: "#00000080" }}
         >
           <Pressable
             accessibilityLabel="Close time picker"
-            onPress={() => setVisible(false)}
+            onPress={close}
             style={StyleSheet.absoluteFill}
           />
           <View
-            className="rounded-t-[30px] px-5 pb-8 pt-5"
+            className="rounded-t-[30px] px-5 pt-5"
             style={{
               backgroundColor: colors.surface,
               alignSelf: "center",
               width: "100%",
               maxWidth: 480,
+              paddingBottom: insets.bottom + 20,
             }}
           >
             <View className="flex-row items-center justify-between">
               <Text
                 className="text-[18px]"
-                style={{
-                  color: colors.text,
-                  fontFamily: fontFamily.figtreeBold,
-                }}
+                style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
               >
                 Choose {label.toLowerCase()}
               </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close time picker"
-                onPress={() => setVisible(false)}
+                onPress={close}
                 className="h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: colors.surfaceMuted }}
               >
-                <MaterialCommunityIcons
-                  name="close"
-                  size={20}
-                  color={colors.text}
-                />
+                <MaterialCommunityIcons name="close" size={20} color={colors.text} />
               </Pressable>
             </View>
             <Text
               className="mb-5 mt-1 text-[12px]"
               style={{
-                color: colors.textMuted,
+                color: validTime ? colors.textMuted : colors.error,
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
               {displayedTime}
             </Text>
             <View className="flex-row gap-3">
-              {choiceColumn("hour")}
-              {choiceColumn("minute")}
-              <View style={{ width: 68 }}>
+              {([
+                ["Hour", hourText, setHourText],
+                ["Minute", minuteText, setMinuteText],
+              ] as const).map(([part, text, setText]) => (
+                <View key={part} className="flex-1">
+                  <Text
+                    className="mb-2 text-center text-[11px] uppercase tracking-[1px]"
+                    style={{
+                      color: colors.textMuted,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  >
+                    {part}
+                  </Text>
+                  <TextInput
+                    accessibilityLabel={`${label} ${part.toLowerCase()}`}
+                    value={text}
+                    onChangeText={(next) => setText(next.replace(/\D/g, "").slice(0, 2))}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    selectTextOnFocus
+                    placeholder={part === "Hour" ? "HH" : "MM"}
+                    placeholderTextColor={colors.textSubtle}
+                    className="h-16 rounded-2xl border text-center text-[26px]"
+                    style={{
+                      backgroundColor: colors.surfaceMuted,
+                      borderColor: colors.border,
+                      color: colors.text,
+                      fontFamily: fontFamily.figtreeBold,
+                    }}
+                  />
+                </View>
+              ))}
+              <View style={{ width: 86 }}>
                 <Text
                   className="mb-2 text-center text-[11px] uppercase tracking-[1px]"
                   style={{
@@ -224,60 +200,65 @@ export function TimetableTimeField({
                 >
                   Period
                 </Text>
-                {(["AM", "PM"] as const).map((period) => {
-                  const selected = (hour < 12 ? "AM" : "PM") === period;
-                  return (
-                    <Pressable
-                      key={period}
-                      accessibilityRole="button"
-                      accessibilityLabel={period}
-                      accessibilityState={{ selected }}
-                      onPress={() =>
-                        setHour((hour % 12) + (period === "PM" ? 12 : 0))
-                      }
-                      className="mb-1 h-10 items-center justify-center rounded-xl"
-                      style={{
-                        backgroundColor: selected
-                          ? colors.primary
-                          : colors.surfaceMuted,
-                      }}
-                    >
-                      <Text
-                        className="text-[13px]"
-                        style={{
-                          color: selected ? colors.onPrimary : colors.text,
-                          fontFamily: fontFamily.figtreeBold,
-                        }}
+                <View className="h-16 flex-row overflow-hidden rounded-2xl border" style={{ borderColor: colors.border }}>
+                  {(["AM", "PM"] as const).map((option) => {
+                    const selected = period === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        accessibilityRole="button"
+                        accessibilityLabel={option}
+                        accessibilityState={{ selected }}
+                        onPress={() => setPeriod(option)}
+                        className="flex-1 items-center justify-center"
+                        style={{ backgroundColor: selected ? colors.primary : colors.surfaceMuted }}
                       >
-                        {period}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                        <Text
+                          className="text-[12px]"
+                          style={{
+                            color: selected ? colors.onPrimary : colors.text,
+                            fontFamily: fontFamily.figtreeBold,
+                          }}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             </View>
+            <Text
+              className="mt-3 text-[11px]"
+              style={{ color: colors.textMuted, fontFamily: fontFamily.figtreeMedium }}
+            >
+              Enter an hour from 1–12 and minutes from 00–59.
+            </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Use ${displayedTime} for ${label.toLowerCase()}`}
+              accessibilityState={{ disabled: !validTime }}
+              disabled={!validTime}
               onPress={() => {
-                onChange(minutesToTime(hour * 60 + minute));
-                setVisible(false);
+                if (!selectedTime) return;
+                onChange(selectedTime);
+                close();
               }}
               className="mt-6 h-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: colors.primary }}
+              style={{ backgroundColor: validTime ? colors.primary : colors.surfaceMuted }}
             >
               <Text
                 className="text-[14px]"
                 style={{
-                  color: colors.onPrimary,
+                  color: validTime ? colors.onPrimary : colors.textMuted,
                   fontFamily: fontFamily.figtreeBold,
                 }}
               >
-                Use {displayedTime}
+                Use {validTime ? displayedTime : "time"}
               </Text>
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );

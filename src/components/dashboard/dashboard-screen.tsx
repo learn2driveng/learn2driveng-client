@@ -20,12 +20,14 @@ import { useKeepFocusedInputVisible } from "@/hooks/use-keep-focused-input-visib
 
 type DashboardScreenProps = {
   children: ReactNode;
+  header?: ReactNode;
   scrollResetKey?: string | number;
   onRefresh?: () => Promise<unknown> | void;
 };
 
 export function DashboardScreen({
   children,
+  header,
   scrollResetKey,
   onRefresh,
 }: DashboardScreenProps) {
@@ -59,9 +61,14 @@ export function DashboardScreen({
   return (
     <KeyboardAvoidingView
       className="flex-1"
-      style={{ backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {header ? (
+        <View style={{ paddingTop: 16, paddingHorizontal: 20 }}>
+          <View className="mx-auto w-full max-w-[720px]">{header}</View>
+        </View>
+      ) : null}
       <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
@@ -82,8 +89,8 @@ export function DashboardScreen({
         }
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + 16,
-          paddingBottom: 32,
+          paddingTop: header ? 0 : 16,
+          paddingBottom: insets.bottom + 32,
           paddingHorizontal: 20,
         }}
       >

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -33,21 +33,24 @@ export default function InstructorDashboardScreen() {
   const todayLessons = useInstructorOperationsStore(
     (state) => state.todayLessons,
   );
+  const scheduleDays = useInstructorOperationsStore((state) => state.scheduleDays);
   const sessions = useTrainingSessionStore((state) => state.sessions);
+  const [renderedAt, setRenderedAt] = useState(() => Date.now());
   const unreadNotificationCount = useNotificationStore(
     (state) => state.unreadCount,
-  );
-  useFocusEffect(
-    useCallback(() => {
-      void refreshNotificationUnreadCount().catch(() => undefined);
-    }, []),
   );
   const refresh = useCallback(async () => {
     await Promise.all([
       hydrateInstructorOperations(),
       refreshNotificationUnreadCount(),
     ]);
+    setRenderedAt(Date.now());
   }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void refresh().catch(() => undefined);
+    }, [refresh]),
+  );
   const getLessonStatus = (
     sessionId: string,
     fallback: InstructorLessonStatus,
@@ -56,13 +59,27 @@ export default function InstructorDashboardScreen() {
     (lesson) =>
       getLessonStatus(lesson.sessionId, lesson.status) === "in_progress",
   );
-  const nextLesson = todayLessons.find(
-    (lesson) =>
-      getLessonStatus(lesson.sessionId, lesson.status) === "scheduled",
-  );
+  const nextLesson = scheduleDays
+    .flatMap((day) => day.lessons)
+    .filter((lesson) =>
+      getLessonStatus(lesson.sessionId, lesson.status) === "scheduled" &&
+      new Date(lesson.scheduledEndTime ?? lesson.scheduledStartTime ?? lesson.scheduledAt).getTime() > renderedAt,
+    )
+    .sort((left, right) =>
+      new Date(left.scheduledStartTime ?? left.scheduledAt).getTime() -
+      new Date(right.scheduledStartTime ?? right.scheduledAt).getTime(),
+    )[0];
   const featuredLesson = activeLesson ?? nextLesson;
   const featuredStatus = featuredLesson
     ? getLessonStatus(featuredLesson.sessionId, featuredLesson.status)
+    : null;
+  const featuredLessonDate = featuredLesson
+    ? new Intl.DateTimeFormat("en-NG", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        timeZone: "Africa/Lagos",
+      }).format(new Date(featuredLesson.scheduledStartTime ?? featuredLesson.scheduledAt))
     : null;
   const availabilityColor = profile.availableToday
     ? colors.success
@@ -189,7 +206,7 @@ export default function InstructorDashboardScreen() {
               style={{ color: colors.text }}
             >
               {profile.availableToday
-                ? "Available today"
+                ? "Accepting assignments"
                 : "Assignments paused"}
             </Text>
             <Text
@@ -197,8 +214,8 @@ export default function InstructorDashboardScreen() {
               style={{ color: colors.textMuted }}
             >
               {profile.availableToday
-                ? "Accepting assigned lessons"
-                : "Update availability to accept lessons"}
+                ? "Open to new lessons"
+                : "New lessons are paused"}
             </Text>
           </View>
         </View>
@@ -232,7 +249,13 @@ export default function InstructorDashboardScreen() {
             </View>
           </View>
           <Text
-            className="mt-4 font-figtree-bold text-[38px] tracking-[-1px]"
+            className="mt-4 font-figtree-medium text-[12px]"
+            style={{ color: colors.contrastMuted }}
+          >
+            {featuredLessonDate}
+          </Text>
+          <Text
+            className="mt-1 font-figtree-bold text-[38px] tracking-[-1px]"
             style={{ color: colors.contrastText }}
           >
             {featuredLesson.time}
@@ -288,7 +311,7 @@ export default function InstructorDashboardScreen() {
         <View className="mt-8">
           <ContentEmptyState
             icon="calendar-check-outline"
-            title="No upcoming lesson today"
+            title="No upcoming lessons"
             description="Your next assigned lesson will appear here when one is scheduled."
             actionLabel="View schedule"
             onActionPress={() => router.push("/instructor/schedule")}
@@ -333,7 +356,7 @@ export default function InstructorDashboardScreen() {
               icon="calendar-blank-outline"
               title="Your day is clear"
               description="There are no lessons assigned to you today."
-              actionLabel="Set availability"
+              actionLabel="Manage assignments"
               onActionPress={() => router.push("/instructor/availability")}
             />
           )}
@@ -350,7 +373,7 @@ export default function InstructorDashboardScreen() {
           />
           <QuickAction
             icon="calendar-account"
-            label="Availability"
+            label="Assignments"
             onPress={() => router.push("/instructor/availability")}
           />
           <QuickAction

@@ -9,6 +9,7 @@ import type { LiveLocationMapProps } from "./live-location-map.types";
 export function LiveLocationMap({
   coordinates,
   vehicleLabel,
+  fill = false,
 }: LiveLocationMapProps) {
   const { colors } = useAppTheme();
   const coordinate = {
@@ -31,7 +32,11 @@ export function LiveLocationMap({
       <View
         accessible
         accessibilityLabel="Google Maps configuration is required"
-        className="h-72 items-center justify-center rounded-[28px] border px-6"
+        className={
+          fill
+            ? "absolute inset-0 items-center justify-center px-6"
+            : "h-72 items-center justify-center rounded-[28px] border px-6"
+        }
         style={{ backgroundColor: colors.surface, borderColor: colors.border }}
       >
         <MaterialCommunityIcons
@@ -60,7 +65,7 @@ export function LiveLocationMap({
     <View
       accessible
       accessibilityLabel={`${vehicleLabel}'s latest shared location`}
-      className="h-72 overflow-hidden rounded-[28px]"
+      className={fill ? "absolute inset-0 overflow-hidden" : "h-72 overflow-hidden rounded-[28px]"}
     >
       <MapView
         accessibilityLabel={`Map showing ${vehicleLabel}'s latest location`}

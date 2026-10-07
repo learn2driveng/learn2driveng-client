@@ -13,10 +13,12 @@ import { AppLogo } from "@/components/common/app-logo";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { requestPasswordReset } from "@/lib/api";
 import { isValidEmail } from "@/lib/auth/validation";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import type { ApiError } from "@/types";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/login");
   const { colors } = useAppTheme();
   const { email: initialEmail } = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(initialEmail ?? "");
@@ -60,7 +62,7 @@ export default function ForgotPasswordScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={8}
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-12 w-12 items-center justify-center rounded-full border active:scale-[0.98] active:opacity-70"
           style={{
             borderColor: colors.border,

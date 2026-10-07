@@ -65,7 +65,7 @@ export default function InstructorLessonDetailScreen() {
       background: colors.surfaceStrong,
     },
     missed: {
-      label: "Lesson missed",
+      label: lesson.learnerCount === 0 ? "Lesson not held" : "Lesson missed",
       color: colors.error,
       background: colors.surfaceStrong,
     },

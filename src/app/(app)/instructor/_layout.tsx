@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs, useRouter, type Href } from "expo-router";
+import { Tabs } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { fontFamily } from "@/constants/fonts";
@@ -10,16 +10,7 @@ import { useInstructorOperationsStore } from "@/store/instructor-operations.stor
 import { useAuthStore } from "@/store/auth.store";
 import { InstructorLocationPublisher } from "@/features/location";
 
-const instructorTabRoots: Readonly<Record<string, Href>> = {
-  index: "/instructor",
-  schedule: "/instructor/schedule",
-  attendance: "/instructor/attendance",
-  availability: "/instructor/availability",
-  profile: "/instructor/profile",
-};
-
 export default function InstructorLayout() {
-  const router = useRouter();
   const { colors } = useAppTheme();
   const status = useAuthStore((state) => state.status);
   const role = useAuthStore((state) => state.role);
@@ -63,15 +54,6 @@ export default function InstructorLayout() {
     <>
       <InstructorLocationPublisher />
       <Tabs
-        screenListeners={({ route }) => ({
-          tabPress: (event) => {
-            const tabRoot = instructorTabRoots[route.name];
-            if (!tabRoot) return;
-
-            event.preventDefault();
-            router.replace(tabRoot);
-          },
-        })}
         screenOptions={{
           headerShown: false,
           popToTopOnBlur: true,
@@ -138,7 +120,7 @@ export default function InstructorLayout() {
         <Tabs.Screen
           name="availability"
           options={{
-            title: "Availability",
+            title: "Assignments",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="calendar-account"

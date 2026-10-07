@@ -140,8 +140,7 @@ export default function SchoolProfileScreen() {
   );
 
   return (
-    <DashboardScreen>
-      <DashboardPageHeader title="School profile" />
+    <DashboardScreen header={<DashboardPageHeader title="School profile" />}>
       <View
         className="mt-5 overflow-hidden rounded-[32px] border p-5"
         style={{

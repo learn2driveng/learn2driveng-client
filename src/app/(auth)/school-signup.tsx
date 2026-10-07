@@ -18,11 +18,13 @@ import {
   isValidEmail,
   PASSWORD_REQUIREMENTS,
 } from "@/lib/auth/validation";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { ApiError } from "@/types";
 
 export default function SchoolSignupScreen() {
   const router = useRouter();
+  const goBack = useSafeBack("/welcome");
   const { colors } = useAppTheme();
   const beginOnboarding = useSchoolOperationsStore(
     (state) => state.beginSchoolOnboarding,
@@ -89,7 +91,7 @@ export default function SchoolSignupScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full border"
           style={{
             backgroundColor: colors.surface,

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type RefObject } from "react";
 import {
   Keyboard,
   ScrollView,
+  TextInput,
   type NativeSyntheticEvent,
   type TargetedEvent,
 } from "react-native";
@@ -15,7 +16,8 @@ export function useKeepFocusedInputVisible(
   const focusedInputRef = useRef<FocusTarget | null>(null);
 
   const scrollToFocusedInput = useCallback(() => {
-    const focusedInput = focusedInputRef.current;
+    const focusedInput =
+      TextInput.State.currentlyFocusedInput() ?? focusedInputRef.current;
     if (!focusedInput) return;
 
     requestAnimationFrame(() => {
