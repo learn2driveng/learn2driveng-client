@@ -1,5 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,29 +14,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
 import { CheckoutShell, useCheckoutPackage } from "@/features/checkout";
-import {
-  openPaystackCheckout,
-  paystackReturnUrlPrefix,
-} from "@/features/checkout/open-paystack-checkout";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   createLearnerBooking,
   initializePayment,
+  verifyPayment,
 } from "@/lib/api";
 import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 import type { ApiError } from "@/types";
-import {
-  parsePaymentChannel,
-  type PaymentChannel,
-  type PaymentStatus,
-} from "@/types/payment";
-
-const methodLabels: Record<PaymentChannel, string> = {
-  card: "Debit or credit card",
-  bank_transfer: "Bank transfer",
-};
+import type { PaymentStatus } from "@/types/payment";
 
 export default function PurchaseReviewScreen() {
   const router = useRouter();
@@ -135,7 +125,7 @@ export default function PurchaseReviewScreen() {
       const returnUrl = Linking.createURL("checkout/payment-return", {
         scheme: "learn2driveng",
       });
-      const browserResult = await WebBrowser.openAuthSessionAsync(
+      await WebBrowser.openAuthSessionAsync(
         payment.authorizationUrl,
         returnUrl,
         { preferEphemeralSession: true },
@@ -154,10 +144,7 @@ export default function PurchaseReviewScreen() {
           ? "success"
           : paymentStatus === "failed"
             ? "failed"
-            : browserResult.type === "cancel" ||
-                browserResult.type === "dismiss"
-              ? "cancelled"
-              : "pending";
+            : "pending";
 
       await refreshLearnerBookings().catch(() => undefined);
 
