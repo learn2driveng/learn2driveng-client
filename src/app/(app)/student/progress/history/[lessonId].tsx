@@ -1,14 +1,15 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import { useLearnerSessionsStore } from "@/store/learner-sessions.store";
 
 export default function ProgressLessonDetailScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack("/student/progress/history");
   const { colors } = useAppTheme();
   const { lessonId } = useLocalSearchParams<{ lessonId?: string }>();
   const lesson = useLearnerSessionsStore((state) =>
@@ -38,7 +39,7 @@ export default function ProgressLessonDetailScreen() {
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.back()}
+            onPress={goBack}
             className="mt-5 rounded-full px-5 py-3 active:opacity-80"
             style={{ backgroundColor: colors.primary }}
           >
@@ -62,7 +63,7 @@ export default function ProgressLessonDetailScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
           className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
           style={{
             backgroundColor: colors.surface,

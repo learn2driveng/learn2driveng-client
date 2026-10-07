@@ -12,6 +12,7 @@ import {
 import { DashboardPageHeader, DashboardScreen } from "@/components/dashboard";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   createSupportRequest,
   type SupportRequestContext,
@@ -24,6 +25,7 @@ type SupportRequestScreenProps = {
 
 export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
   const router = useRouter();
+  const goBack = useSafeBack();
   const { colors } = useAppTheme();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const isProblemReport = mode === "report";
@@ -97,7 +99,7 @@ export function SupportRequestScreen({ backHref }: SupportRequestScreenProps) {
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => (backHref ? router.replace(backHref) : router.back())}
+          onPress={() => (backHref ? router.replace(backHref) : goBack())}
           className="mt-10 h-14 items-center justify-center rounded-2xl active:opacity-80"
           style={{ backgroundColor: colors.primary }}
         >

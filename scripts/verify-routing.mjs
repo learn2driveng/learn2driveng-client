@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -124,13 +124,29 @@ if (
   "src/app/(app)/student/_layout.tsx",
   "src/app/(app)/instructor/_layout.tsx",
   "src/app/(app)/school/(tabs)/_layout.tsx",
-].forEach((path) =>
-  requireText(
-    path,
-    "router.replace(tabRoot)",
-    "Tab presses must target canonical tab roots",
-  ),
-);
+].forEach((path) => {
+  if (source(path).includes("event.preventDefault()")) {
+    failures.push(`Tab presses must use the navigator's default behavior: ${path}`);
+  }
+});
+
+function routeScreenFiles(directory) {
+  return readdirSync(join(projectRoot, directory), { withFileTypes: true })
+    .flatMap((entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory()
+        ? routeScreenFiles(path)
+        : entry.name.endsWith(".tsx")
+          ? [path]
+          : [];
+    });
+}
+
+for (const path of routeScreenFiles("src")) {
+  if (/\brouter\.back\s*\(/.test(source(path))) {
+    failures.push(`Screens must use a safe Back fallback: ${path}`);
+  }
+}
 requireText(
   "src/features/auth/navigation.ts",
   'guardian: "/unsupported-role"',

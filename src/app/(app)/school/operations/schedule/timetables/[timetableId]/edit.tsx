@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,6 +24,7 @@ import {
 import { TimetableTimeField } from "@/components/dashboard/timetable-time-field";
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   fetchRecurringTrainingSchedules,
   updateRecurringTrainingSchedule,
@@ -91,7 +92,7 @@ function Field({
 
 export default function EditTimetableScreen() {
   const { timetableId } = useLocalSearchParams<{ timetableId?: string }>();
-  const router = useRouter();
+  const goBack = useSafeBack("/school/operations/schedule/timetables");
   const { colors } = useAppTheme();
   const { showToast } = useToast();
   const [item, setItem] = useState<RecurringTrainingSchedule | null>(null);
@@ -200,7 +201,7 @@ export default function EditTimetableScreen() {
         eligiblePackageIds: packageIds,
       });
       showToast("Timetable updated.");
-      router.back();
+      goBack();
     } catch (caught) {
       setError(
         (caught as ApiError).message || "We could not update this timetable.",
@@ -366,7 +367,7 @@ export default function EditTimetableScreen() {
             : "End time must be 15 minutes to 8 hours after start time."}
         </Text>
         <Field
-          label="Learners"
+          label="Capacity needed"
           value={capacity}
           onChangeText={setCapacity}
           placeholder="4"

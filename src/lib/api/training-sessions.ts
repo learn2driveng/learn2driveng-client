@@ -38,7 +38,7 @@ export async function createRecurringTrainingSchedule(
 export async function fetchRecurringTrainingSchedules() {
   const { data } = await api.get<
     ApiSuccessResponse<RecurringTrainingSchedule[]>
-  >("/training-sessions/recurring");
+  >("/training-sessions/recurring", { timeout: 15000 });
   return data.data;
 }
 

@@ -41,7 +41,7 @@ export function InstructorLessonCard({
       background: colors.surfaceStrong,
     },
     missed: {
-      label: "Missed",
+      label: lesson.learnerCount === 0 ? "Not held" : "Missed",
       color: colors.error,
       background: colors.surfaceStrong,
     },

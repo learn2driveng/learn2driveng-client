@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import {
 import { fontFamily } from "@/constants/fonts";
 import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeBack } from "@/lib/navigation/use-safe-back";
 import {
   fetchSchoolInstructor,
   updateSchoolInstructor,
@@ -44,7 +45,7 @@ function dateInputValue(value?: string) {
 }
 
 export default function EditInstructorScreen() {
-  const router = useRouter();
+  const goBack = useSafeBack("/school/instructors");
   const { instructorId } = useLocalSearchParams<{ instructorId?: string }>();
   const { colors } = useAppTheme();
   const { showToast } = useToast();
@@ -171,7 +172,7 @@ export default function EditInstructorScreen() {
 
       upsertInstructor(instructorUserToRosterItem(updated));
       showToast("Instructor changes saved.");
-      router.back();
+      goBack();
     } catch (caught) {
       setError(
         (caught as ApiError).message || "We could not save this instructor.",

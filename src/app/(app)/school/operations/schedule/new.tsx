@@ -473,7 +473,7 @@ export default function NewSchoolLessonScreen() {
             optional
           />
           <Field
-            label="Learners"
+            label="Capacity needed"
             value={capacity}
             onChangeText={setCapacity}
             placeholder="1"

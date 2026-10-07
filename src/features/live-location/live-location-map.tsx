@@ -84,6 +84,7 @@ function createMarkerContent(vehicleLabel: string) {
 export function LiveLocationMap({
   coordinates,
   vehicleLabel,
+  fill = false,
 }: LiveLocationMapProps) {
   const { colors } = useAppTheme();
   const containerRef = useRef<View>(null);
@@ -210,8 +211,12 @@ export function LiveLocationMap({
     <View
       accessible
       accessibilityLabel={`${vehicleLabel}'s latest location. Latitude ${coordinates.latitude.toFixed(5)}, longitude ${coordinates.longitude.toFixed(5)}.`}
-      className="h-72 overflow-hidden rounded-[28px] border"
-      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      className={fill ? "absolute inset-0 overflow-hidden" : "h-72 overflow-hidden rounded-[28px] border"}
+      style={
+        fill
+          ? { backgroundColor: colors.surface }
+          : { backgroundColor: colors.surface, borderColor: colors.border }
+      }
     >
       <View ref={containerRef} style={StyleSheet.absoluteFill} />
       {mapStatus !== "ready" ? (

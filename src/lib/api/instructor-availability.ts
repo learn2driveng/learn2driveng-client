@@ -4,14 +4,12 @@ import type { ApiSuccessResponse } from "@/types";
 export type InstructorAvailabilitySettings = {
   instructorId: string;
   acceptingAssignments: boolean;
-  weeklyHours: { id: string; enabled: boolean; shiftId: string }[];
-  timeOffDates: string[];
   updatedAt: string | null;
 };
 
 export type UpdateInstructorAvailabilityInput = Pick<
   InstructorAvailabilitySettings,
-  "acceptingAssignments" | "weeklyHours" | "timeOffDates"
+  "acceptingAssignments"
 >;
 
 export async function fetchInstructorAvailability() {

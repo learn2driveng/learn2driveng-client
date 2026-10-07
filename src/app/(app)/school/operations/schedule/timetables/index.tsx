@@ -49,11 +49,15 @@ export default function SchoolTimetablesScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
       setTimetables(await fetchRecurringTrainingSchedules());
     } catch (caught) {
-      setError((caught as ApiError).message || "We could not load timetables.");
+      const apiError = caught as ApiError;
+      setError(apiError.statusCode
+        ? apiError.message
+        : "Timetables could not be loaded. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -168,21 +172,31 @@ export default function SchoolTimetablesScreen() {
       <View className="mt-8">
         <SectionHeader title="Your timetables" />
         {error ? (
-          <Text
-            className="mt-4 text-[13px]"
-            style={{
-              color: colors.error,
-              fontFamily: fontFamily.figtreeMedium,
-            }}
-          >
-            {error}
-          </Text>
+          <View className="mt-4 rounded-2xl border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+            <Text
+              className="text-[13px]"
+              style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+            >
+              {error}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading timetables"
+              onPress={() => void load()}
+              className="mt-3 self-start rounded-full px-4 py-2 active:opacity-75"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Text style={{ color: colors.onPrimary, fontFamily: fontFamily.figtreeBold }}>
+                Try again
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
         {loading ? (
           <View className="mt-8 items-center">
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : timetables.length === 0 ? (
+        ) : error && timetables.length === 0 ? null : timetables.length === 0 ? (
           <View className="mt-4">
             <ContentEmptyState
               icon="calendar-blank-outline"

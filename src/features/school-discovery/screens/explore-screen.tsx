@@ -200,20 +200,30 @@ export function ExploreScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              marketplaceNavigation.requiresSignIn ? "Sign in" : "Open profile"
+              marketplaceNavigation.requiresSignIn ? "Log in" : "Open profile"
             }
             onPress={() => router.push(marketplaceNavigation.accountHref)}
-            className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
+            className="min-h-10 flex-row items-center justify-center gap-1.5 rounded-full border px-3 active:opacity-70"
             style={{
               backgroundColor: colors.surface,
               borderColor: colors.border,
             }}
           >
             <MaterialCommunityIcons
-              name="account-circle-outline"
-              size={24}
+              name={
+                marketplaceNavigation.requiresSignIn
+                  ? "login"
+                  : "account-circle-outline"
+              }
+              size={19}
               color={colors.text}
             />
+            <Text
+              className="text-[12px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              {marketplaceNavigation.requiresSignIn ? "Log in" : "Profile"}
+            </Text>
           </Pressable>
         </View>
 
