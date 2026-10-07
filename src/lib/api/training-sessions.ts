@@ -61,12 +61,24 @@ export async function resumeRecurringTrainingSchedule(scheduleId: string) {
 
 export async function updateRecurringTrainingSchedule(
   scheduleId: string,
-  input: Partial<CreateRecurringTrainingScheduleInput>,
+  input: Partial<
+    Omit<CreateRecurringTrainingScheduleInput, "vehicleId" | "endsOn" | "notes">
+  > & {
+    vehicleId?: string | null;
+    endsOn?: string | null;
+    notes?: string | null;
+  },
 ) {
   const { data } = await api.patch<
     ApiSuccessResponse<RecurringTrainingSchedule>
   >(`/training-sessions/recurring/${encodeURIComponent(scheduleId)}`, input);
   return data.data;
+}
+
+export async function deleteRecurringTrainingSchedule(scheduleId: string) {
+  await api.delete(
+    `/training-sessions/recurring/${encodeURIComponent(scheduleId)}`,
+  );
 }
 
 export type CreateSchoolTrainingSessionInput = {
@@ -126,6 +138,27 @@ export async function cancelSchoolTrainingSession(sessionId: string) {
   return data.data;
 }
 
+export async function assignLearnerToSchoolTrainingSession(
+  sessionId: string,
+  bookingId: string,
+) {
+  const { data } = await api.post<
+    ApiSuccessResponse<TrainingSessionParticipant>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/participants`, {
+    bookingId,
+  });
+  return data.data;
+}
+
+export async function fetchSchoolTrainingSessionParticipants(
+  sessionId: string,
+) {
+  const { data } = await api.get<
+    ApiSuccessResponse<TrainingSessionParticipant[]>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/participants`);
+  return data.data;
+}
+
 export type AvailableTrainingSessionsQuery = {
   sessionType?: string;
   startsFrom?: string;
@@ -159,6 +192,13 @@ export async function startInstructorTrainingSession(sessionId: string) {
   const { data } = await api.post<
     ApiSuccessResponse<InstructorAssignedSession>
   >(`/training-sessions/${encodeURIComponent(sessionId)}/start`, {});
+  return data.data;
+}
+
+export async function extendInstructorTrainingSession(sessionId: string) {
+  const { data } = await api.post<
+    ApiSuccessResponse<InstructorAssignedSession>
+  >(`/training-sessions/${encodeURIComponent(sessionId)}/extend`, {});
   return data.data;
 }
 
@@ -276,6 +316,14 @@ export type PublicLessonLocationShare = {
   title: string;
   status: "in_progress";
   expiresAt: string;
+  vehicle: {
+    id: string;
+    make: string;
+    model: string;
+    year: number;
+    plateNumber: string;
+    color?: string | null;
+  } | null;
   location:
     | (SessionCoordinates & { sessionId: string; recordedAt: string })
     | null;

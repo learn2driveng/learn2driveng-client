@@ -4,7 +4,6 @@ import { fetchSchoolInstructors } from "@/lib/api/instructors";
 import { fetchSchoolPackages } from "@/lib/api/packages";
 import { fetchSchoolVehicles } from "@/lib/api/vehicles";
 import {
-  bookingToSchoolAssignment,
   drivingSchoolToProfile,
   instructorUserToRosterItem,
   mergeVerificationDocuments,
@@ -54,10 +53,7 @@ function applyHydratedSchool(
   ]).then(([instructors, vehicles, packages, bookings, learners]) => {
     const roster = instructors.map(instructorUserToRosterItem);
     const { activeInstructors, pendingInstructors } = countInstructors(roster);
-    const mappedBookings = bookings.map(bookingToSchoolAssignment);
-    const activeBookings = mappedBookings.filter(
-      (booking) => booking.status !== "cancelled",
-    ).length;
+    const activeBookings = bookings.filter((booking) => booking.status !== "cancelled").length;
 
     store.hydrateFromApi({
       profile: drivingSchoolToProfile(school, adminName, {
@@ -70,7 +66,6 @@ function applyHydratedSchool(
       instructors: roster,
       vehicles: vehicles.map(vehicleToSchoolVehicle),
       packages: packages.map(packageToSchoolPackage),
-      bookings: mappedBookings,
       verificationDocuments: mergeVerificationDocuments(
         school.verificationDocuments,
       ),
@@ -124,10 +119,7 @@ export async function refreshApprovedSchoolOperations(adminName: string) {
 
   const roster = instructors.map(instructorUserToRosterItem);
   const { activeInstructors, pendingInstructors } = countInstructors(roster);
-  const mappedBookings = bookings.map(bookingToSchoolAssignment);
-  const activeBookings = mappedBookings.filter(
-    (booking) => booking.status !== "cancelled",
-  ).length;
+  const activeBookings = bookings.filter((booking) => booking.status !== "cancelled").length;
 
   useSchoolOperationsStore.getState().hydrateFromApi({
     profile: drivingSchoolToProfile(school, adminName, {
@@ -140,7 +132,6 @@ export async function refreshApprovedSchoolOperations(adminName: string) {
     instructors: roster,
     vehicles: vehicles.map(vehicleToSchoolVehicle),
     packages: packages.map(packageToSchoolPackage),
-    bookings: mappedBookings,
     verificationDocuments: mergeVerificationDocuments(
       school.verificationDocuments,
     ),

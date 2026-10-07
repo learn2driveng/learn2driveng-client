@@ -28,8 +28,6 @@ export function useCheckoutPackage(
 
   useEffect(() => {
     if (!schoolId || !packageId) {
-      setSchool(null);
-      setLoading(false);
       return;
     }
 
@@ -69,14 +67,16 @@ export function useCheckoutPackage(
     };
   }, [schoolId, packageId, reloadToken]);
 
+  const hasSelection = Boolean(schoolId && packageId);
+  const visibleSchool = hasSelection ? school : null;
   const selectedPackage =
-    school?.packages.find((item) => item.id === packageId) ?? null;
+    visibleSchool?.packages.find((item) => item.id === packageId) ?? null;
 
   return {
-    school,
+    school: visibleSchool,
     selectedPackage,
-    loading,
-    error,
+    loading: hasSelection ? loading : false,
+    error: hasSelection ? error : null,
     refetch,
   };
 }

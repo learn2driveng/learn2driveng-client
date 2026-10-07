@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -15,8 +16,13 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hydrateInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
+import {
+  refreshNotificationUnreadCount,
+  useNotificationStore,
+} from "@/store/notification.store";
 import type { InstructorLessonStatus } from "@/types";
 
 export default function InstructorDashboardScreen() {
@@ -28,6 +34,20 @@ export default function InstructorDashboardScreen() {
     (state) => state.todayLessons,
   );
   const sessions = useTrainingSessionStore((state) => state.sessions);
+  const unreadNotificationCount = useNotificationStore(
+    (state) => state.unreadCount,
+  );
+  useFocusEffect(
+    useCallback(() => {
+      void refreshNotificationUnreadCount().catch(() => undefined);
+    }, []),
+  );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      hydrateInstructorOperations(),
+      refreshNotificationUnreadCount(),
+    ]);
+  }, []);
   const getLessonStatus = (
     sessionId: string,
     fallback: InstructorLessonStatus,
@@ -54,7 +74,7 @@ export default function InstructorDashboardScreen() {
     });
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           <Text
@@ -86,16 +106,57 @@ export default function InstructorDashboardScreen() {
             </Text>
           </View>
         </View>
-        <View
-          className="h-12 w-12 items-center justify-center rounded-full"
-          style={{ backgroundColor: colors.contrastSurface }}
-        >
-          <Text
-            className="font-figtree-bold text-[14px]"
-            style={{ color: colors.primary }}
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              unreadNotificationCount > 0
+                ? `Notifications, ${unreadNotificationCount} unread`
+                : "Notifications"
+            }
+            onPress={() => router.navigate("/instructor/profile/inbox")}
+            className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
+            style={{
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
-            {profile.initials}
-          </Text>
+            <MaterialCommunityIcons
+              name="bell-outline"
+              size={22}
+              color={colors.text}
+            />
+            {unreadNotificationCount > 0 ? (
+              <View
+                className="absolute -right-1 -top-1 min-w-5 items-center justify-center rounded-full border-2 px-1"
+                style={{
+                  height: 20,
+                  borderColor: colors.background,
+                  backgroundColor: colors.primary,
+                }}
+              >
+                <Text
+                  className="font-figtree-bold text-[10px] leading-[16px]"
+                  style={{ color: colors.onPrimary }}
+                >
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : unreadNotificationCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+          <View
+            className="h-12 w-12 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.contrastSurface }}
+          >
+            <Text
+              className="font-figtree-bold text-[14px]"
+              style={{ color: colors.primary }}
+            >
+              {profile.initials}
+            </Text>
+          </View>
         </View>
       </View>
 

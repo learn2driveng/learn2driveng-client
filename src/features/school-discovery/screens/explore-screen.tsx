@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -11,28 +13,27 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppLogo } from "@/components/common/app-logo";
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { fontFamily } from "@/constants/fonts";
+import { getPreferredArea } from "@/constants/preferred-areas";
 import { useUserLocation } from "@/features/location";
 import { FilterChip, SchoolCard } from "@/features/school-discovery";
+import { useMarketplaceNavigation } from "@/features/school-discovery/marketplace-navigation";
 import { useDiscoverSchools } from "@/features/school-discovery/use-discover-schools";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSettingsStore } from "@/store/settings.store";
 
-type ExploreScreenProps = {
-  publicMarketplace?: boolean;
-};
-
-export function ExploreScreen({
-  publicMarketplace = false,
-}: ExploreScreenProps) {
+export function ExploreScreen() {
   const router = useRouter();
+  const marketplaceNavigation = useMarketplaceNavigation();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const {
     coordinates,
     isChecking: isCheckingLocation,
     isGranted: isLocationGranted,
+    isPrecise: isPreciseLocation,
+    canAskAgain,
     isLocating,
     error: locationError,
     placeName,
@@ -42,16 +43,72 @@ export function ExploreScreen({
   const [ratingFilter, setRatingFilter] = useState(false);
   const [priceFilter, setPriceFilter] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(false);
+  const [preciseRequestAttempted, setPreciseRequestAttempted] = useState(false);
+  const requestLocationRef = useRef(requestLocation);
+  const autoLocationAttempted = useRef(false);
+  const discoveryLocationMode = useSettingsStore(
+    (state) => state.discoveryLocationMode,
+  );
+  const setDiscoveryLocationMode = useSettingsStore(
+    (state) => state.setDiscoveryLocationMode,
+  );
+  const preferredAreaId = useSettingsStore((state) => state.preferredAreaId);
+  const preferredArea = getPreferredArea(preferredAreaId);
+  const hasPreciseLocation = isPreciseLocation && Boolean(coordinates);
+  const hasCurrentLocation =
+    discoveryLocationMode === "current" && hasPreciseLocation;
+  const locationBlocked =
+    !isCheckingLocation && !isLocationGranted && !canAskAgain;
+  const needsPrecisePermission =
+    !isCheckingLocation && isLocationGranted && !isPreciseLocation;
+  const mustUseSettings =
+    locationBlocked ||
+    (needsPrecisePermission && (!canAskAgain || preciseRequestAttempted));
+
+  useEffect(() => {
+    requestLocationRef.current = requestLocation;
+  }, [requestLocation]);
 
   useFocusEffect(
     useCallback(() => {
-      if (isCheckingLocation || !isLocationGranted) {
+      if (
+        isCheckingLocation ||
+        locationBlocked ||
+        needsPrecisePermission ||
+        hasPreciseLocation ||
+        autoLocationAttempted.current
+      )
         return;
-      }
 
-      void requestLocation();
-    }, [isCheckingLocation, isLocationGranted, requestLocation]),
+      autoLocationAttempted.current = true;
+      void requestLocationRef.current({ requirePrecise: true });
+    }, [
+      hasPreciseLocation,
+      isCheckingLocation,
+      locationBlocked,
+      needsPrecisePermission,
+    ]),
   );
+
+  useEffect(() => {
+    // An area saved before permission was granted must not become the default
+    // discovery location when the app is reopened.
+    if (!hasPreciseLocation && discoveryLocationMode === "area") {
+      setDiscoveryLocationMode("current");
+    }
+  }, [discoveryLocationMode, hasPreciseLocation, setDiscoveryLocationMode]);
+
+  const requestPreciseLocation = () => {
+    if (mustUseSettings) {
+      void Linking.openSettings();
+      return;
+    }
+
+    if (needsPrecisePermission) setPreciseRequestAttempted(true);
+    void requestLocation({ requirePrecise: true }).then((nextCoordinates) => {
+      if (nextCoordinates) setPreciseRequestAttempted(false);
+    });
+  };
 
   const discoverQuery = useMemo(() => {
     const base = {
@@ -61,28 +118,40 @@ export function ExploreScreen({
       minRating: ratingFilter ? 4.5 : undefined,
     };
 
-    if (coordinates) {
+    if (hasCurrentLocation && coordinates) {
       return {
         ...base,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
-        radiusKm: 50,
+        radiusKm: 5,
         sort: "distance" as const,
       };
     }
 
     return {
       ...base,
+      city: preferredArea.city,
+      state: preferredArea.state,
       sort: "rating" as const,
     };
-  }, [coordinates, query, ratingFilter]);
+  }, [
+    coordinates,
+    hasCurrentLocation,
+    preferredArea.city,
+    preferredArea.state,
+    query,
+    ratingFilter,
+  ]);
 
-  const { schools, loading, error, refetch } = useDiscoverSchools(discoverQuery);
+  const { schools, loading, error, refetch } = useDiscoverSchools(
+    discoverQuery,
+    hasPreciseLocation,
+  );
 
   const filteredSchools = useMemo(() => {
     let result = schools;
 
-    if (distanceFilter && coordinates) {
+    if (distanceFilter && hasCurrentLocation) {
       result = result.filter(
         (school) => school.distanceKm > 0 && school.distanceKm <= 5,
       );
@@ -93,7 +162,7 @@ export function ExploreScreen({
     }
 
     return result;
-  }, [coordinates, distanceFilter, priceFilter, schools]);
+  }, [distanceFilter, hasCurrentLocation, priceFilter, schools]);
 
   const resetFilters = () => {
     setQuery("");
@@ -108,16 +177,32 @@ export function ExploreScreen({
       style={{ backgroundColor: colors.background, paddingTop: insets.top }}
     >
       <View className="px-6 pb-2 pt-4">
-        <View className="mb-4 flex-row items-center justify-between">
-          <AppLogo height={44} />
+        <View className="mb-6 flex-row items-start justify-between gap-3">
+          <View className="flex-1 pr-3">
+            <Text
+              className="mb-1 text-[10px] uppercase tracking-[2px]"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeBold,
+              }}
+            >
+              Driving schools
+            </Text>
+            <Text
+              accessibilityRole="header"
+              className="text-[24px] leading-7 tracking-[-0.7px]"
+              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+            >
+              Top Rated Schools{" "}
+              <Text style={{ color: colors.primary }}>Near You</Text>
+            </Text>
+          </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={publicMarketplace ? "Sign in" : "Open profile"}
-            onPress={() =>
-              publicMarketplace
-                ? router.push("/login")
-                : router.push("/student/profile")
+            accessibilityLabel={
+              marketplaceNavigation.requiresSignIn ? "Sign in" : "Open profile"
             }
+            onPress={() => router.push(marketplaceNavigation.accountHref)}
             className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
             style={{
               backgroundColor: colors.surface,
@@ -131,33 +216,42 @@ export function ExploreScreen({
             />
           </Pressable>
         </View>
-        <View className="mb-6">
-          <View className="pr-3">
+
+        {hasPreciseLocation && discoveryLocationMode === "area" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(marketplaceNavigation.locationHref)}
+            className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={22}
+              color={colors.primary}
+            />
             <Text
-              className="mb-1 text-[10px] uppercase tracking-[2px]"
+              className="flex-1 text-[12px] leading-5"
               style={{
                 color: colors.textMuted,
-                fontFamily: fontFamily.figtreeBold,
+                fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              FRSC Verified
+              Showing schools in {preferredArea.label}
             </Text>
-            <Text
-              accessibilityRole="header"
-              className="text-[24px] leading-7 tracking-[-0.7px]"
-              style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-            >
-              Top Rated Schools{" "}
-              <Text style={{ color: colors.primary }}>Near You</Text>
-            </Text>
-          </View>
-        </View>
-
-        {coordinates ? (
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={colors.textSubtle}
+            />
+          </Pressable>
+        ) : hasCurrentLocation ? (
           <Pressable
             accessibilityRole="button"
             disabled={isLocating}
-            onPress={() => void requestLocation()}
+            onPress={requestPreciseLocation}
             className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
             style={{
               backgroundColor: colors.surface,
@@ -179,8 +273,8 @@ export function ExploreScreen({
               {isLocating
                 ? "Updating your current location…"
                 : placeName
-                  ? `Showing schools within 50 km of ${placeName}`
-                  : "Showing schools within 50 km of your current location"}
+                  ? `Showing schools within 5 km of ${placeName}`
+                  : "Showing schools within 5 km of your current location"}
             </Text>
             <MaterialCommunityIcons
               name="refresh"
@@ -188,109 +282,73 @@ export function ExploreScreen({
               color={colors.textSubtle}
             />
           </Pressable>
-        ) : !isCheckingLocation ? (
-          <Pressable
-            accessibilityRole="button"
-            disabled={isLocating}
-            onPress={() => {
-              if (isLocationGranted) {
-                void requestLocation();
-                return;
-              }
-
-              router.push(
-                publicMarketplace ? "/location" : "/student/profile/location",
-              );
-            }}
-            className="mb-4 flex-row items-center gap-3 rounded-2xl border px-4 py-3 active:opacity-80"
-            style={{
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="map-marker-radius"
-              size={22}
-              color={colors.primary}
-            />
-            <Text
-              className="flex-1 text-[12px] leading-5"
-              style={{
-                color: colors.textMuted,
-                fontFamily: fontFamily.figtreeMedium,
-              }}
-            >
-              {isLocating
-                ? "Finding your current location…"
-                : (locationError ??
-                  "Enable location to sort schools by distance from you.")}
-            </Text>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={20}
-              color={colors.textSubtle}
-            />
-          </Pressable>
         ) : null}
 
-        <View
-          className="h-13 flex-row items-center rounded-2xl border px-4"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
-        >
-          <MaterialCommunityIcons
-            name="magnify"
-            size={20}
-            color={colors.textSubtle}
-          />
-          <TextInput
-            accessibilityLabel="Search driving schools"
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            onChangeText={setQuery}
-            placeholder="Search driving schools..."
-            placeholderTextColor={colors.textFaint}
-            returnKeyType="search"
-            value={query}
-            className="ml-3 flex-1 py-3 text-[13px]"
-            style={{ color: colors.text, fontFamily: fontFamily.figtreeMedium }}
-          />
-        </View>
+        {hasPreciseLocation ? (
+          <>
+            <View
+              className="h-13 flex-row items-center rounded-2xl border px-4"
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="magnify"
+                size={20}
+                color={colors.textSubtle}
+              />
+              <TextInput
+                accessibilityLabel="Search driving schools"
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                onChangeText={setQuery}
+                placeholder="Search driving schools..."
+                placeholderTextColor={colors.textFaint}
+                returnKeyType="search"
+                value={query}
+                className="ml-3 flex-1 py-3 text-[13px]"
+                style={{
+                  color: colors.text,
+                  fontFamily: fontFamily.figtreeMedium,
+                }}
+              />
+            </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-2 py-3"
-          keyboardShouldPersistTaps="handled"
-        >
-          <FilterChip
-            icon="star"
-            label="Rating 4.5+"
-            selected={ratingFilter}
-            onPress={() => setRatingFilter((current) => !current)}
-          />
-          <FilterChip
-            icon="cash-multiple"
-            label="Under ₦50k"
-            selected={priceFilter}
-            onPress={() => setPriceFilter((current) => !current)}
-          />
-          <FilterChip
-            icon="map-marker-distance"
-            label="Within 5km"
-            selected={distanceFilter}
-            disabled={!coordinates}
-            onPress={() => setDistanceFilter((current) => !current)}
-          />
-          <FilterChip
-            icon="tune-variant"
-            accessibilityLabel="Reset all filters"
-            onPress={resetFilters}
-          />
-        </ScrollView>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="gap-2 py-3"
+              keyboardShouldPersistTaps="handled"
+            >
+              <FilterChip
+                icon="star"
+                label="Rating 4.5+"
+                selected={ratingFilter}
+                onPress={() => setRatingFilter((current) => !current)}
+              />
+              <FilterChip
+                icon="cash-multiple"
+                label="Under ₦50k"
+                selected={priceFilter}
+                onPress={() => setPriceFilter((current) => !current)}
+              />
+              <FilterChip
+                icon="map-marker-distance"
+                label="Within 5km"
+                selected={distanceFilter && hasCurrentLocation}
+                disabled={!hasCurrentLocation}
+                onPress={() => setDistanceFilter((current) => !current)}
+              />
+              <FilterChip
+                icon="tune-variant"
+                accessibilityLabel="Reset all filters"
+                onPress={resetFilters}
+              />
+            </ScrollView>
+          </>
+        ) : null}
       </View>
 
       <ScrollView
@@ -299,8 +357,21 @@ export function ExploreScreen({
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        alwaysBounceVertical
+        refreshControl={
+          <RefreshControl
+            refreshing={hasPreciseLocation ? loading : isLocating}
+            onRefresh={() => {
+              if (hasPreciseLocation) refetch();
+              else if (!mustUseSettings) requestPreciseLocation();
+            }}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
+          />
+        }
       >
-        {loading ? (
+        {!hasPreciseLocation && (isCheckingLocation || isLocating) ? (
           <View className="items-center py-16">
             <ActivityIndicator size="large" color={colors.primary} />
             <Text
@@ -310,12 +381,66 @@ export function ExploreScreen({
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Loading schools near you...
+              {isCheckingLocation
+                ? "Checking location permission…"
+                : "Finding your current location…"}
             </Text>
           </View>
         ) : null}
 
-        {!loading && error ? (
+        {!hasPreciseLocation && !isCheckingLocation && !isLocating ? (
+          <ContentEmptyState
+            icon={locationBlocked ? "map-marker-off-outline" : "crosshairs-gps"}
+            title={
+              locationBlocked
+                ? "Location access is off"
+                : needsPrecisePermission
+                  ? "Precise location is off"
+                  : isLocationGranted
+                    ? "Current location unavailable"
+                    : "Allow location to explore schools"
+            }
+            description={
+              locationBlocked
+                ? "Enable location permission for Learn2Drive in device settings to see schools near you."
+                : needsPrecisePermission
+                  ? mustUseSettings
+                    ? "Precise access was not granted in-app. Turn on Precise Location for Learn2Drive in device settings."
+                    : "Allow precise location in the system prompt to see nearby schools."
+                  : (locationError ??
+                    (isLocationGranted
+                      ? "We could not get your current position. Check that device location is on, then try again."
+                      : "Allow device location to see nearby driving schools. Your saved area will not load schools without it."))
+            }
+            actionLabel={
+              mustUseSettings
+                ? "Open device settings"
+                : needsPrecisePermission
+                  ? "Request precise location"
+                  : isLocationGranted
+                    ? "Try again"
+                    : "Allow location"
+            }
+            onActionPress={requestPreciseLocation}
+          />
+        ) : null}
+
+        {hasPreciseLocation && loading ? (
+          <View className="items-center py-16">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text
+              className="mt-4 text-[13px]"
+              style={{
+                color: colors.textMuted,
+                fontFamily: fontFamily.figtreeMedium,
+              }}
+            >
+              Loading driving schools...
+            </Text>
+          </View>
+        ) : null}
+
+        {hasPreciseLocation && !loading && error ? (
           <ContentEmptyState
             icon="cloud-off-outline"
             title="Could not load schools"
@@ -325,7 +450,10 @@ export function ExploreScreen({
           />
         ) : null}
 
-        {!loading && !error && filteredSchools.length === 0 ? (
+        {hasPreciseLocation &&
+        !loading &&
+        !error &&
+        filteredSchools.length === 0 ? (
           <ContentEmptyState
             icon={
               schools.length === 0 ? "school-outline" : "filter-remove-outline"
@@ -337,39 +465,36 @@ export function ExploreScreen({
             }
             description={
               schools.length === 0
-                ? coordinates
-                  ? "No verified schools within 50 km of this location. If you're testing on a simulator, set a custom location near Lagos (or Basky), then refresh GPS."
-                  : "There are no verified schools listed yet, or enable location for distance-based results."
+                ? hasCurrentLocation
+                  ? "No verified schools within 5 km of this location. If you're testing on a simulator, set a custom location near Lagos (or Basky), then refresh GPS."
+                  : `No verified schools are listed in ${preferredArea.label} yet.`
                 : "Try another search or clear your current filters."
             }
             actionLabel={
-              schools.length === 0 && coordinates
+              schools.length === 0 && hasCurrentLocation
                 ? "Refresh location"
                 : "Clear filters"
             }
             onActionPress={
-              schools.length === 0 && coordinates
-                ? () => void requestLocation()
+              schools.length === 0 && hasCurrentLocation
+                ? requestPreciseLocation
                 : resetFilters
             }
           />
         ) : null}
 
-        {!loading && !error
+        {hasPreciseLocation && !loading && !error
           ? filteredSchools.map((school) => (
               <SchoolCard
                 key={school.id}
                 school={school}
                 onPress={() =>
-                  router.push({
-                    pathname: publicMarketplace
-                      ? "/explore/[schoolId]"
-                      : "/student/explore/[schoolId]",
-                    params: {
-                      schoolId: school.id,
-                      distanceKm: String(school.distanceKm),
-                    },
-                  })
+                  router.push(
+                    marketplaceNavigation.schoolHref(
+                      school.id,
+                      school.distanceKm,
+                    ),
+                  )
                 }
               />
             ))

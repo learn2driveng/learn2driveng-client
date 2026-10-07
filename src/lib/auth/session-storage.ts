@@ -11,7 +11,7 @@ function isAuthTokens(value: unknown): value is AuthTokens {
   const tokens = value as Partial<AuthTokens>;
   return (
     typeof tokens.accessToken === "string" &&
-    typeof tokens.refreshToken === "string"
+    (Platform.OS === "web" || typeof tokens.refreshToken === "string")
   );
 }
 
@@ -40,7 +40,10 @@ export async function writeSessionTokens(tokens: AuthTokens) {
   const serialized = JSON.stringify(tokens);
 
   if (Platform.OS === "web") {
-    getWebStorage()?.setItem(SESSION_KEY, serialized);
+    getWebStorage()?.setItem(
+      SESSION_KEY,
+      JSON.stringify({ accessToken: tokens.accessToken, refreshToken: null }),
+    );
     return;
   }
 

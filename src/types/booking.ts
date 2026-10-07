@@ -16,6 +16,7 @@ export interface Booking {
   sessionsTotal: number;
   sessionsScheduledCount: number;
   sessionsCompletedCount: number;
+  expiresAt?: string | null;
   cancelReason?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -57,7 +58,12 @@ export interface LearnerLessonCard {
   time: string;
   location: string;
   instructor: string;
-  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  status:
+    | "scheduled"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "missed";
 }
 
 /** @deprecated Use LearnerLessonCard for session UI, Booking for API. */

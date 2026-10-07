@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -9,6 +10,7 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import type {
   InstructorAssignedSession,
@@ -58,9 +60,10 @@ export default function InstructorAttendanceScreen() {
       ["present", "absent"].includes(participant.status),
     ),
   );
+  const refresh = useCallback(() => refreshInstructorOperations(), []);
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <DashboardPageHeader title="Attendance" showBack={false} />
       <Text
         className="mt-3 font-figtree text-[14px] leading-5"

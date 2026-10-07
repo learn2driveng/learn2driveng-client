@@ -12,13 +12,12 @@ import { verifyPayment } from "@/lib/api";
 import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
 import { packageDurationLabel } from "@/lib/school/mappers";
 
-type CheckoutResultStatus = "success" | "pending" | "failed" | "cancelled";
+type CheckoutResultStatus = "success" | "pending" | "failed";
 
 const resultStatuses: readonly CheckoutResultStatus[] = [
   "success",
   "pending",
   "failed",
-  "cancelled",
 ];
 
 function isCheckoutResultStatus(
@@ -31,11 +30,10 @@ export default function CheckoutResultScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { schoolId, packageId, method, status, bookingId, paymentId } =
+  const { schoolId, packageId, status, bookingId, paymentId } =
     useLocalSearchParams<{
       schoolId?: string;
       packageId?: string;
-      method?: string;
       status?: string;
       bookingId?: string;
       paymentId?: string;
@@ -105,11 +103,10 @@ export default function CheckoutResultScreen() {
 
   const retryPayment = () =>
     router.replace({
-      pathname: "/checkout/[schoolId]/payment",
+      pathname: "/checkout/[schoolId]/review",
       params: {
         schoolId: school.id,
         packageId: selectedPackage.id,
-        ...(typeof method === "string" ? { method } : {}),
       },
     });
 
@@ -127,9 +124,9 @@ export default function CheckoutResultScreen() {
       icon: "clock-outline" as const,
       iconBackground: colors.primary,
       iconColor: colors.onPrimary,
-      title: "Payment processing",
+      title: "Payment status pending",
       description:
-        "We're still confirming your payment. Your package will appear as soon as confirmation is complete.",
+        "Closing checkout does not cancel a transaction. We’ll keep checking, and your package will unlock if Paystack confirms payment.",
       statusLabel: "Confirmation pending",
       statusColor: colors.primary,
     },
@@ -139,19 +136,9 @@ export default function CheckoutResultScreen() {
       iconColor: colors.contrastText,
       title: "Payment unsuccessful",
       description:
-        "Your payment could not be completed. You have not been charged for this package.",
+        "Paystack did not confirm this payment. If money left your account, contact support before trying again.",
       statusLabel: "Payment failed",
       statusColor: colors.error,
-    },
-    cancelled: {
-      icon: "close" as const,
-      iconBackground: colors.textSubtle,
-      iconColor: colors.contrastText,
-      title: "Payment cancelled",
-      description:
-        "The payment was cancelled before completion. No package or session credit was added.",
-      statusLabel: "Payment cancelled",
-      statusColor: colors.textSubtle,
     },
   }[resultStatus];
 
@@ -220,8 +207,8 @@ export default function CheckoutResultScreen() {
                 fontFamily: fontFamily.figtreeMedium,
               }}
             >
-              Please don&apos;t make another payment while this one is
-              processing.
+              Please don&apos;t make another payment or switch methods while this
+              attempt is pending.
             </Text>
           </View>
         ) : null}
@@ -229,7 +216,10 @@ export default function CheckoutResultScreen() {
         {checkError ? (
           <Text
             className="mt-3 text-center text-[12px] leading-5"
-            style={{ color: colors.error, fontFamily: fontFamily.figtreeMedium }}
+            style={{
+              color: colors.error,
+              fontFamily: fontFamily.figtreeMedium,
+            }}
           >
             {checkError}
           </Text>
@@ -328,6 +318,13 @@ export default function CheckoutResultScreen() {
             />
             <ResultButton
               secondary
+              label="Get payment help"
+              onPress={() =>
+                router.push({ pathname: "/support", params: { mode: "payment" } })
+              }
+            />
+            <ResultButton
+              secondary
               label="Back to dashboard"
               onPress={() => router.replace("/student")}
             />
@@ -344,25 +341,21 @@ export default function CheckoutResultScreen() {
             <ResultButton
               secondary
               label="Get payment help"
-              onPress={() => router.push("/student/profile/support")}
+              onPress={() =>
+                router.push({
+                  pathname: "/support",
+                  params: { mode: "payment" },
+                })
+              }
+            />
+            <ResultButton
+              secondary
+              label="Back to dashboard"
+              onPress={() => router.replace("/student")}
             />
           </>
         ) : null}
 
-        {resultStatus === "cancelled" ? (
-          <>
-            <ResultButton
-              label="Return to payment"
-              icon="arrow-right"
-              onPress={retryPayment}
-            />
-            <ResultButton
-              secondary
-              label="Back to Explore"
-              onPress={() => router.replace("/student/explore")}
-            />
-          </>
-        ) : null}
       </View>
     </View>
   );

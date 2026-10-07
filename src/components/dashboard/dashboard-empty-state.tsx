@@ -20,13 +20,16 @@ export function DashboardEmptyState({
   actionLabel,
   onActionPress,
 }: DashboardEmptyStateProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const surfaces = useSurfaceStyles();
 
   return (
     <View
       className="items-center rounded-3xl border px-6 py-8"
-      style={surfaces.card}
+      style={[
+        surfaces.card,
+        { backgroundColor: isDark ? colors.surfaceMuted : colors.surface },
+      ]}
     >
       <View
         className="h-14 w-14 items-center justify-center rounded-2xl"

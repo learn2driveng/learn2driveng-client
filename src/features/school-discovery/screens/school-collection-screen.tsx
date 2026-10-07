@@ -284,6 +284,8 @@ export function SchoolCollectionScreen({
               </Text>
               {error ? (
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Try loading ${title.toLowerCase()} again`}
                   onPress={() => void loadPage(1, true)}
                   className="mt-5 rounded-full px-5 py-3"
                   style={{ backgroundColor: colors.primary }}

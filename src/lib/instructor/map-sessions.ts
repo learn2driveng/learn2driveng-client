@@ -87,10 +87,18 @@ function readTransmission(
 
 function mapLessonStatus(
   sessionStatus: TrainingSessionStatus,
+  scheduledEndTime: string,
   participantStatus?: InstructorSessionParticipant["status"],
 ): InstructorLessonSummary["status"] {
   if (sessionStatus === "cancelled" || participantStatus === "cancelled") {
     return "cancelled";
+  }
+  if (
+    sessionStatus === "missed" ||
+    (sessionStatus === "scheduled" &&
+      new Date(scheduledEndTime).getTime() <= Date.now())
+  ) {
+    return "missed";
   }
   if (sessionStatus === "completed" || participantStatus === "present") {
     return "completed";
@@ -195,7 +203,7 @@ function sessionToLesson(
     ),
     location: sessionLocation(session),
     transmission: readTransmission(session.vehicleId),
-    status: mapLessonStatus(session.status),
+    status: mapLessonStatus(session.status, session.scheduledEndTime),
     sessionStatus: session.status,
     learnerCount,
     learners,
@@ -223,7 +231,7 @@ function sessionToPlaceholderLesson(
     ),
     location: sessionLocation(session),
     transmission: readTransmission(session.vehicleId),
-    status: mapLessonStatus(session.status),
+    status: mapLessonStatus(session.status, session.scheduledEndTime),
     sessionStatus: session.status,
     learnerCount: 0,
     learners: [],
@@ -312,7 +320,14 @@ export function selectTodayLessons(scheduleDays: InstructorScheduleDay[]) {
 }
 
 export function countOutstandingReports(sessions: InstructorAssignedSession[]) {
-  return sessions.filter((session) => session.status === "in_progress").length;
+  return sessions.filter(
+    (session) =>
+      session.status === "in_progress" ||
+      (session.status === "completed" &&
+        session.participants.some(
+          (participant) => participant.status === "scheduled",
+        )),
+  ).length;
 }
 
 export function readSchoolNameFromSessions(

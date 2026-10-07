@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -17,7 +18,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
@@ -25,6 +25,7 @@ import Svg, { Path } from "react-native-svg";
 import { AppLogo } from "@/components/common/app-logo";
 import { Screen } from "@/components/common/screen";
 import { borderRadius, splashPalette } from "@/constants/theme";
+import { useSettingsStore } from "@/store/settings.store";
 
 const PRIMARY = splashPalette.primary;
 const SLIDE_COUNT = 3;
@@ -255,40 +256,6 @@ function HeroGlow() {
   );
 }
 
-function VerifiedBadge() {
-  const offset = useSharedValue(0);
-
-  useEffect(() => {
-    offset.value = withRepeat(
-      withSequence(
-        withTiming(-4, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      false,
-    );
-  }, [offset]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: offset.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={animatedStyle}
-      className="absolute -bottom-4 -right-2 flex-row items-center gap-2 rounded-2xl border border-primary/30 bg-navy-accent px-3 py-3 shadow-lg"
-    >
-      <MaterialCommunityIcons name="check-decagram" size={20} color={PRIMARY} />
-      <Text
-        className="font-sans text-xs font-bold uppercase tracking-wider text-primary"
-        style={{ color: splashPalette.primary }}
-      >
-        FRSC Verified
-      </Text>
-    </Animated.View>
-  );
-}
-
 function MapDotPattern() {
   return (
     <View
@@ -446,19 +413,17 @@ function OnboardingSlide1({
             >
               <MaterialCommunityIcons name="garage" size={80} color={PRIMARY} />
             </LinearGradient>
-            <VerifiedBadge />
           </View>
         </View>
       </View>
 
       <View className="px-8 pb-4">
         <OnboardingTitle className="mb-4">
-          FRSC-Approved{"\n"}
+          Approved{"\n"}
           <Text className="text-primary">Schools</Text>
         </OnboardingTitle>
         <Text className="mx-auto mb-6 max-w-[300px] text-center font-sans text-base leading-relaxed text-neutral-600 dark:text-white/70">
-          Discover and book lessons with the best, government-verified driving
-          schools near you.
+          Discover and book lessons with approved driving schools near you.
         </Text>
         <PageDots activeIndex={0} />
         <PrimaryCtaButton label="Get Started" onPress={onNext} />
@@ -550,13 +515,32 @@ function OnboardingSlide3({
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const setDiscoveryLocationMode = useSettingsStore(
+    (state) => state.setDiscoveryLocationMode,
+  );
+  const completeOnboarding = useSettingsStore(
+    (state) => state.completeOnboarding,
+  );
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
+  const isLeavingOnboarding = useRef(false);
   const [, setPage] = useState(0);
   const [slideHeight, setSlideHeight] = useState(0);
 
-  const continueToDiscovery = () => {
-    router.push("/location");
+  const continueToDiscovery = async () => {
+    if (isLeavingOnboarding.current) return;
+    isLeavingOnboarding.current = true;
+    completeOnboarding();
+
+    try {
+      // Let the OS show its own permission dialog; do not insert an app-made gate.
+      await Location.requestForegroundPermissionsAsync();
+    } catch {
+      // Explore will show the location action if the request cannot complete.
+    } finally {
+      setDiscoveryLocationMode("current");
+      router.replace("/welcome");
+    }
   };
 
   const goToPage = (index: number) => {

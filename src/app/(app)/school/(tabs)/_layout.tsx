@@ -1,16 +1,35 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter, type Href } from "expo-router";
 
 import { fontFamily } from "@/constants/fonts";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
+const schoolTabRoots: Readonly<Record<string, Href>> = {
+  index: "/school",
+  bookings: "/school/bookings",
+  learners: "/school/learners",
+  instructors: "/school/instructors",
+  more: "/school/more",
+};
+
 export default function SchoolTabsLayout() {
+  const router = useRouter();
   const { colors } = useAppTheme();
 
   return (
     <Tabs
+      screenListeners={({ route }) => ({
+        tabPress: (event) => {
+          const tabRoot = schoolTabRoots[route.name];
+          if (!tabRoot) return;
+
+          event.preventDefault();
+          router.replace(tabRoot);
+        },
+      })}
       screenOptions={{
         headerShown: false,
+        popToTopOnBlur: true,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,
@@ -36,7 +55,7 @@ export default function SchoolTabsLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: "Bookings",
+          title: "Lessons",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="calendar-check"

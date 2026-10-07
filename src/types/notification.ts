@@ -4,9 +4,22 @@ export type AppNotification = {
   title: string;
   message: string;
   data?: {
+    notificationId?: string;
     participantId?: string;
     sessionId?: string;
+    url?: string;
   } | null;
   readAt?: string | null;
   createdAt: string;
 };
+
+export type NotificationPreferences = {
+  sessionReminders: boolean;
+  packageUpdates: boolean;
+  promotions: boolean;
+  lessonReminders: boolean;
+  scheduleChanges: boolean;
+  reportReminders: boolean;
+};
+
+export type NotificationPreferenceKey = keyof NotificationPreferences;

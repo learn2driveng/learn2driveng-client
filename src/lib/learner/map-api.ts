@@ -32,7 +32,8 @@ export type LearnerPackageCredit = {
   icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
   totalSessions: number;
   remainingSessions: number;
-  status: "active" | "expired" | "pending";
+  expiresAt?: string | null;
+  status: "active" | "expired" | "pending" | "completed" | "cancelled";
 };
 
 function readRefName(value: string | EnrichedRef | undefined, fallback: string) {
@@ -63,11 +64,13 @@ function readRefId(value: string | EnrichedRef | undefined) {
 function packageStatus(
   booking: BookingListItem,
 ): LearnerPackageCredit["status"] {
-  if (booking.status === "cancelled" || booking.status === "completed") {
-    return "expired";
-  }
+  if (booking.status === "cancelled") return "cancelled";
+  if (booking.status === "completed") return "completed";
   if (booking.status === "initiated") {
     return "pending";
+  }
+  if (booking.expiresAt && Date.parse(booking.expiresAt) <= Date.now()) {
+    return "expired";
   }
   return "active";
 }
@@ -92,6 +95,7 @@ export function bookingToLearnerPackage(
     icon: packageIconForName(packageName),
     totalSessions: booking.sessionsTotal,
     remainingSessions: remainingSessions(booking),
+    expiresAt: booking.expiresAt,
     status: packageStatus(booking),
   };
 }
@@ -121,5 +125,7 @@ export function activeLearnerPackages(packages: LearnerPackageCredit[]) {
 }
 
 export function expiredLearnerPackages(packages: LearnerPackageCredit[]) {
-  return packages.filter((item) => item.status === "expired");
+  return packages.filter((item) =>
+    item.status === "expired" || item.status === "completed" || item.status === "cancelled",
+  );
 }

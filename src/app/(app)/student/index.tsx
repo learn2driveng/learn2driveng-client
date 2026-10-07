@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { HeroSurface, useSurfaceStyles } from "@/components/common/surface";
@@ -9,6 +10,8 @@ import {
   SectionHeader,
 } from "@/components/dashboard";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshLearnerBookings } from "@/lib/learner/hydrate-learner-operations";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
 import { userInitials } from "@/lib/learner/map-api";
 import { computeProgressSummary } from "@/lib/learner/map-sessions";
 import { useAuthStore } from "@/store/auth.store";
@@ -23,12 +26,19 @@ import {
   selectUpcomingLessonCards,
   useLearnerSessionsStore,
 } from "@/store/learner-sessions.store";
+import {
+  refreshNotificationUnreadCount,
+  useNotificationStore,
+} from "@/store/notification.store";
 
 export default function StudentDashboardScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const user = useAuthStore((state) => state.user);
+  const unreadNotificationCount = useNotificationStore(
+    (state) => state.unreadCount,
+  );
   const bookings = useLearnerOperationsStore((state) => state.bookings);
   const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
   const expiredPackages = useLearnerOperationsStore(
@@ -63,6 +73,18 @@ export default function StudentDashboardScreen() {
       : 0;
   const greetingName = user?.firstName ?? "there";
   const profileInitials = user ? userInitials(user) : "L2";
+  useFocusEffect(
+    useCallback(() => {
+      void refreshNotificationUnreadCount().catch(() => undefined);
+    }, []),
+  );
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      refreshLearnerBookings(),
+      refreshLearnerSessions(),
+      refreshNotificationUnreadCount(),
+    ]);
+  }, []);
   const header = (
     <View className="flex-row items-center justify-between">
       <View>
@@ -83,7 +105,11 @@ export default function StudentDashboardScreen() {
       <View className="flex-row items-center gap-3">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Notifications"
+          accessibilityLabel={
+            unreadNotificationCount > 0
+              ? `Notifications, ${unreadNotificationCount} unread`
+              : "Notifications"
+          }
           onPress={() => router.navigate("/student/profile/inbox")}
           className="h-11 w-11 items-center justify-center rounded-full border active:opacity-70"
           style={{
@@ -96,6 +122,23 @@ export default function StudentDashboardScreen() {
             size={22}
             color={colors.text}
           />
+          {unreadNotificationCount > 0 ? (
+            <View
+              className="absolute -right-1 -top-1 min-w-5 items-center justify-center rounded-full border-2 px-1"
+              style={{
+                height: 20,
+                borderColor: colors.background,
+                backgroundColor: colors.primary,
+              }}
+            >
+              <Text
+                className="font-figtree-bold text-[10px] leading-[16px]"
+                style={{ color: colors.onPrimary }}
+              >
+                {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -116,7 +159,7 @@ export default function StudentDashboardScreen() {
   );
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       {header}
 
       {activeLesson ? (

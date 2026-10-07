@@ -1,5 +1,1 @@
-import { ExploreScreen } from "@/features/school-discovery/screens/explore-screen";
-
-export default function PublicExploreScreen() {
-  return <ExploreScreen publicMarketplace />;
-}
+export { ExploreScreen as default } from "@/features/school-discovery/screens/explore-screen";

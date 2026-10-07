@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "357298042733",
+    "project_id": "l2d-notifications",
+    "storage_bucket": "l2d-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:357298042733:android:0404a7631e981951090c64",
+        "android_client_info": {
+          "package_name": "com.learn2drive.ng"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjtOV6k3l1--OifDCXKKC6fFC6Yu4uyZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

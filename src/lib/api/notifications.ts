@@ -1,6 +1,9 @@
 import { api } from "@/lib/api/client";
 import type { ApiSuccessResponse } from "@/types";
-import type { AppNotification } from "@/types/notification";
+import type {
+  AppNotification,
+  NotificationPreferences,
+} from "@/types/notification";
 
 type NotificationListResponse = ApiSuccessResponse<AppNotification[]> & {
   unreadCount: number;
@@ -20,4 +23,52 @@ export async function markNotificationRead(notificationId: string) {
 
 export async function markAllNotificationsRead() {
   await api.post("/notifications/read-all", {});
+}
+
+export async function clearAllNotifications() {
+  await api.delete("/notifications/me");
+}
+
+export async function clearNotification(notificationId: string) {
+  await api.delete(`/notifications/${encodeURIComponent(notificationId)}`);
+}
+
+export async function fetchNotificationPreferences() {
+  const { data } = await api.get<ApiSuccessResponse<NotificationPreferences>>(
+    "/notifications/preferences",
+  );
+  return data.data;
+}
+
+export async function updateNotificationPreferences(
+  updates: Partial<NotificationPreferences>,
+) {
+  const { data } = await api.put<ApiSuccessResponse<NotificationPreferences>>(
+    "/notifications/preferences",
+    updates,
+  );
+  return data.data;
+}
+
+export async function registerPushToken(input: {
+  token: string;
+  platform: "android" | "ios";
+  deviceName?: string;
+}) {
+  await api.post("/notifications/push-tokens", input);
+}
+
+export async function unregisterPushToken(token: string) {
+  await api.delete("/notifications/push-tokens", {
+    data: { token },
+    timeout: 1500,
+  });
+}
+
+export async function sendTestNotification() {
+  const { data } = await api.post<ApiSuccessResponse<AppNotification>>(
+    "/notifications/test",
+    {},
+  );
+  return data.data;
 }

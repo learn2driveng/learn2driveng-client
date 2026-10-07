@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
 import { Screen } from "@/components/common/screen";
-import { useRoleRouteAccess } from "@/features/auth";
+import { RoleRouteGuard } from "@/features/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchMyDrivingSchool } from "@/lib/api";
 import { hydrateSchoolFromRecord } from "@/lib/school/hydrate-school-operations";
@@ -21,15 +21,17 @@ type SchoolAccess =
 export default function SchoolLayout() {
   const { colors } = useAppTheme();
   const pathname = usePathname();
-  const roleAccess = useRoleRouteAccess("driving_school", "/school");
   const user = useAuthStore((state) => state.user);
+  const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.role);
+  const hasAccess = status === "authenticated" && role === "driving_school";
   const [reloadToken, setReloadToken] = useState(0);
   const [access, setAccess] = useState<SchoolAccess>({
     status: "checking",
   });
 
   useEffect(() => {
-    if (roleAccess.status !== "allowed") return;
+    if (!hasAccess) return;
 
     let active = true;
     const adminName = user
@@ -58,13 +60,18 @@ export default function SchoolLayout() {
     return () => {
       active = false;
     };
-  }, [reloadToken, roleAccess.status, user]);
+  }, [hasAccess, reloadToken, user]);
 
-  if (roleAccess.status === "checking") return null;
-  if (roleAccess.status === "redirect") {
-    return <Redirect href={roleAccess.href} />;
+  if (!hasAccess) {
+    return (
+      <RoleRouteGuard
+        allowedRoles={["driving_school"]}
+        fallbackReturnTo="/school"
+      >
+        {null}
+      </RoleRouteGuard>
+    );
   }
-
   if (access.status === "checking") return null;
 
   if (access.status === "error") {

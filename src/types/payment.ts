@@ -1,7 +1,5 @@
 export type PaymentProvider = "paystack";
 
-export type PaymentChannel = "card" | "bank_transfer" | "ussd";
-
 export type PaymentStatus =
   | "initiated"
   | "pending"
@@ -15,6 +13,7 @@ export interface Payment {
   payerUserId: string;
   schoolId: string;
   provider: PaymentProvider;
+  channel?: string | null;
   amount: number;
   currency: string;
   status: PaymentStatus;
@@ -25,6 +24,16 @@ export interface Payment {
   metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface SuccessfulPayment {
+  id: string;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  channel: string | null;
+  providerReference: string;
+  paidAt: string | null;
 }
 
 export interface InitializePaymentPayload {

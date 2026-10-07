@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -13,6 +13,9 @@ import {
 import { fontFamily } from "@/constants/fonts";
 import { borderRadius } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { fetchPendingInstructorPhotoSubmissions } from "@/lib/api/instructors";
+import { refreshApprovedSchoolOperations } from "@/lib/school/hydrate-school-operations";
+import type { InstructorPhotoSubmission } from "@/lib/api/users";
 import { useSchoolOperationsStore } from "@/store/school-operations.store";
 import type { SchoolInstructorStatus } from "@/types";
 
@@ -40,10 +43,51 @@ export default function SchoolInstructorsScreen() {
   const { colors } = useAppTheme();
   const surfaces = useSurfaceStyles();
   const instructors = useSchoolOperationsStore((state) => state.instructors);
+  const adminName = useSchoolOperationsStore(
+    (state) => state.profile.adminName,
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("all");
+  const [photoSubmissions, setPhotoSubmissions] = useState<
+    InstructorPhotoSubmission[]
+  >([]);
+  const [photoApprovalError, setPhotoApprovalError] = useState(false);
 
-  const activeCount = instructors.filter((item) => item.status === "active").length;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void fetchPendingInstructorPhotoSubmissions()
+        .then((submissions) => {
+          if (!active) return;
+          setPhotoSubmissions(submissions);
+          setPhotoApprovalError(false);
+        })
+        .catch(() => {
+          if (active) setPhotoApprovalError(true);
+        });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const refresh = useCallback(async () => {
+    const [operations, submissions] = await Promise.allSettled([
+      refreshApprovedSchoolOperations(adminName),
+      fetchPendingInstructorPhotoSubmissions(),
+    ]);
+    if (submissions.status === "fulfilled") {
+      setPhotoSubmissions(submissions.value);
+      setPhotoApprovalError(false);
+    } else {
+      setPhotoApprovalError(true);
+    }
+    if (operations.status === "rejected") throw operations.reason;
+  }, [adminName]);
+
+  const activeCount = instructors.filter(
+    (item) => item.status === "active",
+  ).length;
   const awaitingCount = instructors.filter(
     (item) => item.status === "invited" || item.status === "pending",
   ).length;
@@ -68,13 +112,13 @@ export default function SchoolInstructorsScreen() {
 
   const openInstructor = (instructorId: string) => {
     router.push({
-      pathname: "/school/instructor/[instructorId]",
+      pathname: "/school/instructors/[instructorId]",
       params: { instructorId },
     });
   };
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <DashboardPageHeader title="Instructors" showBack={false} />
 
       <HeroSurface
@@ -174,6 +218,60 @@ export default function SchoolInstructorsScreen() {
         </Pressable>
       </HeroSurface>
 
+      {photoSubmissions.length > 0 || photoApprovalError ? (
+        <View className="mt-8">
+          <SectionHeader
+            title={`Photo approvals · ${photoSubmissions.length}`}
+          />
+          {photoApprovalError ? (
+            <Text
+              className="mt-3 font-figtree text-[12px]"
+              style={{ color: colors.error }}
+            >
+              Photo approvals could not be loaded. Reopen this screen to retry.
+            </Text>
+          ) : (
+            <View className="mt-4 gap-3">
+              {photoSubmissions.map((submission) => (
+                <Pressable
+                  key={submission.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Review photo for ${submission.instructorName ?? "instructor"}`}
+                  onPress={() => openInstructor(submission.instructorId)}
+                  className="flex-row items-center gap-3 rounded-2xl border p-3 active:opacity-75"
+                  style={surfaces.card}
+                >
+                  <Image
+                    source={{ uri: submission.photoUrl }}
+                    className="h-12 w-12 rounded-xl"
+                    resizeMode="cover"
+                  />
+                  <View className="flex-1">
+                    <Text
+                      className="font-figtree-bold text-[13px]"
+                      style={{ color: colors.text }}
+                    >
+                      {submission.instructorName ?? "Instructor"}
+                    </Text>
+                    <Text
+                      className="mt-1 font-figtree text-[11px]"
+                      style={{ color: colors.textMuted }}
+                    >
+                      New photo awaiting approval
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={20}
+                    color={colors.textSubtle}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      ) : null}
+
       <View className="mt-8">
         <SectionHeader title={`Roster · ${visibleInstructors.length}`} />
 
@@ -192,6 +290,7 @@ export default function SchoolInstructorsScreen() {
             color={colors.textSubtle}
           />
           <TextInput
+            accessibilityLabel="Search instructors"
             value={query}
             onChangeText={setQuery}
             placeholder="Search instructors"
@@ -413,7 +512,11 @@ export default function SchoolInstructorsScreen() {
           <View className="mt-5">
             <ContentEmptyState
               icon="account-search-outline"
-              title={instructors.length ? "No instructors found" : "No instructors yet"}
+              title={
+                instructors.length
+                  ? "No instructors found"
+                  : "No instructors yet"
+              }
               description={
                 instructors.length
                   ? "Try another name or status."

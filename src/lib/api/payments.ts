@@ -1,14 +1,18 @@
 import { api } from "@/lib/api/client";
 import type { ApiSuccessResponse } from "@/types";
-import type { Payment, PaymentChannel } from "@/types/payment";
+import type { Payment, SuccessfulPayment } from "@/types/payment";
 
-export async function initializePayment(
-  bookingId: string,
-  channel: PaymentChannel,
-) {
+export async function fetchSuccessfulPayments() {
+  const { data } = await api.get<ApiSuccessResponse<SuccessfulPayment[]>>(
+    "/payments/history",
+  );
+  return data.data;
+}
+
+export async function initializePayment(bookingId: string) {
   const { data } = await api.post<ApiSuccessResponse<Payment>>(
     "/payments/initialize",
-    { bookingId, channel },
+    { bookingId },
   );
   return data.data;
 }

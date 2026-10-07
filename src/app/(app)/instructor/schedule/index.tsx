@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { ContentEmptyState } from "@/components/common/content-empty-state";
@@ -13,6 +13,7 @@ import {
   toInstructorLessonStatus,
 } from "@/features/instructor";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshInstructorOperations } from "@/lib/instructor/hydrate-instructor-operations";
 import { useInstructorOperationsStore } from "@/store/instructor-operations.store";
 import { useTrainingSessionStore } from "@/store/training-session.store";
 import type { InstructorLessonStatus } from "@/types";
@@ -24,6 +25,7 @@ const filters: { label: string; value: ScheduleFilter }[] = [
   { label: "Upcoming", value: "scheduled" },
   { label: "In progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Missed", value: "missed" },
 ];
 
 export default function InstructorScheduleScreen() {
@@ -33,21 +35,11 @@ export default function InstructorScheduleScreen() {
     (state) => state.scheduleDays,
   );
   const sessions = useTrainingSessionStore((state) => state.sessions);
-  const [selectedDayId, setSelectedDayId] = useState(
-    scheduleDays[0]?.id ?? "",
-  );
+  const [selectedDayId, setSelectedDayId] = useState(scheduleDays[0]?.id ?? "");
   const [filter, setFilter] = useState<ScheduleFilter>("all");
   const selectedDay =
     scheduleDays.find((day) => day.id === selectedDayId) ?? scheduleDays[0];
 
-  useEffect(() => {
-    if (scheduleDays.length === 0) return;
-    setSelectedDayId((current) =>
-      scheduleDays.some((day) => day.id === current)
-        ? current
-        : (scheduleDays[0]?.id ?? ""),
-    );
-  }, [scheduleDays]);
   const lessonsWithStatus =
     selectedDay?.lessons.map((lesson) => ({
       lesson,
@@ -59,9 +51,10 @@ export default function InstructorScheduleScreen() {
   const filteredLessons = lessonsWithStatus.filter(
     (item) => filter === "all" || item.status === filter,
   );
+  const refresh = useCallback(() => refreshInstructorOperations(), []);
 
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <DashboardPageHeader title="Schedule" showBack={false} />
       <Text
         className="mt-3 mb-3 font-figtree text-[14px] leading-5"
@@ -77,7 +70,7 @@ export default function InstructorScheduleScreen() {
         contentContainerClassName="gap-2 py-6"
       >
         {scheduleDays.map((day) => {
-          const selected = selectedDayId === day.id;
+          const selected = selectedDay?.id === day.id;
 
           return (
             <Pressable

@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fontFamily } from "@/constants/fonts";
+import { useMarketplaceNavigation } from "@/features/school-discovery/marketplace-navigation";
 import { useDiscoverSchoolDetail } from "@/features/school-discovery/use-discover-school-detail";
 import { packageDurationLabel, packageLessonCount } from "@/lib/school/mappers";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -82,8 +83,7 @@ function PackageStat({
 
 type PackageCardProps = {
   item: TrainingPackage;
-  index: number;
-  publicMarketplace: boolean;
+  requiresSignIn: boolean;
   selected: boolean;
   alreadyOwned: boolean;
   onSelect: () => void;
@@ -92,21 +92,14 @@ type PackageCardProps = {
 
 function PackageCard({
   item,
-  index,
-  publicMarketplace,
+  requiresSignIn,
   selected,
   alreadyOwned,
   onSelect,
   onContinue,
 }: PackageCardProps) {
   const { colors } = useAppTheme();
-  const verified = index !== 1;
   const lessonCount = packageLessonCount(item);
-  const statLabels = [
-    packageDurationLabel(item),
-    `${lessonCount} lessons`,
-    index === 1 ? "Auto Only" : index === 2 ? "All Types" : "Manual/Auto",
-  ];
   const features = item.description?.trim()
     ? item.description
         .split(/[\n•]/)
@@ -135,69 +128,32 @@ function PackageCard({
         className="p-5 active:opacity-90"
       >
         <View className="flex-row items-start justify-between gap-3">
-          <View
-            className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+          <Text
+            className="flex-1 text-[19px]"
+            style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+          >
+            {item.name}
+          </Text>
+
+          <Text
+            className="text-[22px] leading-6"
             style={{
-              backgroundColor: verified
-                ? colors.successSoft
-                : colors.surfaceMuted,
+              color: colors.text,
+              fontFamily: fontFamily.figtreeBold,
             }}
           >
-            <MaterialCommunityIcons
-              name="check-decagram"
-              size={14}
-              color={verified ? colors.success : colors.textMuted}
-            />
-            <Text
-              className="text-[9px] uppercase tracking-[0.7px]"
-              style={{
-                color: verified ? colors.success : colors.textMuted,
-                fontFamily: fontFamily.figtreeBold,
-              }}
-            >
-              {verified ? "FRSC Verified" : "Standard"}
-            </Text>
-          </View>
-
-          <View className="items-end">
-            <Text
-              className="text-[22px] leading-6"
-              style={{
-                color: colors.text,
-                fontFamily: fontFamily.figtreeBold,
-              }}
-            >
-              {formatPrice(item.price)}
-            </Text>
-            <Text
-              className="mt-1 text-[10px]"
-              style={{
-                color: colors.textMuted,
-                fontFamily: fontFamily.figtree,
-              }}
-            >
-              {formatPrice(Math.round(item.price / Math.max(lessonCount, 1)))} /
-              lesson
-            </Text>
-          </View>
+            {formatPrice(item.price)}
+          </Text>
         </View>
 
-        <Text
-          className="mt-5 text-[19px]"
-          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-        >
-          {item.name}
-        </Text>
-
         <View className="mt-4 flex-row gap-3">
-          <PackageStat icon="clock-outline" label={statLabels[0]} />
           <PackageStat
-            icon={index === 2 ? "medal-outline" : "account-outline"}
-            label={statLabels[1]}
+            icon="clock-outline"
+            label={packageDurationLabel(item)}
           />
           <PackageStat
-            icon={index === 2 ? "truck-outline" : "car-outline"}
-            label={statLabels[2]}
+            icon="account-outline"
+            label={`${lessonCount} lessons`}
           />
         </View>
 
@@ -229,7 +185,7 @@ function PackageCard({
           alreadyOwned
             ? `${item.name} is already active`
             : selected
-              ? publicMarketplace
+              ? requiresSignIn
                 ? `Sign in to book ${item.name}`
                 : `Book ${item.name}`
               : `Select ${item.name}`
@@ -237,7 +193,7 @@ function PackageCard({
         accessibilityState={{ disabled: alreadyOwned }}
         disabled={alreadyOwned}
         onPress={selected ? onContinue : onSelect}
-        className="mx-5 mb-5 items-center justify-center rounded-2xl border-2 active:opacity-80"
+        className="mx-5 mb-5 items-center justify-center rounded-full border-2 active:opacity-80"
         style={{
           backgroundColor: alreadyOwned
             ? colors.surfaceStrong
@@ -269,7 +225,7 @@ function PackageCard({
           {alreadyOwned
             ? "Package already active"
             : selected
-              ? publicMarketplace
+              ? requiresSignIn
                 ? "Sign in to book"
                 : "Book this package"
               : "Select package"}
@@ -279,14 +235,9 @@ function PackageCard({
   );
 }
 
-type PackageSelectionScreenProps = {
-  publicMarketplace?: boolean;
-};
-
-export function PackageSelectionScreen({
-  publicMarketplace = false,
-}: PackageSelectionScreenProps) {
+export function PackageSelectionScreen() {
   const router = useRouter();
+  const marketplaceNavigation = useMarketplaceNavigation();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
@@ -401,20 +352,7 @@ export function PackageSelectionScreen({
   }
 
   const bookPackage = (item: TrainingPackage) => {
-    if (publicMarketplace) {
-      router.push({
-        pathname: "/login",
-        params: {
-          returnTo: `/checkout/${school.id}/payment?packageId=${item.id}`,
-        },
-      });
-      return;
-    }
-
-    router.push({
-      pathname: "/checkout/[schoolId]/payment",
-      params: { schoolId: school.id, packageId: item.id },
-    });
+    router.push(marketplaceNavigation.purchaseHref(school.id, item.id));
   };
 
   return (
@@ -472,12 +410,11 @@ export function PackageSelectionScreen({
         </Text>
 
         <View className="mt-7 gap-6">
-          {packages.map((item, index) => (
+          {packages.map((item) => (
             <PackageCard
               key={item.id}
               item={item}
-              index={index}
-              publicMarketplace={publicMarketplace}
+              requiresSignIn={marketplaceNavigation.requiresSignIn}
               selected={effectiveSelectedId === item.id}
               alreadyOwned={activePackages.some(
                 (activePackage) => activePackage.packageId === item.id,

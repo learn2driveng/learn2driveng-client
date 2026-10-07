@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -11,6 +11,7 @@ type SettingsRowProps = {
   value?: string;
   onPress?: () => void;
   destructive?: boolean;
+  loading?: boolean;
 };
 
 export function SettingsRow({
@@ -20,6 +21,7 @@ export function SettingsRow({
   value,
   onPress,
   destructive = false,
+  loading = false,
 }: SettingsRowProps) {
   const { colors } = useAppTheme();
   const foreground = destructive ? colors.error : colors.text;
@@ -32,8 +34,9 @@ export function SettingsRow({
           ? [title, description, value].filter(Boolean).join(". ")
           : undefined
       }
+      accessibilityState={{ disabled: !onPress || loading, busy: loading }}
       onPress={onPress}
-      disabled={!onPress}
+      disabled={!onPress || loading}
       className="min-h-18 flex-row items-center gap-4 px-4 py-3 active:opacity-65"
     >
       <View
@@ -68,7 +71,9 @@ export function SettingsRow({
           {value}
         </Text>
       ) : null}
-      {onPress ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={foreground} />
+      ) : onPress ? (
         <MaterialCommunityIcons
           name="chevron-right"
           size={22}

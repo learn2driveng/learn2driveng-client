@@ -10,13 +10,17 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 type CheckoutShellProps = PropsWithChildren<{
   title: string;
   step: number;
+  totalSteps?: number;
   onBack: () => void;
+  onExit: () => void;
 }>;
 
 export function CheckoutShell({
   title,
   step,
+  totalSteps = 2,
   onBack,
+  onExit,
   children,
 }: CheckoutShellProps) {
   const insets = useSafeAreaInsets();
@@ -29,37 +33,62 @@ export function CheckoutShell({
     >
       <StatusBar style={isDark ? "light" : "dark"} />
       <View className="flex-row items-center px-5 py-3">
+        <View className="w-[76px] items-start">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={onBack}
+            className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={21}
+              color={colors.text}
+            />
+          </Pressable>
+        </View>
+        <View className="flex-1 items-center px-2">
+          <Text
+            className="text-center text-[16px]"
+            style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
+          >
+            {title}
+          </Text>
+          <Text
+            className="mt-0.5 text-[9px] uppercase tracking-[0.8px]"
+            style={{
+              color: colors.textMuted,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Step {step} of {totalSteps}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={onBack}
-          className="h-10 w-10 items-center justify-center rounded-full border active:opacity-70"
-          style={{
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          }}
+          accessibilityLabel="Exit checkout and go to dashboard"
+          onPress={onExit}
+          className="h-10 w-[76px] flex-row items-center justify-end gap-1 active:opacity-70"
         >
           <MaterialCommunityIcons
-            name="arrow-left"
-            size={21}
-            color={colors.text}
+            name="home-variant-outline"
+            size={16}
+            color={colors.primary}
           />
+          <Text
+            className="text-[12px]"
+            style={{
+              color: colors.primary,
+              fontFamily: fontFamily.figtreeBold,
+            }}
+          >
+            Home
+          </Text>
         </Pressable>
-        <Text
-          className="flex-1 text-center text-[16px]"
-          style={{ color: colors.text, fontFamily: fontFamily.figtreeBold }}
-        >
-          {title}
-        </Text>
-        <Text
-          className="w-10 text-right text-[11px]"
-          style={{
-            color: colors.textMuted,
-            fontFamily: fontFamily.figtreeBold,
-          }}
-        >
-          {step}/2
-        </Text>
       </View>
       <View
         className="mx-5 h-1 overflow-hidden rounded-full"
@@ -69,7 +98,7 @@ export function CheckoutShell({
           className="h-full rounded-full"
           style={{
             backgroundColor: colors.primary,
-            width: step === 1 ? "50%" : "100%",
+            width: `${Math.min(100, Math.round((step / totalSteps) * 100))}%`,
           }}
         />
       </View>

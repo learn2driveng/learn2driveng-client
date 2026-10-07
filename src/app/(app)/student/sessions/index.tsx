@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
+import { Text, View } from "react-native";
 
 import {
   DashboardEmptyState,
@@ -11,6 +11,8 @@ import {
 } from "@/components/dashboard";
 import { BookingCard } from "@/features/session-booking";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { refreshLearnerSessions } from "@/lib/learner/hydrate-learner-sessions";
+import type { LearnerPackageCredit } from "@/lib/learner/map-api";
 import {
   selectActiveLearnerPackages,
   selectExpiredLearnerPackages,
@@ -25,36 +27,49 @@ import {
 export default function StudentSessionsScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
-    null,
-  );
   const activePackages = useLearnerOperationsStore(selectActiveLearnerPackages);
-  const expiredPackages = useLearnerOperationsStore(selectExpiredLearnerPackages);
+  const expiredPackages = useLearnerOperationsStore(
+    selectExpiredLearnerPackages,
+  );
+  const refreshBookings = useLearnerOperationsStore(
+    (state) => state.refreshBookings,
+  );
   const totalRemainingSessions = useLearnerOperationsStore(
     selectTotalRemainingSessions,
-  );
-  const selectedPackage = activePackages.find(
-    (item) => item.id === selectedPackageId,
   );
   const hasPackages = activePackages.length > 0;
   const hasCredits = totalRemainingSessions > 0;
   const upcomingBooking = useLearnerSessionsStore(selectUpcomingLessonCards)[0];
 
-  const bookSelectedPackage = () => {
-    if (!selectedPackage) return;
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBookings().catch(() => undefined);
+    }, [refreshBookings]),
+  );
+  const refresh = useCallback(async () => {
+    await Promise.all([refreshBookings(), refreshLearnerSessions()]);
+  }, [refreshBookings]);
 
+  const bookPackage = (packageCredit: LearnerPackageCredit) => {
     router.push({
       pathname: "/student/sessions/book",
       params: {
-        packageName: selectedPackage.name,
-        schoolName: selectedPackage.schoolName,
-        bookingId: selectedPackage.bookingId,
+        packageName: packageCredit.name,
+        schoolName: packageCredit.schoolName,
+        bookingId: packageCredit.bookingId,
       },
     });
   };
 
+  const viewPackage = (packageCredit: LearnerPackageCredit) => {
+    router.push({
+      pathname: "/student/sessions/package/[bookingId]",
+      params: { bookingId: packageCredit.bookingId },
+    });
+  };
+
   return (
-    <DashboardScreen>
+    <DashboardScreen onRefresh={refresh}>
       <Text
         accessibilityRole="header"
         className="font-figtree-bold text-[30px]"
@@ -97,37 +112,9 @@ export default function StudentSessionsScreen() {
             Available session credits
           </Text>
         </View>
-        {hasCredits ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !selectedPackage }}
-            disabled={!selectedPackage}
-            onPress={bookSelectedPackage}
-            className="h-11 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-75"
-            style={{
-              backgroundColor: selectedPackage
-                ? colors.primary
-                : colors.surfaceStrong,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="calendar-plus"
-              size={19}
-              color={selectedPackage ? colors.onPrimary : colors.textSubtle}
-            />
-            <Text
-              className="font-figtree-bold text-[13px]"
-              style={{
-                color: selectedPackage ? colors.onPrimary : colors.textSubtle,
-              }}
-            >
-              Book
-            </Text>
-          </Pressable>
-        ) : null}
       </View>
 
-      {hasPackages && upcomingBooking ? (
+      {upcomingBooking ? (
         <View className="mt-9">
           <SectionHeader
             title="Upcoming lesson"
@@ -157,38 +144,23 @@ export default function StudentSessionsScreen() {
               style={{ color: colors.textMuted }}
             >
               {hasCredits
-                ? "Select the package you want to use, then tap Book."
-                : "You have used all the sessions included in your packages."}
+                ? "Book a lesson directly from a package with available credits."
+                : "All lessons in your active packages are booked."}
             </Text>
-            {!hasCredits ? (
-              <View className="mt-4">
-                <DashboardEmptyState
-                  icon="ticket-confirmation-outline"
-                  title="No sessions remaining"
-                  description="Explore available packages to continue your driving training."
-                  actionLabel="Explore packages"
-                  onActionPress={() => router.push("/student/explore")}
-                />
-              </View>
-            ) : null}
             <View className="mt-4 gap-3">
-              {activePackages.map((item) => {
-                const hasPackageCredits = item.remainingSessions > 0;
-
-                return (
-                  <PackageCreditCard
-                    key={item.id}
-                    name={item.name}
-                    icon={item.icon}
-                    totalSessions={item.totalSessions}
-                    remainingSessions={item.remainingSessions}
-                    status={item.status === "pending" ? "active" : item.status}
-                    selected={selectedPackageId === item.id}
-                    disabled={!hasPackageCredits}
-                    onPress={() => setSelectedPackageId(item.id)}
-                  />
-                );
-              })}
+              {activePackages.map((item) => (
+                <PackageCreditCard
+                  key={item.id}
+                  name={item.name}
+                  schoolName={item.schoolName}
+                  icon={item.icon}
+                  totalSessions={item.totalSessions}
+                  remainingSessions={item.remainingSessions}
+                  status={item.status}
+                  onBookPress={() => bookPackage(item)}
+                  onViewPress={() => viewPackage(item)}
+                />
+              ))}
             </View>
           </>
         ) : (
@@ -198,7 +170,7 @@ export default function StudentSessionsScreen() {
               title="No active packages"
               description={
                 expiredPackages.length > 0
-                  ? "Renew an expired package or purchase a new one before booking another session."
+                  ? "Purchase a new package before booking another session."
                   : "Purchase a training package before booking your first driving session."
               }
               actionLabel="Explore packages"
@@ -210,24 +182,24 @@ export default function StudentSessionsScreen() {
 
       {expiredPackages.length > 0 ? (
         <View className="mt-9">
-          <SectionHeader title="Expired packages" />
+          <SectionHeader title="Past packages" />
           <Text
             className="mt-2 font-figtree text-[13px]"
             style={{ color: colors.textMuted }}
           >
-            Expired packages cannot be used to book sessions.
+            Completed and inactive packages cannot be used to book sessions.
           </Text>
           <View className="mt-4 gap-3">
             {expiredPackages.map((item) => (
               <PackageCreditCard
                 key={item.id}
                 name={item.name}
+                schoolName={item.schoolName}
                 icon={item.icon}
                 totalSessions={item.totalSessions}
                 remainingSessions={item.remainingSessions}
-                status="expired"
-                actionLabel="Renew"
-                onPress={() => router.push("/student/explore")}
+                status={item.status}
+                onViewPress={() => viewPackage(item)}
               />
             ))}
           </View>
